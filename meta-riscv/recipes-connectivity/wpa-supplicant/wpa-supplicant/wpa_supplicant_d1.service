@@ -1,0 +1,14 @@
+[Unit]
+Description=WPA supplicant D1
+Before=network.target
+Wants=network.target
+ConditionPathExists=/sys/devices/platform/xradio_device.0
+
+[Service]
+Type=dbus
+BusName=fi.w1.wpa_supplicant1
+ExecStart=/usr/sbin/wpa_supplicant -u -i wlan0 -c /etc/wpa_supplicant.conf
+
+[Install]
+WantedBy=multi-user.target
+Alias=dbus-fi.w1.wpa_supplicant1.service

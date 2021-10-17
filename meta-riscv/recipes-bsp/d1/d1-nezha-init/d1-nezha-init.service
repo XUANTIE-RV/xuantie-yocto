@@ -1,0 +1,9 @@
+[Unit]
+Description=D1 Init Service
+
+[Service]
+Type=simple
+ExecStart=/bin/sh /etc/nezha/d1-nezha-init.sh
+
+[Install]
+WantedBy=multi-user.target

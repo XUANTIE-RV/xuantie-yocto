@@ -1,0 +1,23 @@
+export POST_CONFIG=dts_FM_100P_VI_GPU_NPU_VO_DSI0_HDMI_V1.txt
+export BOARD_NAME=light_fpga_fm_c910
+ROOT_DIR=${WORKDIR}
+KERNELVERSION=5.10.4
+
+# Set build parameters
+export ARCH=riscv
+export BUILDROOT_DIR=${ROOT_DIR}/buildroot
+#export TOOLCHAIN_DIR?="${EXTERNAL_TOOLCHAIN}"
+export TOOLCHAIN_PREFIX=riscv64-unknown-linux-gnu-
+export CROSS_COMPILE=${TOOLCHAIN_DIR}/${TOOLCHAIN_PREFIX}
+export CC=${CROSS_COMPILE}gcc
+export CXX=${CROSS_COMPILE}g++
+export CFLAGS_COMMON="-march=rv64imafdc -mabi=lp64d -Wall"
+export LINUX_DIR="/home/zhangjb/riscv_yocto/thead-build/light-fm/tmp-glibc/work/light_fm-oe-linux/linux-thead/5.10.4-r0/linux-light_fm-standard-build"
+export INSTALL_DIR_ROOTFS=${ROOT_DIR}/buildroot/output/target
+export INSTALL_DIR_SDK=${ROOT_DIR}/output/sdk
+
+# LTP-DDT
+export SKIP_IDCHECK=1
+export KERNEL_USR_INC=${LINUX_DIR}
+export DESTDIR=${INSTALL_DIR_ROOTFS}
+

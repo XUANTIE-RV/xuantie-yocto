@@ -1,0 +1,29 @@
+dist: bionic
+sudo: required
+language: shell
+compiler:
+env:
+
+git:
+  depth: 3
+
+before_install:
+
+install:
+  - sudo apt-get install -y -qq diffstat texinfo chrpath
+script:
+  - cd ../
+  - git clone --depth=3 git://git.openembedded.org/openembedded-core
+  - cd openembedded-core
+  - mv ../meta-riscv ./
+  - git clone --depth=3 git://git.openembedded.org/bitbake
+  - git clone --depth=3 git://git.openembedded.org/meta-openembedded
+  - source oe-init-build-env
+  - find ./conf/bblayers.conf -type f -exec sed -i "s|  \"|  $(pwd)/../meta-openembedded/meta-oe \\\ \\n  \"|g" {} +
+  - find ./conf/bblayers.conf -type f -exec sed -i "s|  \"|  $(pwd)/../meta-riscv \\\ \\n  \"|g" {} +
+  - MACHINE=qemuriscv64 timeout --foreground 55m bitbake core-image-minimal || if [ $? == 124 ]; then echo "Timeout"; else return 1; fi;
+  - MACHINE=qemuriscv32 timeout --foreground 55m bitbake core-image-minimal || if [ $? == 124 ]; then echo "Timeout"; else return 1; fi
+  - MACHINE=freedom-u540 timeout --foreground 55m bitbake core-image-minimal || if [ $? == 124 ]; then echo "Timeout"; else return 1; fi
+
+after_success:
+

@@ -1,0 +1,37 @@
+#bin/sh
+#adb shell input tap x y
+#adb shell input swipe right 400  y
+#adb shell input swipe left 800 y
+
+if [ "$1" == 'tap' ]; then
+        ./usr/bin/ts-send /dev/input/event2 3 53 $2
+        ./usr/bin/ts-send /dev/input/event2 3 54 $3
+        ./usr/bin/ts-send /dev/input/event2 1 330 1
+        ./usr/bin/ts-send /dev/input/event2 0 0 0
+        ./usr/bin/ts-send /dev/input/event2 1 330 0
+        ./usr/bin/ts-send /dev/input/event2 0 0 0
+elif [ "$1" == 'swipe' ]; then
+        ./usr/bin/ts-send /dev/input/event2 3 53 $3
+        ./usr/bin/ts-send /dev/input/event2 3 54 $4
+        ./usr/bin/ts-send /dev/input/event2 1 330 1
+        ./usr/bin/ts-send /dev/input/event2 0 0 0
+
+        for i in {1..15};
+        do
+                if [ "$2" == 'left' ];then
+                x=$[ $3 - $i * 10 ]
+                elif [ "$2" == 'right' ];then
+                x=$[ $3 + $i * 10 ]
+                fi
+
+        ./usr/bin/ts-send /dev/input/event2 3 53 $x
+        ./usr/bin/ts-send /dev/input/event2 3 54 $4
+        ./usr/bin/ts-send /dev/input/event2 0 0 0
+        done
+
+./usr/bin/ts-send /dev/input/event2 3 53 $x
+./usr/bin/ts-send /dev/input/event2 3 54 $4
+./usr/bin/ts-send /dev/input/event2 1 330 0
+./usr/bin/ts-send /dev/input/event2 0 0 0
+fi
+

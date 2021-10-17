@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<manifest>
+  <remote name="aone" fetch="gopher://git@gitlab.alibaba-inc.com:yocto" />
+  <remote name="gitee_thead_yocoto" fetch="https://gitee.com/thead-yocto" />
+  <default remote="gitee_thead_yocoto" revision="master" />
+  
+
+  <project name="meta-riscv" remote="gitee_thead_yocoto" path="meta-riscv" revision="master" />
+  <project name="openembedded-core" remote="gitee_thead_yocoto" path="openembedded-core" revision="master" />
+  <project name="bitbake" remote="gitee_thead_yocoto" path="openembedded-core/bitbake" revision="master" />
+  <project name="meta-openembedded" remote="gitee_thead_yocoto" path="meta-openembedded" revision="master" />
+  <project name="meta-external-toolchain" remote="gitee_thead_yocoto" path="meta-external-toolchain" revision="master" />
+
+</manifest>
+
+<!-- <manifest>
+  <remote name="openembedded" fetch="https://github.com/openembedded/" />
+  <remote name="riscv" fetch="https://github.com/riscv/" />
+  <remote name="yoctoproject" fetch="https://git.yoctoproject.org/git" />
+  <default remote="openembedded" revision="master" />
+
+  <project name="meta-riscv" remote="riscv" path="meta-riscv" revision="master" />
+  <project name="openembedded-core" remote="openembedded" path="openembedded-core" revision="master" />
+  <project name="bitbake" remote="openembedded" path="openembedded-core/bitbake" revision="master" />
+  <project name="meta-openembedded" remote="openembedded" path="meta-openembedded" revision="master" />
+  <project name="meta-external-toolchain" remote="yoctoproject" path="meta-external-toolchain" revision="master" />
+
+</manifest> -->

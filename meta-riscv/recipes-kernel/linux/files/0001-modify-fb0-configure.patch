@@ -1,0 +1,24 @@
+From fcf19b7ffe50970d1cbf33d3d1a13724c6d8abb5 Mon Sep 17 00:00:00 2001
+From: lihm <koumei.lhm@alibaba-inc.com>
+Date: Fri, 3 Sep 2021 14:43:41 +0800
+Subject: [PATCH] modify fb0 configure
+
+---
+ arch/riscv/boot/dts/sunxi/d1.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/riscv/boot/dts/sunxi/d1.dts b/arch/riscv/boot/dts/sunxi/d1.dts
+index f3e7877f2..27d27fba1 100755
+--- a/arch/riscv/boot/dts/sunxi/d1.dts
++++ b/arch/riscv/boot/dts/sunxi/d1.dts
+@@ -1159,8 +1159,8 @@ chn_cfg_mode     : Hardware DE channel allocation config. 0:single display with
+ 	disp_rotation_used       = <1>;
+ 	degree0                  = <1>;
+ 	fb0_format               = <0>;
+-	fb0_width                = <800>;
+-	fb0_height               = <480>;
++	fb0_width                = <1280>;
++	fb0_height               = <800>;
+ 
+ 	fb1_format               = <0>;
+ 	fb1_width                = <0>;

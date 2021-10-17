@@ -1,0 +1,12 @@
+diff -Nur libtool-2.4.6/m4/libtool.m4 libtool-2.4.6-fix/m4/libtool.m4
+--- libtool-2.4.6/m4/libtool.m4	2020-09-16 12:50:36.486764205 +0000
++++ libtool-2.4.6-fix/m4/libtool.m4	2020-09-16 13:46:53.272622322 +0000
+@@ -2303,7 +2303,7 @@
+     mingw* | cegcc*) lt_sed_strip_eq='s|=\([[A-Za-z]]:\)|\1|g' ;;
+     *) lt_sed_strip_eq='s|=/|/|g' ;;
+   esac
+-  lt_search_path_spec=`$CC -print-search-dirs | awk $lt_awk_arg | $SED -e "s/^libraries://" -e $lt_sed_strip_eq`
++  lt_search_path_spec=`$CC -print-search-dirs | awk $lt_awk_arg | $SED -e "s/^libraries://" -e $lt_sed_strip_eq -e "s/lib\/\.\.\/lib64xthead\/lp64d/lib64xthead\/lp64d/g" -e "s/lp64d\/\.\.\/lib64xthead\/lp64d/lp64d/g" -e "s/lib64xthead\/lib64xthead/lib64xthead/g"`
+   case $lt_search_path_spec in
+   *\;*)
+     # if the path contains ";" then we assume it to be the separator

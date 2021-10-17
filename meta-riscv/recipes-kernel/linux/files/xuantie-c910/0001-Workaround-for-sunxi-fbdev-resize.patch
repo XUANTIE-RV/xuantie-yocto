@@ -1,0 +1,46 @@
+From 8cf91b79aaa0de73e40842fe3460907a5469b804 Mon Sep 17 00:00:00 2001
+From: Mao Han <maohan.mh@alibaba-inc.com>
+Date: Mon, 5 Jul 2021 16:51:22 +0800
+Subject: [PATCH] Workaround for sunxi fbdev resize
+
+Reduce the actual framebuffer allocation and use de support to
+autoscale to display size.
+---
+ arch/riscv/boot/dts/sunxi/d1.dts                  | 6 ++++--
+ drivers/video/fbdev/sunxi/disp2/disp/fb_g2d_rot.c | 4 ++--
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/arch/riscv/boot/dts/sunxi/d1.dts b/arch/riscv/boot/dts/sunxi/d1.dts
+diff --git a/arch/riscv/boot/dts/sunxi/d1.dts b/arch/riscv/boot/dts/sunxi/d1.dts
+index 27d27fba1..0afe546fb 100755
+--- a/arch/riscv/boot/dts/sunxi/d1.dts
++++ b/arch/riscv/boot/dts/sunxi/d1.dts
+@@ -1159,8 +1159,8 @@ chn_cfg_mode     : Hardware DE channel allocation config. 0:single display with
+ 	disp_rotation_used       = <1>;
+ 	degree0                  = <1>;
+ 	fb0_format               = <0>;
+-	fb0_width                = <1280>;
+-	fb0_height               = <800>;
++	fb0_width                = <640>;
++	fb0_height               = <400>;
+
+ 	fb1_format               = <0>;
+ 	fb1_width                = <0>;
+diff --git a/drivers/video/fbdev/sunxi/disp2/disp/fb_g2d_rot.c b/drivers/video/fbdev/sunxi/disp2/disp/fb_g2d_rot.c
+index 81719c560..7d34a4a22 100644
+--- a/drivers/video/fbdev/sunxi/disp2/disp/fb_g2d_rot.c
++++ b/drivers/video/fbdev/sunxi/disp2/disp/fb_g2d_rot.c
+@@ -236,8 +236,8 @@ struct fb_g2d_rot_t *fb_g2d_rot_create(struct fb_info *p_info,
+ 	case FB_ROTATION_HW_90:
+ 		fb_rot->info.flag_h = G2D_ROT_90;
+ 		p_info->var.rotate = G2D_ROT_90;
+-		fb_rot->info.dst_image_h.width = p_info->var.yres;
+-		fb_rot->info.dst_image_h.height = p_info->var.xres;
++		fb_rot->info.dst_image_h.width = 800;
++		fb_rot->info.dst_image_h.height = 1280;
+ 		fb_rot->info.dst_image_h.clip_rect.w = fb_rot->info.dst_image_h.height;
+ 		fb_rot->info.dst_image_h.clip_rect.h = fb_rot->info.dst_image_h.width;
+ 		config->info.screen_win.width = p_info->var.yres;
+-- 
+2.17.1
+

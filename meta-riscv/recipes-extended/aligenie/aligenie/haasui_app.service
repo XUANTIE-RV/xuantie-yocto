@@ -1,0 +1,13 @@
+[Unit]
+Description=haasui_app Service
+#After=voice.service
+After=mount-overlayfs.service
+#DefaultDependencies=no
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/appx
+ExecStop=/usr/bin/killall -9 appx
+
+[Install]
+WantedBy=multi-user.target

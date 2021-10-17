@@ -1,0 +1,42 @@
+diff -Nur meson-0.55.1/mesonbuild/compilers/mixins/elbrus.py meson-0.55.1-fix/mesonbuild/compilers/mixins/elbrus.py
+--- meson-0.55.1/mesonbuild/compilers/mixins/elbrus.py	2020-08-15 16:27:05.000000000 +0000
++++ meson-0.55.1-fix/mesonbuild/compilers/mixins/elbrus.py	2020-09-17 04:29:46.910396526 +0000
+@@ -43,6 +43,7 @@
+         os_env = os.environ.copy()
+         os_env['LC_ALL'] = 'C'
+         stdo = Popen_safe(self.exelist + ['--print-search-dirs'], env=os_env)[1]
++        stdo = stdo.replace("lib/../lib64xthead/", "lib64xthead").replace("lp64d/../lib64xthead/", "").replace("lib64xthead/lib64xthead/", "")
+         for line in stdo.split('\n'):
+             if line.startswith('libraries:'):
+                 # lcc does not include '=' in --print-search-dirs output. Also it could show nonexistent dirs.
+@@ -54,6 +55,7 @@
+         os_env = os.environ.copy()
+         os_env['LC_ALL'] = 'C'
+         stdo = Popen_safe(self.exelist + ['--print-search-dirs'], env=os_env)[1]
++        stdo = stdo.replace("lib/../lib64xthead/", "lib64xthead").replace("lp64d/../lib64xthead/", "").replace("lib64xthead/lib64xthead/", "")
+         for line in stdo.split('\n'):
+             if line.startswith('programs:'):
+                 # lcc does not include '=' in --print-search-dirs output.
+diff -Nur meson-0.55.1/mesonbuild/compilers/mixins/gnu.py meson-0.55.1-fix/mesonbuild/compilers/mixins/gnu.py
+--- meson-0.55.1/mesonbuild/compilers/mixins/gnu.py	2020-08-15 16:27:05.000000000 +0000
++++ meson-0.55.1-fix/mesonbuild/compilers/mixins/gnu.py	2020-09-17 04:30:31.621394648 +0000
+@@ -227,7 +227,7 @@
+         with self._build_wrapper('', env, extra_args=extra_args,
+                                  dependencies=None, mode='compile',
+                                  want_output=True) as p:
+-            stdo = p.stdo
++            stdo = p.stdo.replace("lib/../lib64xthead/", "lib64xthead").replace("lp64d/../lib64xthead/", "").replace("lib64xthead/lib64xthead/", "")
+         return stdo
+ 
+     def _split_fetch_real_dirs(self, pathstr: str) -> T.List[str]:
+diff -Nur meson-0.55.1/mesonbuild/environment.py meson-0.55.1-fix/mesonbuild/environment.py
+--- meson-0.55.1/mesonbuild/environment.py	2020-09-17 04:28:27.469399864 +0000
++++ meson-0.55.1-fix/mesonbuild/environment.py	2020-09-17 03:49:08.282498990 +0000
+@@ -1844,6 +1844,7 @@
+         p, out, _ = Popen_safe(comp.get_exelist() + ['-print-search-dirs'])
+         if p.returncode != 0:
+             raise mesonlib.MesonException('Could not calculate system search dirs')
++        out = out.replace("lib/../lib64xthead/", "lib64xthead").replace("lp64d/../lib64xthead/", "").replace("lib64xthead/lib64xthead/", "")
+         out = out.split('\n')[index].lstrip('libraries: =').split(':')
+         return [os.path.normpath(p) for p in out]
+ 
