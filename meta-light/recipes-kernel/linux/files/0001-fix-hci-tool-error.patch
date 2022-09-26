@@ -1,0 +1,26 @@
+From 16e7291ff9701ffdcf5efe5b56f9a67c849fc426 Mon Sep 17 00:00:00 2001
+Date: Wed, 8 Sep 2021 01:07:23 +0800
+Subject: [PATCH] fix hci tool error
+
+---
+ net/bluetooth/hci_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index ff9516278..fdef1cc04 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -816,11 +816,11 @@ static int hci_init4_req(struct hci_request *req, unsigned long opt)
+ 	/* Set event mask page 2 if the HCI command for it is supported */
+ 	if (hdev->commands[22] & 0x04)
+ 		hci_set_event_mask_page_2(req);
+-
++#if 0
+ 	/* Read local codec list if the HCI command is supported */
+ 	if (hdev->commands[29] & 0x20)
+ 		hci_req_add(req, HCI_OP_READ_LOCAL_CODECS, 0, NULL);
+-
++#endif
+ 	/* Get MWS transport configuration if the HCI command is supported */
+ 	if (hdev->commands[30] & 0x08)
+ 		hci_req_add(req, HCI_OP_GET_MWS_TRANSPORT_CONFIG, 0, NULL);

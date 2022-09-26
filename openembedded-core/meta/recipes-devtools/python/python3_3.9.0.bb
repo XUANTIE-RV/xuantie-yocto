@@ -144,6 +144,10 @@ do_install_append_class-native() {
         # (these often end up too long for the #! parser in the kernel as the
         # buffer is 128 bytes long).
         ln -s python3-native/python3 ${D}${bindir}/nativepython3
+<<<<<<< HEAD
+=======
+        ln -s python3-native/python3 ${D}${bindir}/python
+>>>>>>> Linux_SDK_V0.9.5
 }
 
 do_install_append() {

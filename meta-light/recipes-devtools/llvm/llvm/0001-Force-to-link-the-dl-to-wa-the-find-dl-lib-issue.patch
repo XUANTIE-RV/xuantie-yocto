@@ -1,0 +1,27 @@
+From d6b81863cd1eb26673a529bd6f0483c8eed44a76 Mon Sep 17 00:00:00 2001
+Date: Tue, 7 Sep 2021 11:02:40 +0800
+Subject: [PATCH] Force to link the dl to wa the find dl lib issue.
+
+---
+ clang/tools/libclang/CMakeLists.txt | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/clang/tools/libclang/CMakeLists.txt b/clang/tools/libclang/CMakeLists.txt
+index 973655361f71..6889c8f19450 100644
+--- a/clang/tools/libclang/CMakeLists.txt
++++ b/clang/tools/libclang/CMakeLists.txt
+@@ -59,10 +59,7 @@ if (TARGET clangTidyPlugin)
+   endif()
+ endif ()
+ 
+-find_library(DL_LIBRARY_PATH dl)
+-if (DL_LIBRARY_PATH)
+-  list(APPEND LIBS dl)
+-endif()
++list(APPEND LIBS dl)
+ 
+ option(LIBCLANG_BUILD_STATIC
+   "Build libclang as a static library (in addition to a shared one)" OFF)
+-- 
+2.17.1
+

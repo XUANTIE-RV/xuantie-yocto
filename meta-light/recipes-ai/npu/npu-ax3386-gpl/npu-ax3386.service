@@ -1,0 +1,12 @@
+[Unit]
+Description=NPU ax3386 driver init Service.
+
+[Service]
+Type=simple
+EnvironmentFile=-/usr/share/npu/npu.env
+ExecStart=sh usr/share/npu/insmod.sh
+ExecStop=sh usr/share/npu/rmmod.sh
+RemainAfterExit=y
+
+[Install]
+WantedBy=multi-user.target

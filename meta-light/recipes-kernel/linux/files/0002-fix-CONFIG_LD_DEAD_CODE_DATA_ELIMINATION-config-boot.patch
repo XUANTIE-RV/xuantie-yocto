@@ -1,0 +1,23 @@
+From 2383d5aff67abf09b766c8ed1ab487d218ce2f24 Mon Sep 17 00:00:00 2001
+Date: Fri, 10 Sep 2021 03:59:21 +0800
+Subject: [PATCH 2/2] fix CONFIG_LD_DEAD_CODE_DATA_ELIMINATION config boot fail
+
+---
+ arch/riscv/kernel/vmlinux.lds.S | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/riscv/kernel/vmlinux.lds.S b/arch/riscv/kernel/vmlinux.lds.S
+index 23cd1a9e5..d5aa09fcb 100644
+--- a/arch/riscv/kernel/vmlinux.lds.S
++++ b/arch/riscv/kernel/vmlinux.lds.S
+@@ -39,6 +39,7 @@ SECTIONS
+ 	.text : {
+ 		_text = .;
+ 		_stext = .;
++		KEEP(*(.init.text .init.text.*))
+ 		TEXT_TEXT
+ 		SCHED_TEXT
+ 		CPUIDLE_TEXT
+-- 
+2.17.1
+

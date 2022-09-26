@@ -1,0 +1,79 @@
+From 3e1ee1dcac81e46f26504f993aba791269d3b978 Mon Sep 17 00:00:00 2001
+Date: Tue, 15 Feb 2022 13:26:33 +0800
+Subject: [PATCH 1/2] Backporting for upstream patch to support app_ids of
+ weston.
+
+Ref:
+* https://gitlab.freedesktop.org/wayland/weston/-/merge_requests/611
+---
+ kiosk-shell/kiosk-shell.c | 25 ++++++++++++++++++++++++-
+ kiosk-shell/kiosk-shell.h |  2 ++
+ 2 files changed, 26 insertions(+), 1 deletion(-)
+
+diff --git a/kiosk-shell/kiosk-shell.c b/kiosk-shell/kiosk-shell.c
+index ac9c8684..c1030af9 100644
+--- a/kiosk-shell/kiosk-shell.c
++++ b/kiosk-shell/kiosk-shell.c
+@@ -123,8 +123,10 @@ kiosk_shell_surface_find_best_output(struct kiosk_shell_surface *shsurf)
+ 	app_id = weston_desktop_surface_get_app_id(shsurf->desktop_surface);
+ 	if (app_id) {
+ 		wl_list_for_each(shoutput, &shsurf->shell->output_list, link) {
+-			if (kiosk_shell_output_has_app_id(shoutput, app_id))
++			if (kiosk_shell_output_has_app_id(shoutput, app_id)){
++                                shsurf->appid_output_assigned = true;
+ 				return shoutput->output;
++                        }
+ 		}
+ 	}
+ 
+@@ -304,6 +306,7 @@ kiosk_shell_surface_create(struct kiosk_shell *shell,
+ 	shsurf->desktop_surface = desktop_surface;
+ 	shsurf->view = view;
+ 	shsurf->shell = shell;
++        shsurf->appid_output_assigned = false;
+ 
+ 	weston_desktop_surface_set_user_data(desktop_surface, shsurf);
+ 
+@@ -644,6 +647,26 @@ desktop_surface_committed(struct weston_desktop_surface *desktop_surface,
+ 		     surface->height != shsurf->last_height;
+ 	is_fullscreen = weston_desktop_surface_get_maximized(desktop_surface) ||
+ 			weston_desktop_surface_get_fullscreen(desktop_surface);
++        const char *app_id =
++		weston_desktop_surface_get_app_id(desktop_surface);
++
++        if (!shsurf->appid_output_assigned && app_id) {
++		struct weston_output *output = NULL;
++
++		/* reset previous output being set in _added() as the output is
++		 * being cached */
++		shsurf->output = NULL;
++		output = kiosk_shell_surface_find_best_output(shsurf);
++
++		kiosk_shell_surface_set_output(shsurf, output);
++		weston_desktop_surface_set_size(shsurf->desktop_surface,
++						shsurf->output->width,
++						shsurf->output->height);
++		/* even if we couldn't find an appid set for a particular
++		 * output still flag the shsurf as to a avoid changing the
++		 * output every time */
++		shsurf->appid_output_assigned = true;
++	}
+ 
+ 	if (!weston_surface_is_mapped(surface) || (is_resized && is_fullscreen)) {
+ 		if (is_fullscreen || !shsurf->xwayland.is_set) {
+diff --git a/kiosk-shell/kiosk-shell.h b/kiosk-shell/kiosk-shell.h
+index 09f5a777..4699f0a6 100644
+--- a/kiosk-shell/kiosk-shell.h
++++ b/kiosk-shell/kiosk-shell.h
+@@ -66,6 +66,8 @@ struct kiosk_shell_surface {
+ 		int32_t x;
+ 		int32_t y;
+ 	} xwayland;
++
++        bool appid_output_assigned;
+ };
+ 
+ struct kiosk_shell_seat {
+-- 
+2.17.1
+

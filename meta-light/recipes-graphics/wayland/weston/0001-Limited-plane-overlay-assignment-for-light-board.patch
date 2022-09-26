@@ -1,0 +1,50 @@
+From 996c95795e537ac56f99aa7f29b38ffd10a3e902 Mon Sep 17 00:00:00 2001
+Date: Fri, 13 May 2022 21:03:59 +0800
+Subject: [PATCH 1/2] Limited plane overlay assignment for light board.
+
+---
+ libweston/backend-drm/drm.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/libweston/backend-drm/drm.c b/libweston/backend-drm/drm.c
+index f8e3b702..a67b56dd 100644
+--- a/libweston/backend-drm/drm.c
++++ b/libweston/backend-drm/drm.c
+@@ -972,7 +972,11 @@ create_sprites(struct drm_backend *b)
+ 	drmModePlaneRes *kplane_res;
+ 	drmModePlane *kplane;
+ 	struct drm_plane *drm_plane;
+-	uint32_t i;
++	uint32_t i, overlay_plane = 0;
++	const char *thead_po_limitation;
++
++	thead_po_limitation = getenv("THEAD_PO_LIMITATION");
++
+ 	kplane_res = drmModeGetPlaneResources(b->drm.fd);
+ 	if (!kplane_res) {
+ 		weston_log("failed to get plane resources: %s\n",
+@@ -991,10 +995,20 @@ create_sprites(struct drm_backend *b)
+ 		if (!drm_plane)
+ 			continue;
+ 
+-		if (drm_plane->type == WDRM_PLANE_TYPE_OVERLAY)
++		if (drm_plane->type == WDRM_PLANE_TYPE_OVERLAY){
++			if (thead_po_limitation && !strcmp(thead_po_limitation, "true")) {
++				weston_log("Enabled Thead plane overlay limitation\n");
++				if (overlay_plane <= 1)
++					drm_plane->possible_crtcs = (1 << 0);
++				else
++					drm_plane->possible_crtcs = (1 << 1);
++			}
++
+ 			weston_compositor_stack_plane(b->compositor,
+ 						      &drm_plane->base,
+ 						      &b->compositor->primary_plane);
++                        overlay_plane++;
++                }
+ 	}
+ 
+ 	drmModeFreePlaneResources(kplane_res);
+-- 
+2.17.1
+

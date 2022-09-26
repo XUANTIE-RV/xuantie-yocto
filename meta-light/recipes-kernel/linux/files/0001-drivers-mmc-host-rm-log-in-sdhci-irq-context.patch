@@ -1,0 +1,43 @@
+From 5b209b155adfccae7de429757560d0d7df4a6dc4 Mon Sep 17 00:00:00 2001
+Date: Fri, 6 May 2022 19:56:08 +0800
+Subject: [PATCH] drivers: mmc: host: rm log in sdhci irq context
+
+rm log in sdhci irq context
+
+---
+ drivers/mmc/host/sdhci.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index d42e86cdff12..28c3dd38284d 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -3220,7 +3220,7 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask, u32 *intmask_p)
+ 			return;
+ 		pr_err("%s: Got command interrupt 0x%08x even though no command operation was in progress.\n",
+ 		       mmc_hostname(host->mmc), (unsigned)intmask);
+-		sdhci_dumpregs(host);
++		//sdhci_dumpregs(host);
+ 		return;
+ 	}
+ 
+@@ -3350,7 +3350,7 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
+ 
+ 		pr_err("%s: Got data interrupt 0x%08x even though no data operation was in progress.\n",
+ 		       mmc_hostname(host->mmc), (unsigned)intmask);
+-		sdhci_dumpregs(host);
++		//sdhci_dumpregs(host);
+ 
+ 		return;
+ 	}
+@@ -4762,7 +4762,6 @@ int __sdhci_add_host(struct sdhci_host *host)
+ 	free_irq(host->irq, host);
+ unwq:
+ 	destroy_workqueue(host->complete_wq);
+-
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(__sdhci_add_host);
+-- 
+2.17.1
+

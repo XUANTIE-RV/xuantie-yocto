@@ -1,0 +1,275 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>POWER9 XIVE interrupt controller &#8212; QEMU 4.1.0 (-dirty) documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="XIVE for sPAPR (pseries machines)" href="ppc-spapr-xive.html" />
+    <link rel="prev" title="QEMU System Emulation Guest Hardware Specifications" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="power9-xive-interrupt-controller">
+<h1>POWER9 XIVE interrupt controller<a class="headerlink" href="#power9-xive-interrupt-controller" title="Permalink to this headline">¶</a></h1>
+<p>The POWER9 processor comes with a new interrupt controller
+architecture, called XIVE as “eXternal Interrupt Virtualization
+Engine”.</p>
+<p>Compared to the previous architecture, the main characteristics of
+XIVE are to support a larger number of interrupt sources and to
+deliver interrupts directly to virtual processors without hypervisor
+assistance. This removes the context switches required for the
+delivery process.</p>
+<div class="section" id="xive-architecture">
+<h2>XIVE architecture<a class="headerlink" href="#xive-architecture" title="Permalink to this headline">¶</a></h2>
+<p>The XIVE IC is composed of three sub-engines, each taking care of a
+processing layer of external interrupts:</p>
+<ul class="simple">
+<li>Interrupt Virtualization Source Engine (IVSE), or Source Controller
+(SC). These are found in PCI PHBs, in the Processor Service
+Interface (PSI) host bridge Controller, but also inside the main
+controller for the core IPIs and other sub-chips (NX, CAP, NPU) of
+the chip/processor. They are configured to feed the IVRE with
+events.</li>
+<li>Interrupt Virtualization Routing Engine (IVRE) or Virtualization
+Controller (VC). It handles event coalescing and perform interrupt
+routing by matching an event source number with an Event
+Notification Descriptor (END).</li>
+<li>Interrupt Virtualization Presentation Engine (IVPE) or Presentation
+Controller (PC). It maintains the interrupt context state of each
+thread and handles the delivery of the external interrupt to the
+thread.</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre>            <span class="n">XIVE</span> <span class="n">Interrupt</span> <span class="n">Controller</span>
+            <span class="o">+------------------------------------+</span>      <span class="n">IPIs</span>
+            <span class="o">|</span> <span class="o">+---------+</span> <span class="o">+---------+</span> <span class="o">+--------+</span> <span class="o">|</span>    <span class="o">+-------+</span>
+            <span class="o">|</span> <span class="o">|</span><span class="n">IVRE</span>     <span class="o">|</span> <span class="o">|</span><span class="n">Common</span> <span class="n">Q</span> <span class="o">|</span> <span class="o">|</span><span class="n">IVPE</span>    <span class="o">|----&gt;</span> <span class="o">|</span> <span class="n">CORES</span> <span class="o">|</span>
+            <span class="o">|</span> <span class="o">|</span>     <span class="n">esb</span> <span class="o">|</span> <span class="o">|</span>         <span class="o">|</span> <span class="o">|</span>        <span class="o">|----&gt;</span> <span class="o">|</span>       <span class="o">|</span>
+            <span class="o">|</span> <span class="o">|</span>     <span class="n">eas</span> <span class="o">|</span> <span class="o">|</span>  <span class="n">Bridge</span> <span class="o">|</span> <span class="o">|</span>   <span class="n">tctx</span> <span class="o">|----&gt;</span> <span class="o">|</span>       <span class="o">|</span>
+            <span class="o">|</span> <span class="o">|</span><span class="n">SC</span>   <span class="n">end</span> <span class="o">|</span> <span class="o">|</span>         <span class="o">|</span> <span class="o">|</span>    <span class="n">nvt</span> <span class="o">|</span> <span class="o">|</span>    <span class="o">|</span>       <span class="o">|</span>
+<span class="o">+------+</span>    <span class="o">|</span> <span class="o">+---------+</span> <span class="o">+----+----+</span> <span class="o">+--------+</span> <span class="o">|</span>    <span class="o">+-+-+-+-+</span>
+<span class="o">|</span> <span class="n">RAM</span>  <span class="o">|</span>    <span class="o">+------------------|-----------------+</span>      <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">|</span>      <span class="o">|</span>                       <span class="o">|</span>                        <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">|</span>      <span class="o">|</span>                       <span class="o">|</span>                        <span class="o">|</span> <span class="o">|</span> <span class="o">|</span>
+<span class="o">|</span>      <span class="o">|</span>  <span class="o">+--------------------</span><span class="n">v</span><span class="o">------------------------</span><span class="n">v</span><span class="o">-</span><span class="n">v</span><span class="o">-</span><span class="n">v</span><span class="o">--+</span>    <span class="n">other</span>
+<span class="o">|</span>      <span class="o">&lt;--+</span>                     <span class="n">Power</span> <span class="n">Bus</span>                      <span class="o">+--&gt;</span> <span class="n">chips</span>
+<span class="o">|</span>  <span class="n">esb</span> <span class="o">|</span>  <span class="o">+---------+-----------------------+------------------+</span>
+<span class="o">|</span>  <span class="n">eas</span> <span class="o">|</span>            <span class="o">|</span>                       <span class="o">|</span>
+<span class="o">|</span>  <span class="n">end</span> <span class="o">|</span>         <span class="o">+--|------+</span>                <span class="o">|</span>
+<span class="o">|</span>  <span class="n">nvt</span> <span class="o">|</span>       <span class="o">+----+----+</span> <span class="o">|</span>           <span class="o">+----+----+</span>
+<span class="o">+------+</span>       <span class="o">|</span><span class="n">IVSE</span>     <span class="o">|</span> <span class="o">|</span>           <span class="o">|</span><span class="n">IVSE</span>     <span class="o">|</span>
+               <span class="o">|</span>         <span class="o">|</span> <span class="o">|</span>           <span class="o">|</span>         <span class="o">|</span>
+               <span class="o">|</span> <span class="n">PQ</span><span class="o">-</span><span class="n">bits</span> <span class="o">|</span> <span class="o">|</span>           <span class="o">|</span> <span class="n">PQ</span><span class="o">-</span><span class="n">bits</span> <span class="o">|</span>
+               <span class="o">|</span> <span class="n">local</span>   <span class="o">|-+</span>           <span class="o">|</span>  <span class="ow">in</span> <span class="n">VC</span>  <span class="o">|</span>
+               <span class="o">+---------+</span>             <span class="o">+---------+</span>
+                  <span class="n">PCIe</span>                 <span class="n">NX</span><span class="p">,</span><span class="n">NPU</span><span class="p">,</span><span class="n">CAPI</span>
+
+
+<span class="n">PQ</span><span class="o">-</span><span class="n">bits</span><span class="p">:</span> <span class="mi">2</span> <span class="n">bits</span> <span class="n">source</span> <span class="n">state</span> <span class="n">machine</span> <span class="p">(</span><span class="n">P</span><span class="p">:</span><span class="n">pending</span> <span class="n">Q</span><span class="p">:</span><span class="n">queued</span><span class="p">)</span>
+<span class="n">esb</span><span class="p">:</span> <span class="n">Event</span> <span class="n">State</span> <span class="n">Buffer</span> <span class="p">(</span><span class="n">Array</span> <span class="n">of</span> <span class="n">PQ</span> <span class="n">bits</span> <span class="ow">in</span> <span class="n">an</span> <span class="n">IVSE</span><span class="p">)</span>
+<span class="n">eas</span><span class="p">:</span> <span class="n">Event</span> <span class="n">Assignment</span> <span class="n">Structure</span>
+<span class="n">end</span><span class="p">:</span> <span class="n">Event</span> <span class="n">Notification</span> <span class="n">Descriptor</span>
+<span class="n">nvt</span><span class="p">:</span> <span class="n">Notification</span> <span class="n">Virtual</span> <span class="n">Target</span>
+<span class="n">tctx</span><span class="p">:</span> <span class="n">Thread</span> <span class="n">interrupt</span> <span class="n">Context</span> <span class="n">registers</span>
+</pre></div>
+</div>
+<div class="section" id="xive-internal-tables">
+<h3>XIVE internal tables<a class="headerlink" href="#xive-internal-tables" title="Permalink to this headline">¶</a></h3>
+<p>Each of the sub-engines uses a set of tables to redirect interrupts
+from event sources to CPU threads.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre>                                        <span class="o">+-------+</span>
+<span class="n">User</span> <span class="ow">or</span> <span class="n">O</span><span class="o">/</span><span class="n">S</span>                             <span class="o">|</span>  <span class="n">EQ</span>   <span class="o">|</span>
+    <span class="ow">or</span>                          <span class="o">+------&gt;|</span><span class="n">entries</span><span class="o">|</span>
+<span class="n">Hypervisor</span>                      <span class="o">|</span>       <span class="o">|</span>  <span class="o">..</span>   <span class="o">|</span>
+  <span class="n">Memory</span>                        <span class="o">|</span>       <span class="o">+-------+</span>
+                                <span class="o">|</span>           <span class="o">^</span>
+                                <span class="o">|</span>           <span class="o">|</span>
+           <span class="o">+-------------------------------------------------+</span>
+                                <span class="o">|</span>           <span class="o">|</span>
+<span class="n">Hypervisor</span>      <span class="o">+------+</span>    <span class="o">+---+--+</span>    <span class="o">+---+--+</span>   <span class="o">+------+</span>
+  <span class="n">Memory</span>        <span class="o">|</span> <span class="n">ESB</span>  <span class="o">|</span>    <span class="o">|</span> <span class="n">EAT</span>  <span class="o">|</span>    <span class="o">|</span> <span class="n">ENDT</span> <span class="o">|</span>   <span class="o">|</span> <span class="n">NVTT</span> <span class="o">|</span>
+ <span class="p">(</span><span class="n">skiboot</span><span class="p">)</span>      <span class="o">+----+-+</span>    <span class="o">+----+-+</span>    <span class="o">+----+-+</span>   <span class="o">+------+</span>
+                  <span class="o">^</span>  <span class="o">|</span>        <span class="o">^</span>  <span class="o">|</span>        <span class="o">^</span>  <span class="o">|</span>       <span class="o">^</span>
+                  <span class="o">|</span>  <span class="o">|</span>        <span class="o">|</span>  <span class="o">|</span>        <span class="o">|</span>  <span class="o">|</span>       <span class="o">|</span>
+           <span class="o">+-------------------------------------------------+</span>
+                  <span class="o">|</span>  <span class="o">|</span>        <span class="o">|</span>  <span class="o">|</span>        <span class="o">|</span>  <span class="o">|</span>       <span class="o">|</span>
+                  <span class="o">|</span>  <span class="o">|</span>        <span class="o">|</span>  <span class="o">|</span>        <span class="o">|</span>  <span class="o">|</span>       <span class="o">|</span>
+             <span class="o">+----|--|--------|--|--------|--|-+</span>   <span class="o">+-|-----+</span>    <span class="o">+------+</span>
+             <span class="o">|</span>    <span class="o">|</span>  <span class="o">|</span>        <span class="o">|</span>  <span class="o">|</span>        <span class="o">|</span>  <span class="o">|</span> <span class="o">|</span>   <span class="o">|</span> <span class="o">|</span> <span class="n">tctx</span><span class="o">|</span>    <span class="o">|</span><span class="n">Thread</span><span class="o">|</span>
+ <span class="n">IPI</span> <span class="ow">or</span>   <span class="o">---+</span>    <span class="o">+</span>  <span class="n">v</span>        <span class="o">+</span>  <span class="n">v</span>        <span class="o">+</span>  <span class="n">v</span> <span class="o">|---|</span> <span class="o">+</span>  <span class="o">..</span> <span class="o">|-----&gt;</span>     <span class="o">|</span>
+<span class="n">HW</span> <span class="n">events</span>    <span class="o">|</span>                                 <span class="o">|</span>   <span class="o">|</span>       <span class="o">|</span>    <span class="o">|</span>      <span class="o">|</span>
+             <span class="o">|</span>             <span class="n">IVRE</span>                <span class="o">|</span>   <span class="o">|</span> <span class="n">IVPE</span>  <span class="o">|</span>    <span class="o">+------+</span>
+             <span class="o">+---------------------------------+</span>   <span class="o">+-------+</span>
+</pre></div>
+</div>
+<p>The IVSE have a 2-bits state machine, P for pending and Q for queued,
+for each source that allows events to be triggered. They are stored in
+an Event State Buffer (ESB) array and can be controlled by MMIOs.</p>
+<p>If the event is let through, the IVRE looks up in the Event Assignment
+Structure (EAS) table for an Event Notification Descriptor (END)
+configured for the source. Each Event Notification Descriptor defines
+a notification path to a CPU and an in-memory Event Queue, in which
+will be enqueued an EQ data for the O/S to pull.</p>
+<p>The IVPE determines if a Notification Virtual Target (NVT) can handle
+the event by scanning the thread contexts of the VCPUs dispatched on
+the processor HW threads. It maintains the interrupt context state of
+each thread in a NVT table.</p>
+</div>
+<div class="section" id="xive-thread-interrupt-context">
+<h3>XIVE thread interrupt context<a class="headerlink" href="#xive-thread-interrupt-context" title="Permalink to this headline">¶</a></h3>
+<p>The XIVE presenter can generate four different exceptions to its
+HW threads:</p>
+<ul class="simple">
+<li>hypervisor exception</li>
+<li>O/S exception</li>
+<li>Event-Based Branch (user level)</li>
+<li>msgsnd (doorbell)</li>
+</ul>
+<p>Each exception has a state independent from the others called a Thread
+Interrupt Management context. This context is a set of registers which
+lets the thread handle priority management and interrupt
+acknowledgment among other things. The most important ones being :</p>
+<ul class="simple">
+<li>Interrupt Priority Register  (PIPR)</li>
+<li>Interrupt Pending Buffer     (IPB)</li>
+<li>Current Processor Priority   (CPPR)</li>
+<li>Notification Source Register (NSR)</li>
+</ul>
+<div class="section" id="tima">
+<h4>TIMA<a class="headerlink" href="#tima" title="Permalink to this headline">¶</a></h4>
+<p>The Thread Interrupt Management registers are accessible through a
+specific MMIO region, called the Thread Interrupt Management Area
+(TIMA), four aligned pages, each exposing a different view of the
+registers. First page (page address ending in <code class="docutils literal notranslate"><span class="pre">0b00</span></code>) gives access
+to the entire context and is reserved for the ring 0 view for the
+physical thread context. The second (page address ending in <code class="docutils literal notranslate"><span class="pre">0b01</span></code>)
+is for the hypervisor, ring 1 view. The third (page address ending in
+<code class="docutils literal notranslate"><span class="pre">0b10</span></code>) is for the operating system, ring 2 view. The fourth (page
+address ending in <code class="docutils literal notranslate"><span class="pre">0b11</span></code>) is for user level, ring 3 view.</p>
+</div>
+<div class="section" id="interrupt-flow-from-an-o-s-perspective">
+<h4>Interrupt flow from an O/S perspective<a class="headerlink" href="#interrupt-flow-from-an-o-s-perspective" title="Permalink to this headline">¶</a></h4>
+<p>After an event data has been enqueued in the O/S Event Queue, the IVPE
+raises the bit corresponding to the priority of the pending interrupt
+in the register IBP (Interrupt Pending Buffer) to indicate that an
+event is pending in one of the 8 priority queues. The Pending
+Interrupt Priority Register (PIPR) is also updated using the IPB. This
+register represent the priority of the most favored pending
+notification.</p>
+<p>The PIPR is then compared to the the Current Processor Priority
+Register (CPPR). If it is more favored (numerically less than), the
+CPU interrupt line is raised and the EO bit of the Notification Source
+Register (NSR) is updated to notify the presence of an exception for
+the O/S. The O/S acknowledges the interrupt with a special load in the
+Thread Interrupt Management Area.</p>
+<p>The O/S handles the interrupt and when done, performs an EOI using a
+MMIO operation on the ESB management page of the associate source.</p>
+</div>
+</div>
+</div>
+<div class="section" id="overview-of-the-qemu-models-for-xive">
+<h2>Overview of the QEMU models for XIVE<a class="headerlink" href="#overview-of-the-qemu-models-for-xive" title="Permalink to this headline">¶</a></h2>
+<p>The XiveSource models the IVSE in general, internal and external. It
+handles the source ESBs and the MMIO interface to control them.</p>
+<p>The XiveNotifier is a small helper interface interconnecting the
+XiveSource to the XiveRouter.</p>
+<p>The XiveRouter is an abstract model acting as a combined IVRE and
+IVPE. It routes event notifications using the EAS and END tables to
+the IVPE sub-engine which does a CAM scan to find a CPU to deliver the
+exception. Storage should be provided by the inheriting classes.</p>
+<p>XiveEnDSource is a special source object. It exposes the END ESB MMIOs
+of the Event Queues which are used for coalescing event notifications
+and for escalation. Not used on the field, only to sync the EQ cache
+in OPAL.</p>
+<p>Finally, the XiveTCTX contains the interrupt state context of a thread,
+four sets of registers, one for each exception that can be delivered
+to a CPU. These contexts are scanned by the IVPE to find a matching VP
+when a notification is triggered. It also models the Thread Interrupt
+Management Area (TIMA), which exposes the thread context registers to
+the CPU for interrupt management.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">QEMU</a></h1>
+
+
+
+<p class="blurb">System Emulation Guest Hardware Specifications</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">POWER9 XIVE interrupt controller</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#xive-architecture">XIVE architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#overview-of-the-qemu-models-for-xive">Overview of the QEMU models for XIVE</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ppc-spapr-xive.html">XIVE for sPAPR (pseries machines)</a></li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, The QEMU Project Developers.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,18 @@
+# THEAD resize2fs service, this will esizes partition and
+# filesystem on root, This service may block the boot process
+# the first time after this partition is flashed
+
+[Unit]
+Description=THEAD filesystem resize service
+Before=basic.target
+After=sysinit.target local-fs.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash /usr/bin/resizefs
+TimeoutStartSec=5min
+
+[Install]
+WantedBy=basic.target

@@ -1,0 +1,28 @@
+From 610ee71c0aa611eab4efa987307806a9ad46194b Mon Sep 17 00:00:00 2001
+Date: Sat, 7 May 2022 19:37:48 +0800
+Subject: [PATCH] dts: thead: modify the regulator name to match driver
+
+modify the regulator name to match driver, or the lcd in LightB can not display
+
+---
+ arch/riscv/boot/dts/thead/light-val-b.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/riscv/boot/dts/thead/light-val-b.dts b/arch/riscv/boot/dts/thead/light-val-b.dts
+index 4aea2c1093e4..f072100fbf85 100644
+--- a/arch/riscv/boot/dts/thead/light-val-b.dts
++++ b/arch/riscv/boot/dts/thead/light-val-b.dts
+@@ -504,8 +504,8 @@
+ 				regulator-always-on;
+ 			};
+ 
+-			soc_vdd18_lcd0_en_reg: soc_vdd18_lcd0_en {
+-				regulator-name = "soc_vdd18_lcd0_en";
++			soc_vdd18_lcd0_en_reg: soc_lcd0_en {
++				regulator-name = "soc_lcd0_en";
+ 				regulator-boot-on;
+ 				regulator-always-on;
+ 			};
+-- 
+2.17.1
+

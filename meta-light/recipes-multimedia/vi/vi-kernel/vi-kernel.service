@@ -1,0 +1,11 @@
+[Unit]
+Description=vi kernel driver init Service.
+
+[Service]
+Type=simple
+ExecStart=sh /usr/share/vi/insmod.sh
+ExecStop=sh /usr/share/vi/rmmod.sh
+RemainAfterExit=y
+
+[Install]
+WantedBy=multi-user.target

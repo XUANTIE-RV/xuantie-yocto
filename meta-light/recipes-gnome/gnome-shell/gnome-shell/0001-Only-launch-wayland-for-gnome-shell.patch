@@ -1,0 +1,24 @@
+From 8ea11ebe4d2afa6383c3f7d238727a4ce3428fd2 Mon Sep 17 00:00:00 2001
+Date: Mon, 15 Nov 2021 20:51:52 +0800
+Subject: [PATCH] Only launch wayland for gnome-shell.
+
+---
+ data/gnome-shell-wayland.service.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/data/gnome-shell-wayland.service.in b/data/gnome-shell-wayland.service.in
+index 04f94af..7099b19 100644
+--- a/data/gnome-shell-wayland.service.in
++++ b/data/gnome-shell-wayland.service.in
+@@ -18,7 +18,7 @@ Before=gnome-session-initialized.target
+ 
+ [Service]
+ Type=notify
+-ExecStart=@bindir@/gnome-shell
++ExecStart=@bindir@/gnome-shell --wayland --no-x11
+ # Exit code 1 means we are probably *not* dealing with an extension failure
+ SuccessExitStatus=1
+ # On wayland we cannot restart
+-- 
+2.17.1
+

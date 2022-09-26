@@ -1,0 +1,55 @@
+From 77418b06c3687eb42f3705d4feef463cb55d503d Mon Sep 17 00:00:00 2001
+Date: Tue, 15 Feb 2022 13:28:45 +0800
+Subject: [PATCH 2/2] Backporting upstream patch to fix input segment fault.
+
+Ref:
+* https://gitlab.freedesktop.org/wayland/weston/-/merge_requests/585
+---
+ libweston/backend-drm/drm.c | 8 ++++----
+ libweston/backend-drm/kms.c | 4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/libweston/backend-drm/drm.c b/libweston/backend-drm/drm.c
+index 2780f3bd..2df80157 100644
+--- a/libweston/backend-drm/drm.c
++++ b/libweston/backend-drm/drm.c
+@@ -3025,10 +3025,6 @@ err_drm_source:
+ err_udev_input:
+ 	udev_input_destroy(&b->input);
+ err_sprite:
+-#ifdef BUILD_DRM_GBM
+-	if (b->gbm)
+-		gbm_device_destroy(b->gbm);
+-#endif
+ 	destroy_sprites(b);
+ err_udev_dev:
+ 	udev_device_unref(drm_device);
+@@ -3038,6 +3034,10 @@ err_launcher:
+ 	weston_launcher_destroy(compositor->launcher);
+ err_compositor:
+ 	weston_compositor_shutdown(compositor);
++#ifdef BUILD_DRM_GBM
++        if (b->gbm)
++                gbm_device_destroy(b->gbm);
++#endif
+ 	free(b);
+ 	return NULL;
+ }
+diff --git a/libweston/backend-drm/kms.c b/libweston/backend-drm/kms.c
+index c91e3810..68412214 100644
+--- a/libweston/backend-drm/kms.c
++++ b/libweston/backend-drm/kms.c
+@@ -1168,8 +1168,8 @@ drm_pending_state_apply_atomic(struct drm_pending_state *pending_state,
+ 		wl_list_for_each(plane, &b->plane_list, link) {
+ 			drm_debug(b, "\t\t[atomic] starting with plane %lu disabled\n",
+ 				  (unsigned long) plane->plane_id);
+-			plane_add_prop(req, plane, WDRM_PLANE_CRTC_ID, 0);
+-			plane_add_prop(req, plane, WDRM_PLANE_FB_ID, 0);
++			//plane_add_prop(req, plane, WDRM_PLANE_CRTC_ID, 0);
++			//plane_add_prop(req, plane, WDRM_PLANE_FB_ID, 0);
+ 		}
+ 
+ 		flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
+-- 
+2.17.1
+

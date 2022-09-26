@@ -1,0 +1,34 @@
+From f9710114a009c96088c5d2206f27e5705c28fc65 Mon Sep 17 00:00:00 2001
+Date: Wed, 22 Jun 2022 15:05:12 +0800
+Subject: [PATCH] Destory fade view for each fade done as shell output changes.
+
+---
+ desktop-shell/shell.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/desktop-shell/shell.c b/desktop-shell/shell.c
+index f9d7e925..1c0ffa45 100644
+--- a/desktop-shell/shell.c
++++ b/desktop-shell/shell.c
+@@ -4035,10 +4035,16 @@ shell_fade_done_for_output(struct weston_view_animation *animation, void *data)
+ 	shell_output->fade.animation = NULL;
+ 	switch (shell_output->fade.type) {
+ 	case FADE_IN:
+-		weston_surface_destroy(shell_output->fade.view->surface);
+-		shell_output->fade.view = NULL;
++		if (shell_output->fade.view){
++			weston_surface_destroy(shell_output->fade.view->surface);
++			shell_output->fade.view = NULL;
++		}
+ 		break;
+ 	case FADE_OUT:
++		if (shell_output->fade.view){
++			weston_surface_destroy(shell_output->fade.view->surface);
++			shell_output->fade.view = NULL;
++		}
+ 		lock(shell);
+ 		break;
+ 	default:
+-- 
+2.17.1
+

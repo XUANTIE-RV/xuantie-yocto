@@ -1,0 +1,11 @@
+[Unit]
+Description=Media Service
+
+[Service]
+Type=dbus
+BusName=org.media.server
+ExecStart=/usr/bin/media_service
+ExecStop=/usr/bin/killall -9 media_service
+
+[Install]
+WantedBy=multi-user.target

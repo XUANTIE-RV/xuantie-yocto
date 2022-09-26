@@ -1,0 +1,47 @@
+From 486f3eb3afa4573fef876ba5f46408241dbdeda8 Mon Sep 17 00:00:00 2001
+Date: Fri, 6 Aug 2021 14:43:17 +0800
+Subject: [PATCH] Makefile: Fix the compile error for yocto
+
+---
+ .../thead/c910/standby-normal/sunxi-standby/Makefile | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/platform/thead/c910/standby-normal/sunxi-standby/Makefile b/platform/thead/c910/standby-normal/sunxi-standby/Makefile
+index 44e0304..165de82 100644
+--- a/platform/thead/c910/standby-normal/sunxi-standby/Makefile
++++ b/platform/thead/c910/standby-normal/sunxi-standby/Makefile
+@@ -3,7 +3,6 @@ ifeq ($(V), 1)
+ else
+ 	Q := @
+ endif
+-CROSS_COMPILE=riscv64-unknown-linux-gnu-
+ 
+ STANDBY = sun20iw1p1
+ #makefile for standby.bin
+@@ -30,20 +29,21 @@ standby-y += $(patsubst %.S,%.o,$(standby-s))
+ 
+ standby.bin: standby.elf
+ 	$(Q)echo " COPY      (standby)standby.bin"
+-	$(Q)$(CROSS_COMPILE)strip -s standby.elf -o $(OUT)
++	$(Q)$(STRIP) -s standby.elf -o $(OUT)
+ 
+ standby.elf:  $(standby-y) FORCE
+ 	$(Q)echo " LD        (standby)standby.elf"
+-	$(Q)$(CROSS_COMPILE)ld -T $(STANDBY_XN_FILES) -Ttext=$(SRAM_BASE_LOAD) $(LD_FLAGS) -EL  $(standby-y) $(standby-lib) -o standby.elf -Map standby.map
+-	$(Q)$(CROSS_COMPILE)objdump -D standby.elf > standby.lst
++	$(Q)$(LD) -T $(STANDBY_XN_FILES) -Ttext=$(SRAM_BASE_LOAD) $(LD_FLAGS) -EL  $(standby-y) $(standby-lib) -o standby.elf -Map standby.map
++	$(Q)$(OBJDUMP) -D standby.elf > standby.lst
+ 
+ %.o : %.c
++	#echo "$(CC)"
+ 	$(Q)echo " CC        (standby)$<"
+-	$(Q)$(CROSS_COMPILE)gcc $(KBUILD_CFLAGS) $(INCLUDE) $< -o $@
++	$(Q)$(CC) $(KBUILD_CFLAGS) $(INCLUDE) $< -o $@
+ 
+ %.o : %.S
+ 	$(Q)echo " AS        (standby)$<"
+-	$(Q)$(CROSS_COMPILE)gcc $(KBUILD_CFLAGS) $(INCLUDE) $< -o $@
++	$(Q)$(CC) $(KBUILD_CFLAGS) $(INCLUDE) $< -o $@
+ 
+ clean:
+ 	$(Q)rm -f $(standby-y) standby.code standby.elf *.lst *.map

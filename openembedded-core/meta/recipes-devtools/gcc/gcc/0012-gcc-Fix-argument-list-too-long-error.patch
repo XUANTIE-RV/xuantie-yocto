@@ -19,7 +19,11 @@ Signed-off-by: Khem Raj <raj.khem@gmail.com>
 
 RP: gcc then added *.h and *.def additions to this list, breaking the original
 fix. Add the sort to the original gcc code, leaving the tr+sort to fix the original
+<<<<<<< HEAD
 issue but include the new files too as reported by Zhuang <qiuguang.zqg@alibaba-inc.com>
+=======
+issue but include the new files too as reported by Zhuang
+>>>>>>> Linux_SDK_V0.9.5
 
 Upstream-Status: Pending
 ---

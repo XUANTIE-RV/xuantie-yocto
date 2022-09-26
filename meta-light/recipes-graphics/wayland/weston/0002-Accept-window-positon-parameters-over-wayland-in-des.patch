@@ -1,0 +1,146 @@
+From 0dc3250366ff8ef7f1a5201f4186e3617caa0e04 Mon Sep 17 00:00:00 2001
+Date: Fri, 17 Jun 2022 12:08:41 +0800
+Subject: [PATCH 2/2] Accept window positon parameters over wayland in desktop
+ shell.
+
+---
+ desktop-shell/shell.c         | 46 +++++++++++++++++++++++------------
+ libweston-desktop/xdg-shell.c |  4 +--
+ 2 files changed, 33 insertions(+), 17 deletions(-)
+
+diff --git a/desktop-shell/shell.c b/desktop-shell/shell.c
+index c1c126e8..f9d7e925 100644
+--- a/desktop-shell/shell.c
++++ b/desktop-shell/shell.c
+@@ -1998,8 +1998,7 @@ shell_surface_set_output(struct shell_surface *shsurf,
+ }
+ 
+ static void
+-weston_view_set_initial_position(struct weston_view *view,
+-				 struct desktop_shell *shell);
++weston_view_set_initial_position(struct shell_surface *shsurf);
+ 
+ static void
+ unset_fullscreen(struct shell_surface *shsurf)
+@@ -2016,7 +2015,7 @@ unset_fullscreen(struct shell_surface *shsurf)
+ 		weston_view_set_position(shsurf->view,
+ 					 shsurf->saved_x, shsurf->saved_y);
+ 	else
+-		weston_view_set_initial_position(shsurf->view, shsurf->shell);
++		weston_view_set_initial_position(shsurf);
+ 	shsurf->saved_position_valid = false;
+ 
+ 	if (shsurf->saved_rotation_valid) {
+@@ -2039,7 +2038,7 @@ unset_maximized(struct shell_surface *shsurf)
+ 		weston_view_set_position(shsurf->view,
+ 					 shsurf->saved_x, shsurf->saved_y);
+ 	else
+-		weston_view_set_initial_position(shsurf->view, shsurf->shell);
++		weston_view_set_initial_position(shsurf);
+ 	shsurf->saved_position_valid = false;
+ 
+ 	if (shsurf->saved_rotation_valid) {
+@@ -2535,7 +2534,7 @@ map(struct desktop_shell *shell, struct shell_surface *shsurf,
+ 	} else if (shsurf->xwayland.is_set) {
+ 		set_position_from_xwayland(shsurf);
+ 	} else {
+-		weston_view_set_initial_position(shsurf->view, shell);
++		weston_view_set_initial_position(shsurf);
+ 	}
+ 
+ 	/* Surface stacking order, see also activate(). */
+@@ -4284,9 +4283,10 @@ center_on_output(struct weston_view *view, struct weston_output *output)
+ }
+ 
+ static void
+-weston_view_set_initial_position(struct weston_view *view,
+-				 struct desktop_shell *shell)
++weston_view_set_initial_position(struct shell_surface *shsurf)
+ {
++        struct weston_view *view = shsurf->view;
++        struct desktop_shell *shell = shsurf->shell;
+ 	struct weston_compositor *compositor = shell->compositor;
+ 	int ix = 0, iy = 0;
+ 	int32_t range_x, range_y;
+@@ -4294,6 +4294,11 @@ weston_view_set_initial_position(struct weston_view *view,
+ 	struct weston_output *output, *target_output = NULL;
+ 	struct weston_seat *seat;
+ 	pixman_rectangle32_t area;
++	const char *thead_window_position;
++
++	/* T-HEAD: Use ENV to support window position set */
++	struct weston_geometry geometry = weston_desktop_surface_get_geometry(shsurf->desktop_surface);
++	thead_window_position = getenv("THEAD_WINDOW_POSITION");
+ 
+ 	/* As a heuristic place the new window on the same output as the
+ 	 * pointer. Falling back to the output containing 0, 0.
+@@ -4318,8 +4323,13 @@ weston_view_set_initial_position(struct weston_view *view,
+ 	}
+ 
+ 	if (!target_output) {
+-		weston_view_set_position(view, 10 + random() % 400,
++                if (thead_window_position && !strcmp(thead_window_position, "true")) {
++			weston_log("Enabled Thead window move\n");
++			weston_view_set_position(view, geometry.x, geometry.y);
++		} else {
++			weston_view_set_position(view, 10 + random() % 400,
+ 					 10 + random() % 400);
++                }
+ 		return;
+ 	}
+ 
+@@ -4331,16 +4341,22 @@ weston_view_set_initial_position(struct weston_view *view,
+ 
+ 	x = area.x;
+ 	y = area.y;
+-	range_x = area.width - view->surface->width;
+-	range_y = area.height - view->surface->height;
+ 
+-	if (range_x > 0)
+-		x += random() % range_x;
++	if (thead_window_position && !strcmp(thead_window_position, "true")) {
++		weston_log("Enabled Thead window move for target output\n");
++		weston_view_set_position(view, x + geometry.x, y + geometry.y);
++	} else {
++		range_x = area.width - view->surface->width;
++		range_y = area.height - view->surface->height;
+ 
+-	if (range_y > 0)
+-		y += random() % range_y;
++		if (range_x > 0)
++			x += random() % range_x;
+ 
+-	weston_view_set_position(view, x, y);
++		if (range_y > 0)
++			y += random() % range_y;
++
++		weston_view_set_position(view, x, y);
++	}
+ }
+ 
+ static bool
+diff --git a/libweston-desktop/xdg-shell.c b/libweston-desktop/xdg-shell.c
+index 4a9eb977..aef02c03 100644
+--- a/libweston-desktop/xdg-shell.c
++++ b/libweston-desktop/xdg-shell.c
+@@ -672,7 +672,7 @@ weston_desktop_xdg_toplevel_committed(struct weston_desktop_xdg_toplevel *toplev
+ 
+ 	struct weston_geometry geometry =
+ 		weston_desktop_surface_get_geometry(toplevel->base.desktop_surface);
+-
++/*
+ 	if (toplevel->next.state.maximized &&
+ 	    (toplevel->next.size.width != geometry.width ||
+ 	     toplevel->next.size.height != geometry.height)) {
+@@ -708,7 +708,7 @@ weston_desktop_xdg_toplevel_committed(struct weston_desktop_xdg_toplevel *toplev
+ 				       toplevel->next.size.height);
+ 		return;
+ 	}
+-
++*/
+ 	toplevel->current.state = toplevel->next.state;
+ 	toplevel->current.min_size = toplevel->next.min_size;
+ 	toplevel->current.max_size = toplevel->next.max_size;
+-- 
+2.17.1
+

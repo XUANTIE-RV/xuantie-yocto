@@ -1,0 +1,11 @@
+[Unit]
+Description=xtensa dsp driver init Service.
+
+[Service]
+Type=simple
+ExecStart=sh /usr/share/xtensa_dsp/insmod.sh
+ExecStop=sh /usr/share/xtensa_dsp/rmmod.sh
+RemainAfterExit=y
+
+[Install]
+WantedBy=multi-user.target

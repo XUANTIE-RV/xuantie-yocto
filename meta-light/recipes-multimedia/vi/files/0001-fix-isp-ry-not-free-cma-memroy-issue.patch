@@ -1,0 +1,87 @@
+From 4aa87b490b75d3d6712b61e8474cd73f0d9d26bb Mon Sep 17 00:00:00 2001
+Date: Thu, 14 Jul 2022 14:28:32 +0800
+Subject: [PATCH] fix isp/ry not free cma memroy issue
+
+---
+ vvcam/native/flash_led/flash_led_ioctl.c  |  3 +++
+ vvcam/native/isp/vvcam_isp_driver_of.c    | 10 +++++++++-
+ vvcam_ry/native/isp/vvcam_isp_driver_of.c |  7 +++++++
+ 3 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/vvcam/native/flash_led/flash_led_ioctl.c b/vvcam/native/flash_led/flash_led_ioctl.c
+index bfa9386..0839b96 100755
+--- a/vvcam/native/flash_led/flash_led_ioctl.c
++++ b/vvcam/native/flash_led/flash_led_ioctl.c
+@@ -191,6 +191,9 @@ int32_t flash_led_i2c_write(struct flash_led_dev *dev, uint32_t address, uint32_
+ 	                         address,dev->flash_led_sccb_cfg.addr_byte,
+ 	                         data,dev->flash_led_sccb_cfg.data_byte);
+ 
++    if (ret != 0) {
++        printk("%s error\n", __func__);
++    }
+ 	return ret;
+ }
+ 
+diff --git a/vvcam/native/isp/vvcam_isp_driver_of.c b/vvcam/native/isp/vvcam_isp_driver_of.c
+index 4f9c149..6485207 100755
+--- a/vvcam/native/isp/vvcam_isp_driver_of.c
++++ b/vvcam/native/isp/vvcam_isp_driver_of.c
+@@ -286,7 +286,7 @@ static irqreturn_t vvcam_isp_irq(int irq, void *dev_id)
+ #endif
+         schedule_work(&pdriver_dev->vvnative_wq);
+     } else {
+-    return IRQ_HANDLED; // return IRQ_NONE;
++        return IRQ_HANDLED;
+     }
+     return IRQ_HANDLED;
+ }
+@@ -421,6 +421,13 @@ static int vvcam_isp_release(struct inode * inode, struct file * file)
+ 	pr_info("enter %s\n", __func__);
+ 	isp_irq_destroy_circle_queue(&(pisp_dev->circle_list));
+ 
++    if (pisp_dev->ut_addr != NULL) {
++        #define UT_USED_SIZE 0x01000000
++        dma_free_coherent(dev, UT_USED_SIZE,
++                          pisp_dev->ut_addr, pisp_dev->ut_phy_addr);
++        pisp_dev->ut_addr = NULL;
++    }
++
+ 	ret = pm_runtime_put_sync(dev);
+ 	if (ret) {
+ 		pr_err("fail to suspen isp %s %d ret = %d\n", __func__, __LINE__, ret);
+@@ -658,6 +665,7 @@ static int vvcam_isp_remove(struct platform_device *pdev)
+         #define UT_USED_SIZE 0x01000000
+         dma_free_coherent(&pdev->dev, UT_USED_SIZE,
+                           pisp_dev->ut_addr, pisp_dev->ut_phy_addr);
++        pisp_dev->ut_addr =NULL;
+     }
+ 
+ 	free_irq(pdriver_dev->irq_num[0], pdriver_dev);
+diff --git a/vvcam_ry/native/isp/vvcam_isp_driver_of.c b/vvcam_ry/native/isp/vvcam_isp_driver_of.c
+index 3d9c815..61d311c 100755
+--- a/vvcam_ry/native/isp/vvcam_isp_driver_of.c
++++ b/vvcam_ry/native/isp/vvcam_isp_driver_of.c
+@@ -364,6 +364,12 @@ static int vvcam_isp_release(struct inode * inode, struct file * file)
+ 	isp_irq_destroy_circle_queue(&(pisp_dev->circle_list));
+ 
+ 	struct device *dev = &pdriver_dev->pdev->dev;
++    if (pisp_dev->ut_addr != NULL) {
++        #define UT_USED_SIZE 0x01000000
++        dma_free_coherent(dev, UT_USED_SIZE,
++                          pisp_dev->ut_addr, pisp_dev->ut_phy_addr);
++        pisp_dev->ut_addr=NULL;
++    }
+ 
+ 	if (pm_runtime_put_sync(dev)) {
+ 		pr_info("fail to resume isp %s %d\n", __func__, __LINE__);
+@@ -577,6 +583,7 @@ static int vvcam_isp_remove(struct platform_device *pdev)
+         #define UT_USED_SIZE 0x01000000
+         dma_free_coherent(&pdev->dev, UT_USED_SIZE,
+                           pisp_dev->ut_addr, pisp_dev->ut_phy_addr);
++        pisp_dev->ut_addr = NULL;
+     }
+ 
+ 	free_irq(pdriver_dev->irq_num[0], pdriver_dev);
+-- 
+2.17.1
+

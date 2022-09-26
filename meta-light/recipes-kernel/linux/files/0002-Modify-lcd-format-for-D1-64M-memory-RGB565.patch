@@ -1,0 +1,67 @@
+From d80500b49233ac521fe041a816502aca0bb0394a Mon Sep 17 00:00:00 2001
+Date: Fri, 29 Oct 2021 13:54:53 +0800
+Subject: [PATCH] Modify lcd format for D1 64M memory: RGB565
+
+---
+ arch/riscv/boot/dts/sunxi/d1.dts              |  4 ++--
+ drivers/video/fbdev/sunxi/disp2/disp/dev_fb.c | 20 ++++++++++++++++---
+ 2 files changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/arch/riscv/boot/dts/sunxi/d1.dts b/arch/riscv/boot/dts/sunxi/d1.dts
+index e2ad44bc1..3de90f8f9 100755
+--- a/arch/riscv/boot/dts/sunxi/d1.dts
++++ b/arch/riscv/boot/dts/sunxi/d1.dts
+@@ -1158,12 +1158,12 @@ chn_cfg_mode     : Hardware DE channel allocation config. 0:single display with
+ 
+ 	disp_rotation_used       = <1>;
+ 	degree0                  = <1>;
+-	fb0_format               = <0>;
++	fb0_format               = <10>;
+ 	fb0_width                = <800>;
+ 	fb0_height               = <480>;
+ 	fb0_buffer_num           = <1>;
+ 
+-	fb1_format               = <0>;
++	fb1_format               = <10>;
+ 	fb1_width                = <0>;
+ 	fb1_height               = <0>;
+ 	fb1_buffer_num           = <1>;
+diff --git a/drivers/video/fbdev/sunxi/disp2/disp/dev_fb.c b/drivers/video/fbdev/sunxi/disp2/disp/dev_fb.c
+index 25d29c353..0e890c753 100644
+--- a/drivers/video/fbdev/sunxi/disp2/disp/dev_fb.c
++++ b/drivers/video/fbdev/sunxi/disp2/disp/dev_fb.c
+@@ -1461,7 +1461,8 @@ static int Fb_copy_boot_fb(u32 sel, struct fb_info *info)
+ 	    || (dst_height <= 0)
+ 	    || (dst_stride <= 0)
+ 	    || (dst_bpp <= 0)
+-	    || (src_bpp != dst_bpp)) {
++	    // || (src_bpp != dst_bpp)
++	   ) {
+ 		__wrn
+ 		    ("wrong para: src[phy_addr=%p,w=%d,h=%d,bpp=%d,stride=%d], dst[addr=%p,w=%d,h=%d,bpp=%d,stride=%d]\n",
+ 		     src_phy_addr,
+@@ -1521,9 +1522,22 @@ static int Fb_copy_boot_fb(u32 sel, struct fb_info *info)
+ 
+ 	src_cp_btyes = src_width * src_bpp >> 3;
+ 	src_addr_e = src_addr_b + src_stride * src_height;
++	int j, logo_565_data;
++
+ 	for (; src_addr_b != src_addr_e; src_addr_b += src_stride) {
+-		memcpy((void *)dst_addr, (void *)src_addr_b, src_cp_btyes);
+-		dst_addr += dst_stride;
++		if (src_bpp == dst_bpp) {
++			memcpy((void *)dst_addr, (void *)src_addr_b, src_cp_btyes);
++			dst_addr += dst_stride;
++		} else {
++			for (j = 0; j < src_width; j++) {
++				logo_565_data = (((int)(*(char *)(src_addr_b + 4 * j + 2)) >> 3) << 11) + 	// R
++								(((int)(*(char *)(src_addr_b + 4 * j + 1)) >> 2) <<  5) + 	// G
++								(((int)(*(char *)(src_addr_b + 4 * j + 0)) >> 3));			// B
++				*(char *)(dst_addr + 2 * j + 1) = logo_565_data >> 8;
++				*(char *)(dst_addr + 2 * j + 0) = logo_565_data & 0xff;
++			}
++			dst_addr += dst_stride;
++		}
+ 	}
+ 
+ 	Fb_unmap_kernel(src_addr);

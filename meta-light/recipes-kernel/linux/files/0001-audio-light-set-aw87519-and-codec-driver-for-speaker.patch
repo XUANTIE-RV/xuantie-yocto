@@ -1,0 +1,55 @@
+From 7039a30e37f86bfd5036720e8827efe586694ba7 Mon Sep 17 00:00:00 2001
+Date: Fri, 13 May 2022 12:11:29 +0800
+Subject: [PATCH] audio: light: set aw87519 and codec driver for speaker mode
+ default
+
+Set aw87519 and codec driver for speaker mode default.
+
+
+diff --git a/sound/soc/codecs/es8156.c b/sound/soc/codecs/es8156.c
+index 24193c9629a4..a128dde005aa 100644
+--- a/sound/soc/codecs/es8156.c
++++ b/sound/soc/codecs/es8156.c
+@@ -223,6 +223,11 @@ static int es8156_pcm_hw_params(struct snd_pcm_substream *substream,
+ 				struct snd_soc_dai *dai)
+ {
+ 	struct snd_soc_component *codec = dai->component;	
++	struct snd_pcm_runtime *runtime = substream->runtime;
++
++	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_PERIOD_BYTES,
++				     4096, UINT_MAX);
++
+ 	switch (params_format(params)) {
+ 	case SNDRV_PCM_FORMAT_S16_LE:		
+ 		snd_soc_component_update_bits(codec, ES8156_DAC_SDP_REG11, 0x70,0x30);
+diff --git a/sound/soc/thead/aw87519_audio.c b/sound/soc/thead/aw87519_audio.c
+index 5f9ce30f8751..c5ad9bc01bd4 100644
+--- a/sound/soc/thead/aw87519_audio.c
++++ b/sound/soc/thead/aw87519_audio.c
+@@ -105,11 +105,14 @@ static int aw87519_i2c_read(struct aw87519 *aw87519,
+ ***************************************************************************/
+ unsigned int aw87519_hw_on(struct aw87519 *aw87519)
+ {
++	aw87519->hwen_flag = 1;
++	aw87519_i2c_write(aw87519, 0x64, 0x2C);
+ 	return 0;
+ }
+ 
+ unsigned int aw87519_hw_off(struct aw87519 *aw87519)
+ {
++	aw87519->hwen_flag = 0;
+ 	return 0;
+ }
+ 
+@@ -592,6 +595,8 @@ static int aw87519_i2c_probe(struct i2c_client *client,
+ 	/* aw87519 hardware off */
+ 	aw87519_hw_off(aw87519);
+ 
++	aw87519_audio_speaker();
++
+ 	return 0;
+ 
+ exit_i2c_check_id_failed:
+-- 
+2.17.1
+
