@@ -1,0 +1,16 @@
+#!/bin/bash
+
+boot_dev=`fdisk -x |sed -n '/boot/p' |awk '{ print $1}'`
+for i in ${boot_dev}
+do
+    echo "resize boot block "${i}
+    resize2fs ${i} 
+done
+
+
+root_dev=`fdisk -x |sed -n '/root/p' |awk '{ print $1}'`
+for i in ${root_dev}
+do
+    echo "resize root block "${i}
+    resize2fs ${i}
+done

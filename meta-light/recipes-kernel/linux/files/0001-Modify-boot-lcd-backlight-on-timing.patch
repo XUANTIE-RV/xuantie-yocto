@@ -1,0 +1,39 @@
+From d7db929fca59e2ef3c20ce1527d6040541bcf02f Mon Sep 17 00:00:00 2001
+Date: Fri, 29 Oct 2021 13:25:27 +0800
+Subject: [PATCH] Modify boot lcd backlight on timing.
+
+---
+ drivers/mtd/mtdpart.c                              | 5 +++++
+ drivers/video/fbdev/sunxi/disp2/disp/de/disp_lcd.c | 3 ++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mtd/mtdpart.c b/drivers/mtd/mtdpart.c
+index 9ebdd9739..dbefced5c 100644
+--- a/drivers/mtd/mtdpart.c
++++ b/drivers/mtd/mtdpart.c
+@@ -746,6 +746,11 @@ int add_mtd_partitions(struct mtd_info *master,
+ 		cur_offset = slave->offset + slave->mtd.size;
+ 	}
+ 
++	extern s32 bsp_disp_lcd_backlight_disable(u32 disp);
++	bsp_disp_lcd_backlight_disable(0);
++	extern s32 bsp_disp_lcd_backlight_enable(u32 disp);
++	bsp_disp_lcd_backlight_enable(0);
++	
+ 	return 0;
+ 
+ err_del_partitions:
+diff --git a/drivers/video/fbdev/sunxi/disp2/disp/de/disp_lcd.c b/drivers/video/fbdev/sunxi/disp2/disp/de/disp_lcd.c
+index 47ac10390..85ceef39a 100644
+--- a/drivers/video/fbdev/sunxi/disp2/disp/de/disp_lcd.c
++++ b/drivers/video/fbdev/sunxi/disp2/disp/de/disp_lcd.c
+@@ -2872,7 +2872,8 @@ static s32 disp_lcd_init(struct disp_device *lcd, int lcd_index)
+ 				period_ns = 1000 * 1000 * 1000 / 1000;
+ 			}
+ 
+-			backlight_bright = lcdp->lcd_cfg.backlight_bright;
++			// backlight_bright = lcdp->lcd_cfg.backlight_bright;
++			backlight_bright = 0;
+ 
+ 			duty_ns = (backlight_bright * period_ns) / 256;
+ 			lcdp->pwm_info.duty_ns = duty_ns;

@@ -1,0 +1,38 @@
+From 5f5880ff73a3d1f1140fc78c7583401d756e1283 Mon Sep 17 00:00:00 2001
+Date: Wed, 16 Mar 2022 10:09:06 +0800
+Subject: [PATCH] REVERTME: always set primary zpos as zpos_min(0).
+
+Current weston drm don't set the primary plane zpos
+after plane alloc, the plane will keep the invalid
+zpos and caused the overlay black ground issue.
+---
+ libweston/backend-drm/kms.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/libweston/backend-drm/kms.c b/libweston/backend-drm/kms.c
+index 68412214..d3f723bc 100644
+--- a/libweston/backend-drm/kms.c
++++ b/libweston/backend-drm/kms.c
+@@ -1029,10 +1029,18 @@ drm_output_apply_state_atomic(struct drm_output_state *state,
+ 
+ 		/* do note, that 'invented' zpos values are set as immutable */
+ 		if (plane_state->zpos != DRM_PLANE_ZPOS_INVALID_PLANE &&
+-		    plane_state->plane->zpos_min != plane_state->plane->zpos_max)
++		    plane_state->plane->zpos_min != plane_state->plane->zpos_max) {
+ 			ret |= plane_add_prop(req, plane,
+ 					      WDRM_PLANE_ZPOS,
+ 					      plane_state->zpos);
++                } else if (plane_state->plane->type == WDRM_PLANE_TYPE_PRIMARY){
++                        /* Always set primary plane zpos as zpos min as zpos */
++                        /* can't be set after plane state alloc */
++                        plane_state->zpos = plane_state->plane->zpos_min;
++                        ret |= plane_add_prop(req, plane,
++                                              WDRM_PLANE_ZPOS,
++                                              plane_state->zpos);
++                }
+ 
+ 		if (ret != 0) {
+ 			weston_log("couldn't set plane state\n");
+-- 
+2.17.1
+

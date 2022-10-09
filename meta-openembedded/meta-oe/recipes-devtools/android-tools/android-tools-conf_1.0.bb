@@ -19,7 +19,7 @@ do_install() {
     if ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'true', 'false', d)}; then
         install -d ${D}${sysconfdir}/init.d
         install -m 0755 ${WORKDIR}/android-gadget-init ${D}${sysconfdir}/init.d
-        update-rc.d -r ${D} android-gadget-init start 10 5 .
+        update-rc.d -r ${D} android-gadget-init start 10 5 3 2 .
     fi
 
 }

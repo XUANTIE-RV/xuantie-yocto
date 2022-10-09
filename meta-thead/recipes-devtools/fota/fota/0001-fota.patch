@@ -1,0 +1,30 @@
+diff --git a/project.cmake b/project.cmake
+index ba923d7..5b282b1 100644
+--- a/project.cmake
++++ b/project.cmake
+@@ -2,25 +2,6 @@ cmake_minimum_required(VERSION 3.5)
+ 
+ # set(SYSROOT_PATH "/home/hlb194802/.local/riscv64-toolchain/sysroots")
+ 
+-if(NOT DEFINED ENV{SYSROOT_PATH})
+-    message(FATAL_ERROR "not defined environment variable:SYSROOT_PATH please `source env.sh`")  
+-else()
+-    message($ENV{SYSROOT_PATH})
+-endif()
+-message($ENV{SYSROOT_PATH})
+-set(SYSROOT "$ENV{SYSROOT_PATH}/riscv64-oe-linux")
+-
+-set(CMAKE_C_COMPILER   "$ENV{SYSROOT_PATH}/x86_64-oesdk-linux/usr/bin/riscv64-linux-gcc")
+-set(CMAKE_CXX_COMPILER "$ENV{SYSROOT_PATH}/x86_64-oesdk-linux/usr/bin/riscv64-linux-g++")
+-
+-# 设置 SYSROOT
+-set(CMAKE_SYSROOT "${SYSROOT}")
+-
+-# 设置 PKG 环境变量
+-set(ENV{PKG_CONFIG_PATH} "${CMAKE_SYSROOT}/usr/lib/pkgconfig")
+-set(ENV{PKG_CONFIG_DIR} "")
+-set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib:${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
+-set(ENV{PKG_CONFIG_SYSROOT_DIR} "${CMAKE_SYSROOT}")
+ 
+ set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
+ 

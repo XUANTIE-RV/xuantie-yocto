@@ -1,0 +1,8 @@
+--- a/tools/env/Makefile	2022-05-27 19:37:06.788519278 +0800
++++ b/tools/env/Makefile	2022-05-27 19:37:31.463474550 +0800
+@@ -34,4 +34,4 @@
+ $(obj)/.strip: $(obj)/fw_printenv
+ 	$(call cmd,crosstools_strip)
+ 
+-always += .strip
++# always += .strip

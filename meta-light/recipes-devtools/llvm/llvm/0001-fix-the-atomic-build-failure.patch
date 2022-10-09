@@ -1,0 +1,101 @@
+From db712c357233a029143ac0ef8ea92771d033ce1f Mon Sep 17 00:00:00 2001
+Date: Tue, 10 Aug 2021 16:41:48 +0800
+Subject: [PATCH] fix the atomic build failure.
+
+---
+ llvm/cmake/config.guess              | 24 ++++++++++++++++++++++++
+ llvm/cmake/modules/CheckAtomic.cmake |  8 +++++++-
+ llvm/lib/Support/CMakeLists.txt      |  2 +-
+ llvm/tools/dsymutil/CMakeLists.txt   |  4 ++++
+ 4 files changed, 36 insertions(+), 2 deletions(-)
+
+diff --git a/llvm/cmake/config.guess b/llvm/cmake/config.guess
+index ccb30f4e75e8..26d120601e49 100644
+--- a/llvm/cmake/config.guess
++++ b/llvm/cmake/config.guess
+@@ -973,6 +973,30 @@ EOF
+     ppc:Linux:*:*)
+ 	echo powerpc-unknown-linux-gnu
+ 	exit ;;
++    riscv32:Linux:*:* | riscv64:Linux:*:*)
++	LIBC=gnu
++	eval $set_cc_for_build
++	# Do not check for __GLIBC__ because uclibc defines it too
++	sed 's/^	//' << EOF >$dummy.c
++	#include <features.h>
++	#if defined(__UCLIBC__)
++	LIBC=uclibc
++	#elif defined(__dietlibc__)
++	LIBC=dietlibc
++	#endif
++EOF
++	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep '^LIBC'`
++
++	# There is no features test macro for musl
++	# Follow the GNU's config.guess approach of
++	# checking the output of ldd
++	if command -v ldd >/dev/null && \
++		ldd --version 2>&1 | grep -q ^musl; then
++	    LIBC=musl
++	fi
++
++	echo ${UNAME_MACHINE}-unknown-linux-${LIBC}
++	exit ;;
+     s390:Linux:*:* | s390x:Linux:*:*)
+ 	echo ${UNAME_MACHINE}-ibm-linux
+ 	exit ;;
+diff --git a/llvm/cmake/modules/CheckAtomic.cmake b/llvm/cmake/modules/CheckAtomic.cmake
+index 29f3bdd57f03..5d22a131e5cb 100644
+--- a/llvm/cmake/modules/CheckAtomic.cmake
++++ b/llvm/cmake/modules/CheckAtomic.cmake
+@@ -12,8 +12,12 @@ function(check_working_cxx_atomics varname)
+   CHECK_CXX_SOURCE_COMPILES("
+ #include <atomic>
+ std::atomic<int> x;
++std::atomic<short> y;
++std::atomic<char> z;
+ int main() {
+-  return x;
++  ++z;
++  ++y;
++  return ++x;
+ }
+ " ${varname})
+   set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
+@@ -53,6 +57,8 @@ if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
+       message(FATAL_ERROR "Host compiler appears to require libatomic, but cannot find it.")
+     endif()
+   endif()
++elseif(MSVC)
++  set(HAVE_CXX_ATOMICS_WITHOUT_LIB True)
+ endif()
+ 
+ # Check for 64 bit atomic operations.
+diff --git a/llvm/lib/Support/CMakeLists.txt b/llvm/lib/Support/CMakeLists.txt
+index ddc4d2324a05..75a62f45da36 100644
+--- a/llvm/lib/Support/CMakeLists.txt
++++ b/llvm/lib/Support/CMakeLists.txt
+@@ -26,7 +26,7 @@ elseif( CMAKE_HOST_UNIX )
+       set(system_libs ${system_libs} ${TERMINFO_LIBS})
+     endif()
+   endif()
+-  if( LLVM_ENABLE_THREADS AND HAVE_LIBATOMIC )
++  if( LLVM_ENABLE_THREADS AND (HAVE_LIBATOMIC OR HAVE_CXX_LIBATOMICS64) )
+     set(system_libs ${system_libs} atomic)
+   endif()
+   set(system_libs ${system_libs} ${LLVM_PTHREAD_LIB})
+diff --git a/llvm/tools/dsymutil/CMakeLists.txt b/llvm/tools/dsymutil/CMakeLists.txt
+index fecd8a61ad00..e38085296398 100644
+--- a/llvm/tools/dsymutil/CMakeLists.txt
++++ b/llvm/tools/dsymutil/CMakeLists.txt
+@@ -38,3 +38,7 @@ add_llvm_tool(dsymutil
+ if(APPLE)
+   target_link_libraries(dsymutil PRIVATE "-framework CoreFoundation")
+ endif(APPLE)
++
++if(HAVE_CXX_ATOMICS_WITH_LIB OR HAVE_CXX_ATOMICS64_WITH_LIB)
++  target_link_libraries(dsymutil PRIVATE atomic)
++endif()
+-- 
+2.17.1
+

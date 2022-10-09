@@ -1,0 +1,27 @@
+From 5f7d0eaf40cee01966790b47510322fc2f3a8c39 Mon Sep 17 00:00:00 2001
+Date: Sat, 7 May 2022 18:53:50 +0800
+Subject: [PATCH] board: thead: light-c910: enable audio pwr by default
+
+enable audio power by default
+
+---
+ board/thead/light-c910/light.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/board/thead/light-c910/light.c b/board/thead/light-c910/light.c
+index 863a5bc8db..6d4e647d11 100644
+--- a/board/thead/light-c910/light.c
++++ b/board/thead/light-c910/light.c
+@@ -1017,7 +1017,9 @@ static void light_iopin_init(void)
+ 	light_pin_mux(AUDIO_PA9,3);
+ 	light_pin_cfg(AUDIO_PA9,PIN_SPEED_NORMAL,PIN_PU,2);
+ 	light_pin_mux(AUDIO_PA10,3);
++	light_pin_cfg(AUDIO_PA10,PIN_SPEED_NORMAL,PIN_PU,2);
+ 	light_pin_mux(AUDIO_PA12,3);
++	light_pin_cfg(AUDIO_PA12,PIN_SPEED_NORMAL,PIN_PU,2);
+ 	light_pin_mux(AUDIO_PA13,0);
+ 
+ 	/*ap-padmux on left/top */
+-- 
+2.17.1
+

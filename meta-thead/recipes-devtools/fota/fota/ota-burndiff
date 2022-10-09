@@ -1,0 +1,125 @@
+#!/bin/bash
+
+set -euo pipefail
+
+MOUNT="/bin/mount"
+UMOUNT="/bin/umount"
+
+ROOT_ROMOUNT="/media/rfs/ro"
+ROOT_RWMOUNT="/media/rfs/rw"
+
+ROOT_ROFSTYPE=""
+
+FOTA_DIR="/fota"
+UPDATA_ROOT=0
+UPDATA_BOOT=0
+ROOT_NAME="root"
+BOOT_NAME="kernel"
+
+read_args() {
+	[ -z "${CMDLINE+x}" ] && CMDLINE=`cat /proc/cmdline`
+	for arg in $CMDLINE; do
+		# Set optarg to option parameter, and '' if no parameter was
+		# given
+		optarg=`expr "x$arg" : 'x[^=]*=\(.*\)' || echo ''`
+		case $arg in
+			rootfstype=*)
+				ROOT_ROFSTYPE="$optarg"
+		esac
+	done
+}
+
+if [ $# != 1 ];then echo "Usage: $0 rootfs_update_package";exit 1; fi
+
+update_file=`realpath $1`
+
+ROOT_PARTITION=$(fw_printenv -n root_partition)
+if [ "${ROOT_PARTITION}" == "rootfsB" ];
+then
+	ROOTFS_BAK=`blkid -t PARTLABEL=root -o device`
+else
+	ROOTFS_BAK=`blkid -t PARTLABEL=rootB -o device`
+fi
+BOOT_PARTITION=$(fw_printenv -n boot_partition)
+if [ "${BOOT_PARTITION}" == "bootB" ];
+then
+	BOOT_BAK=`blkid -t PARTLABEL=boot -o device`
+	BOOT_CUR=`blkid -t PARTLABEL=bootB -o device`
+else
+	BOOT_BAK=`blkid -t PARTLABEL=bootB -o device`
+	BOOT_CUR=`blkid -t PARTLABEL=boot -o device`
+fi
+
+read_args
+
+$UMOUNT $FOTA_DIR/$ROOT_NAME || true
+$UMOUNT $FOTA_DIR/$BOOT_NAME || true
+$UMOUNT $FOTA_DIR/$BOOT_NAME-cur || true
+rm -rf $FOTA_DIR
+
+mkdir -p $FOTA_DIR
+
+tar -zxf $update_file update_$ROOT_NAME.sh -C $FOTA_DIR/ || true
+tar -zxf $update_file update_$BOOT_NAME.sh -C $FOTA_DIR/ || true
+
+[ -z "$ROOT_ROFSTYPE" ] && ROOT_ROFSTYPE="ext4"
+
+update_root(){
+	mke2fs -t $ROOT_ROFSTYPE -F $ROOTFS_BAK
+	mkdir -p $FOTA_DIR/$2
+	$MOUNT $ROOTFS_BAK $FOTA_DIR/$2
+	cp -raf $ROOT_ROMOUNT/* $FOTA_DIR/$2
+	cd $FOTA_DIR/
+	mkdir -p $FOTA_DIR/$2/media/rfs/ro $FOTA_DIR/$2/media/rfs/rw
+	$FOTA_DIR/update_$2.sh $1 $FOTA_DIR/
+	cd -
+	$UMOUNT $FOTA_DIR/$2
+}
+
+update_boot(){
+	$UMOUNT /boot || true
+	mke2fs -t $ROOT_ROFSTYPE -F $BOOT_BAK
+	mkdir -p $FOTA_DIR/$2 $FOTA_DIR/$2-cur
+	$MOUNT $BOOT_BAK $FOTA_DIR/$2
+	if $MOUNT $BOOT_CUR $FOTA_DIR/$2-cur/; then
+		cp -raf $FOTA_DIR/$2-cur/* $FOTA_DIR/$2/
+		$UMOUNT $FOTA_DIR/$2-cur
+	else
+		$UMOUNT $FOTA_DIR/$2-cur || true
+		$UMOUNT $FOTA_DIR/$2 || true
+		exit 1
+	fi
+	cd $FOTA_DIR/
+	$FOTA_DIR/update_$2.sh $1 $FOTA_DIR/
+	cd -
+	$UMOUNT $FOTA_DIR/$2
+}
+
+if [ -f $FOTA_DIR/update_$ROOT_NAME.sh ]; then
+	update_root $update_file $ROOT_NAME
+	UPDATA_ROOT=1
+fi
+if [ -f $FOTA_DIR/update_$BOOT_NAME.sh ]; then
+	update_boot $update_file $BOOT_NAME
+	UPDATA_BOOT=1
+fi
+
+rm -rf $FOTA_DIR
+
+if [ "${UPDATA_ROOT}" == "1" ]; then
+	if [ "${ROOT_PARTITION}" == "rootfsB" ]; then
+		fw_setenv root_partition rootfsA
+	else
+		fw_setenv root_partition rootfsB
+	fi
+fi
+if [ "${UPDATA_BOOT}" == "1" ]; then
+	if [ "${BOOT_PARTITION}" == "bootB" ]; then
+		fw_setenv boot_partition bootA
+	else
+		fw_setenv boot_partition bootB
+	fi
+fi
+rm $update_file
+sync
+

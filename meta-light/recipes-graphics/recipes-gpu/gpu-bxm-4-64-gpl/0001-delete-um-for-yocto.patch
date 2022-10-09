@@ -1,0 +1,223 @@
+From 1b0a28e4b3a42c9bccf486b567421ed793c90dfd Mon Sep 17 00:00:00 2001
+Date: Tue, 28 Dec 2021 20:28:19 +0800
+Subject: [PATCH] delete-um-for-yocto
+
+---
+ Makefile                                      | 52 +++++++------------
+ .../drivers/staging/imgtec/plato/plato_drv.c  |  2 +-
+ .../drivers/staging/imgtec/tc/drm_pdp_drv.c   |  2 +-
+ .../kernel/drivers/staging/imgtec/tc/tc_drv.c |  2 +-
+ .../server/env/linux/pvr_platform_drv.c       |  4 +-
+ tools/prepare.sh                              | 22 ++++----
+ tools/prepare_driver.sh                       |  5 ++
+ 7 files changed, 41 insertions(+), 48 deletions(-)
+ create mode 100755 tools/prepare_driver.sh
+
+diff --git a/Makefile b/Makefile
+index 40ab37788..c08dd78e8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -17,20 +17,20 @@ BUILD_LOG_START="\033[47;30m>>> $(MODULE_NAME) $@ begin\033[0m"
+ BUILD_LOG_END  ="\033[47;30m<<< $(MODULE_NAME) $@ end\033[0m"
+ 
+ 
+-export PATH+=:$(ROOT_DIR)/buildroot/output/host/bin
++#export PATH+=:$(ROOT_DIR)/buildroot/output/host/bin
+ #export WINDOW_SYSTEM=nulldrmws
+ #export WINDOW_SYSTEM=xorg
+-export WINDOW_SYSTEM=lws-generic
++#export WINDOW_SYSTEM=lws-generic
+ #export WINDOW_SYSTEM=wayland
+ #export WINDOW_SYSTEM=nullws
+-export MIPS_ELF_ROOT=$(ROOT_DIR)/gpu_bxm_4_64/tools/mips-mti-elf/2014.07-1
+-export SYSROOT=$(ROOT_DIR)/buildroot/output/host/opt/ext-toolchain/sysroot
+-export DISCIMAGE=$(ROOT_DIR)/buildroot/output/host/opt/ext-toolchain/sysroot
+-export KERNELDIR=$(ROOT_DIR)/buildroot/output/build/linux-custom
+-export BUILD=debug
++export MIPS_ELF_ROOT=$(LINUX_ROOT)/tools/mips-mti-elf/2014.07-1
++export SYSROOT=$(SYSROOT_DIR)
++#export DISCIMAGE=$(ROOT_DIR)/buildroot/output/host/opt/ext-toolchain/sysroot
++#export KERNELDIR=$(ROOT_DIR)/buildroot/output/build/linux-custom
++#export BUILD=debug
+ #export BUILD=release
+-export LINUX_ROOT=$(ROOT_DIR)/gpu_bxm_4_64
+-export LLVM_BUILD_DIR=$(ROOT_DIR)/gpu_bxm_4_64/tools/llvm
++#export LINUX_ROOT=$(ROOT_DIR)/gpu_bxm_4_64
++#export LLVM_BUILD_DIR=$(ROOT_DIR)/gpu_bxm_4_64/tools/llvm
+ export RGX_BVNC=36.52.104.182
+ export DRIVERDIR=rogue_km
+ export LIBDIR=rogue
+@@ -52,9 +52,9 @@ ifeq ($(JOBS),)
+   endif
+ endif
+ 
+-all:    info driver lib test install_local_output install_rootfs
+-.PHONY: info driver lib test install_local_output install_rootfs \
+-        install_addons clean_driver clean_lib clean_test clean_output clean
++all:    info driver test install_local_output install_rootfs
++.PHONY: info driver test install_local_output install_rootfs \
++        install_addons clean_driver clean_test clean_output clean
+ 
+ info:
+ 	@echo $(BUILD_LOG_START)
+@@ -82,20 +82,11 @@ clean_driver:
+ 	make -C $(DRIVERDIR)/build/linux/thead_linux CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) BUILD=$(BUILD) RGX_BVNC=$(RGX_BVNC) clean
+ 	@echo $(BUILD_LOG_END)
+ 
+-prepare_lib:
+-	@bash ./tools/prepare.sh $(SYSROOT) $(KERNELDIR) $(DISCIMAGE)
++prepare_driver:
++	@bash ./tools/prepare_driver.sh $(KERNELDIR) $(DISCIMAGE)
+ 
+-lib: prepare_lib
+-	@echo $(BUILD_LOG_START)
+-	make -C $(LIBDIR)/build/linux/thead_linux CROSS_COMPILE=$(TOOLCHAIN_PREFIX) ARCH=$(ARCH) BUILD=$(BUILD) RGX_BVNC=$(RGX_BVNC)
+-	@echo $(BUILD_LOG_END)
+-
+-clean_lib:
+-	@echo $(BUILD_LOG_START)
+-	make -C $(LIBDIR)/build/linux/thead_linux CROSS_COMPILE=$(TOOLCHAIN_PREFIX) ARCH=$(ARCH) BUILD=$(BUILD) RGX_BVNC=$(RGX_BVNC) clean
+-	@echo $(BUILD_LOG_END)
+ 
+-test: lib driver
++test: driver
+ 	@echo $(BUILD_LOG_START)
+ 	@echo "Test cases are built when build lib"
+ 	@echo $(BUILD_LOG_END)
+@@ -104,23 +95,20 @@ clean_test:
+ 	@echo $(BUILD_LOG_START)
+ 	@echo $(BUILD_LOG_END)
+ 
+-install_driver:
+-	sudo -E make -C $(DRIVERDIR)/build/linux/thead_linux CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) BUILD=$(BUILD) RGX_BVNC=$(RGX_BVNC) kbuild_install
+-
+-install_lib:
+-	sudo -E make -C $(LIBDIR)/build/linux/thead_linux CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) BUILD=$(BUILD) RGX_BVNC=$(RGX_BVNC) install
++install_driver: prepare_driver
++	make -C $(DRIVERDIR)/build/linux/thead_linux CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) BUILD=$(BUILD) RGX_BVNC=$(RGX_BVNC) kbuild_install
+ 
+ install_prepare:
+ 	mkdir -p ./output/rootfs/$(DIR_TARGET_KO)
+ 	mkdir -p ./output/rootfs/$(DIR_TARGET_LIB)
+ 	mkdir -p ./output/rootfs/$(DIR_TARGET_TEST)
+ 
+-install_addons: install_prepare install_driver install_lib
++install_addons: install_prepare install_driver
+ 	@if [ -d addons/$(BOARD_NAME) ]; then                                 \
+ 	    cp -rf addons/$(BOARD_NAME)/* ./output/rootfs/$(DIR_TARGET_BASE); \
+ 	fi
+ 
+-install_local_output: driver lib test install_addons
++install_local_output: driver test install_addons
+ 	@echo $(BUILD_LOG_START)
+ 	find $(DRIVERDIR) -name "*.ko" | xargs -i cp -f {} ./output/rootfs/$(DIR_TARGET_KO)
+ 	chmod +x ./output/rootfs/$(DIR_TARGET_KO)/*.sh
+@@ -145,5 +133,5 @@ clean_output:
+ 	rm -rf $(INSTALL_DIR_ROOTFS)/$(DIR_TARGET_BASE)
+ 	@echo $(BUILD_LOG_END)
+ 
+-clean: clean_output clean_driver clean_lib clean_test
++clean: clean_output clean_driver clean_test
+ 
+diff --git a/rogue_km/kernel/drivers/staging/imgtec/plato/plato_drv.c b/rogue_km/kernel/drivers/staging/imgtec/plato/plato_drv.c
+index 5bab0b740..ee9503f94 100644
+--- a/rogue_km/kernel/drivers/staging/imgtec/plato/plato_drv.c
++++ b/rogue_km/kernel/drivers/staging/imgtec/plato/plato_drv.c
+@@ -91,7 +91,7 @@ static struct pci_driver plato_pci_driver = {
+ };
+ 
+ module_pci_driver(plato_pci_driver);
+-MODULE_DEVICE_TABLE(pci, plato_pci_tbl);
++//MODULE_DEVICE_TABLE(pci, plato_pci_tbl);
+ 
+ static struct plato_debug_register plato_noc_regs[] = {
+ 	{"NOC Offset 0x00", 0x00, 0},
+diff --git a/rogue_km/kernel/drivers/staging/imgtec/tc/drm_pdp_drv.c b/rogue_km/kernel/drivers/staging/imgtec/tc/drm_pdp_drv.c
+index 7b12b1ca3..0cdeb9047 100644
+--- a/rogue_km/kernel/drivers/staging/imgtec/tc/drm_pdp_drv.c
++++ b/rogue_km/kernel/drivers/staging/imgtec/tc/drm_pdp_drv.c
+@@ -880,5 +880,5 @@ module_platform_driver(pdp_platform_driver);
+ 
+ MODULE_AUTHOR("Imagination Technologies Ltd. <gpl-support@imgtec.com>");
+ MODULE_DESCRIPTION(DRIVER_DESC);
+-MODULE_DEVICE_TABLE(platform, pdp_platform_device_id_table);
++//MODULE_DEVICE_TABLE(platform, pdp_platform_device_id_table);
+ MODULE_LICENSE("Dual MIT/GPL");
+diff --git a/rogue_km/kernel/drivers/staging/imgtec/tc/tc_drv.c b/rogue_km/kernel/drivers/staging/imgtec/tc/tc_drv.c
+index fd9ba461b..c69498fdf 100644
+--- a/rogue_km/kernel/drivers/staging/imgtec/tc/tc_drv.c
++++ b/rogue_km/kernel/drivers/staging/imgtec/tc/tc_drv.c
+@@ -666,7 +666,7 @@ static struct pci_driver tc_pci_driver = {
+ 
+ module_pci_driver(tc_pci_driver);
+ 
+-MODULE_DEVICE_TABLE(pci, tc_pci_tbl);
++//MODULE_DEVICE_TABLE(pci, tc_pci_tbl);
+ 
+ int tc_enable(struct device *dev)
+ {
+diff --git a/rogue_km/services/server/env/linux/pvr_platform_drv.c b/rogue_km/services/server/env/linux/pvr_platform_drv.c
+index b1586c9bf..172f8e52f 100644
+--- a/rogue_km/services/server/env/linux/pvr_platform_drv.c
++++ b/rogue_km/services/server/env/linux/pvr_platform_drv.c
+@@ -259,7 +259,7 @@ static const struct of_device_id pvr_of_ids[] = {
+ };
+ 
+ #if !defined(CHROMIUMOS_KERNEL) || !defined(MODULE)
+-MODULE_DEVICE_TABLE(of, pvr_of_ids);
++//MODULE_DEVICE_TABLE(of, pvr_of_ids);
+ #endif
+ #endif
+ 
+@@ -271,7 +271,7 @@ static struct platform_device_id pvr_platform_ids[] = {
+ };
+ 
+ #if !defined(CHROMIUMOS_KERNEL) || !defined(MODULE)
+-MODULE_DEVICE_TABLE(platform, pvr_platform_ids);
++//MODULE_DEVICE_TABLE(platform, pvr_platform_ids);
+ #endif
+ 
+ static struct platform_driver pvr_platform_driver = {
+diff --git a/tools/prepare.sh b/tools/prepare.sh
+index ab269d0d5..67fd3c2cb 100755
+--- a/tools/prepare.sh
++++ b/tools/prepare.sh
+@@ -1,16 +1,16 @@
+ #!/bin/bash
+ 
+-if [ ! -d $1/usr/local ]; then
+-    echo "Install libdrm in the $SYSROOT"
+-    cd tools/drm/libdrm-2.4.101/riscv64-unknown-linux-gnu-binaries/
+-    DESTDIR="$SYSROOT" sudo -E ninja install
+-#    sudo -E make -C libdrm-2.4.99/riscv64-unknown-linux-gnu-binaries  DESTDIR="$SYSROOT" install
+-    sudo cp $1/usr/local/lib/riscv64-unknown-linux-gnu $1/usr/local/lib/riscv64-linux-gnu -rf
+-    cd -
+-    cd $2
+-    make INSTALL_MOD_PATH=$3 modules_install
+-    cd -
+-fi
++#if [ ! -d $1/usr/local ]; then
++#    echo "Install libdrm in the $SYSROOT"
++#    cd tools/drm/libdrm-2.4.101/riscv64-unknown-linux-gnu-binaries/
++#    DESTDIR="$SYSROOT" sudo -E ninja install
++##    sudo -E make -C libdrm-2.4.99/riscv64-unknown-linux-gnu-binaries  DESTDIR="$SYSROOT" install
++#    sudo cp $1/usr/local/lib/riscv64-unknown-linux-gnu $1/usr/local/lib/riscv64-linux-gnu -rf
++#    cd -
++#    cd $2
++#    make INSTALL_MOD_PATH=$3 modules_install
++#    cd -
++#fi
+ 
+ if [ ! -d tools/mips-mti-elf ]; then
+     echo "unzip the MIPS TOOLCHAIN"
+diff --git a/tools/prepare_driver.sh b/tools/prepare_driver.sh
+new file mode 100755
+index 000000000..4e54022c5
+--- /dev/null
++++ b/tools/prepare_driver.sh
+@@ -0,0 +1,5 @@
++#!/bin/bash
++
++cd $1
++make INSTALL_MOD_PATH=$2 modules_install
++cd -

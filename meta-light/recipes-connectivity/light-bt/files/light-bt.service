@@ -1,0 +1,12 @@
+[Unit]
+Description=Light Bluetooth
+After=network.target
+ConditionPathIsDirectory=/sys/class/bluetooth
+
+[Service]
+Type=forking
+ExecStart=/etc/bt-init.sh start
+EecStartPost=bluetoothctl power on
+
+[Install]
+WantedBy=multi-user.target

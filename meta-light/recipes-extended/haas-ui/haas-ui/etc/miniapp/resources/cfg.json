@@ -1,0 +1,23 @@
+{
+	"screen": {
+		"width": 800,
+		"height": 480,
+		"xoffset": 0,
+		"yoffset": 0,
+		"tp_xoffset": 0,
+		"tp_yoffset": 0,
+		"direction": 0,
+		"fps_max": 60
+	},
+	"device": {
+		"fb": "/dev/fb0",
+		"mouse": "/dev/input/mouse0",
+		"draw_cursor": false,
+		"only_one_input": false
+	},
+	"linksdk": {
+		"one_device_one_secret": false,
+		"one_type_one_secret_pre_registration": false,
+		"one_type_one_secret_no_pre_registration": false
+	}
+}

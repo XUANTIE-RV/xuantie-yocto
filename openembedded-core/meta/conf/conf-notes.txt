@@ -5,7 +5,9 @@ You can now run 'bitbake <target>'
 
 Common targets are:
     core-image-minimal
-    thead-image-base
+    core-image-sato
+    meta-toolchain
+    meta-ide-support
 
 You can also run generated qemu images with a command like 'runqemu qemux86'.
 

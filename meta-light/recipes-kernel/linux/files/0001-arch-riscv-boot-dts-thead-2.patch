@@ -1,0 +1,216 @@
+From 0888d467fa11abc99ac110c1eb850aa9389957e5 Mon Sep 17 00:00:00 2001
+Date: Tue, 10 May 2022 20:53:36 +0800
+Subject: [PATCH] arch: riscv: boot: dts: thead drivers: regulator:
+
+changes as follow
+
+1)add individual regulator resource for ant-evt board
+2)add 600mv-800mv voltage point for ant-evt board
+3)modify apcpu-vddm volatage from 750mv to 800mv when cpu-speed ==
+300Mhz
+---
+ .../boot/dts/thead/light-val-ant-evt.dts      | 76 +++++++++++++++++--
+ drivers/regulator/light-regulator-aon.c       | 68 +++++++++++++++++
+ 2 files changed, 138 insertions(+), 6 deletions(-)
+
+diff --git a/arch/riscv/boot/dts/thead/light-val-ant-evt.dts b/arch/riscv/boot/dts/thead/light-val-ant-evt.dts
+index 592c99316f6a..2b52631c4154 100644
+--- a/arch/riscv/boot/dts/thead/light-val-ant-evt.dts
++++ b/arch/riscv/boot/dts/thead/light-val-ant-evt.dts
+@@ -389,7 +389,7 @@
+ 		};
+ 
+ 		aon_reg_dialog: light-dialog-reg {
+-			compatible = "thead,light-dialog-pmic";
++			compatible = "thead,light-dialog-pmic-ant";
+ 			status = "okay";
+ 
+ 			dvdd_cpu_reg: appcpu_dvdd {
+@@ -492,11 +492,6 @@
+ 				regulator-name = "soc_avdd28_scan_en";
+ 			};
+ 
+-			soc_vext_2v8_reg: soc_vext_2v8 {
+-				regulator-name = "soc_vext_2v8";
+-				regulator-boot-on;
+-				regulator-always-on;
+-			};
+ 		};
+ 
+ 		c910_cpufreq {
+@@ -1257,3 +1252,72 @@
+ &i2s3 {
+         status = "okay";
+ };
++
++&cpus {
++	c910_0: cpu@0 {
++		operating-points = <
++			/* kHz    uV */
++			300000	600000
++			800000	700000
++			1500000	800000
++			1848000	1000000
++		>;
++		light,dvddm-operating-points = <
++			/* kHz   uV */
++			300000	800000
++			800000	800000
++			1500000	800000
++			1848000	1000000
++		>;
++	};
++	c910_1: cpu@1 {
++		operating-points = <
++			/* kHz    uV */
++			300000	600000
++			800000	700000
++			1500000	800000
++			1848000	1000000
++		>;
++		light,dvddm-operating-points = <
++			/* kHz   uV */
++			300000	800000
++			800000	800000
++			1500000	800000
++			1848000	1000000
++		>;
++	};
++	c910_2: cpu@2 {
++
++		operating-points = <
++			/* kHz    uV */
++			300000	600000
++			800000	700000
++			1500000	800000
++			1848000	1000000
++		>;
++		light,dvddm-operating-points = <
++			/* kHz   uV */
++			300000	800000
++			800000	800000
++			1500000	800000
++			1848000	1000000
++		>;
++	};
++	c910_3: cpu@3 {
++
++		operating-points = <
++			/* kHz    uV */
++			300000	600000
++			800000	700000
++			1500000	800000
++			1848000	1000000
++		>;
++		light,dvddm-operating-points = <
++			/* kHz   uV */
++			300000	800000
++			800000	800000
++			1500000	800000
++			1848000	1000000
++		>;
++	};
++};
+diff --git a/drivers/regulator/light-regulator-aon.c b/drivers/regulator/light-regulator-aon.c
+index 8e205090434b..83ca3c665e3e 100644
+--- a/drivers/regulator/light-regulator-aon.c
++++ b/drivers/regulator/light-regulator-aon.c
+@@ -129,6 +129,8 @@ static const struct apcpu_vol_set apcpu_volts[] = {
+ 	APCPU_VOL_DEF(700000U,800000U),
+ 	/*1500Mhz*/
+ 	APCPU_VOL_DEF(800000U,800000U),
++	/*300Mhz for ant-evt*/
++	APCPU_VOL_DEF(600000U, 800000U),
+ 	/*1850Mhz*/
+ 	APCPU_VOL_DEF(1000000U,1000000U),
+ };
+@@ -408,6 +410,66 @@ static const struct regulator_ops apcpu_dvddm_ops = {
+ 	.owner = THIS_MODULE
+ 
+ /* regulator desc for dialog */
++static struct regulator_desc light_dialog_ant_regu_desc[] = {
++	/*cpu vdd vddm regulators, used to adjust vol dynamicaly */
++	{
++		BUCK_APCPU_DVDD(SOC_APCPU_DVDD_DVDDM, 300000, 10000, 1570000),
++	},
++	{
++		BUCK_APCPU_DVDDM(SOC_APCPU_DVDD_DVDDM, 300000, 10000, 1570000),
++	},
++
++	/*common regu ,no need to adjust vol dynamicaly */
++	{
++		REGU_DSC_DEF(SOC_DVDD18_AON,soc_dvdd18_aon),
++	},
++	{
++		REGU_DSC_DEF(SOC_AVDD33_USB3,soc_avdd33_usb3),
++	},
++	{
++		REGU_DSC_DEF(SOC_DVDD08_AON,soc_dvdd08_aon),
++	},
++	{
++		REGU_DSC_DEF(SOC_DVDD08_DDR,soc_dvdd08_ddr),
++	},
++	{
++		REGU_DSC_DEF(SOC_VDD_DDR_1V8,soc_vdd_ddr_1v8),
++	},
++	{
++		REGU_DSC_DEF(SOC_VDD_DDR_1V1,soc_vdd_ddr_1v1),
++	},
++	{
++		REGU_DSC_DEF(SOC_VDD_DDR_0V6,soc_vdd_ddr_0v6),
++	},
++	{
++		REGU_DSC_DEF(SOC_DVDD18_AP,soc_dvdd18_ap),
++	},
++	{
++		REGU_DSC_DEF(SOC_DVDD08_AP,soc_dvdd08_ap),
++	},
++	{
++		REGU_DSC_DEF(SOC_AVDD08_MIPI_HDMI,soc_avdd08_mipi_hdmi),
++	},
++	{
++		REGU_DSC_DEF(SOC_AVDD18_MIPI_HDMI,soc_avdd18_mipi_hdmi),
++	},
++	{
++		REGU_DSC_DEF(SOC_DVDD33_EMMC,soc_dvdd33_emmc),
++	},
++	{
++		REGU_DSC_DEF(SOC_DVDD18_EMMC,soc_dvdd18_emmc),
++	},
++	{
++		REGU_DSC_DEF(SOC_DOVDD18_SCAN,soc_dovdd18_scan),
++	},
++	{
++		REGU_DSC_DEF(SOC_DVDD12_SCAN,soc_dvdd12_scan),
++	},
++	{
++		REGU_DSC_DEF(SOC_AVDD28_SCAN_EN,soc_avdd28_scan_en),
++	},
++};
++
+ static struct regulator_desc light_dialog_regu_desc[] = {
+ 	/*cpu vdd vddm regulators, used to adjust vol dynamicaly */
+ 	{
+@@ -693,6 +755,11 @@ static const struct aon_regu_desc light_dialog_regus = {
+     .regu_num  = ARRAY_SIZE(light_dialog_regu_desc),
+ };
+ 
++static const struct aon_regu_desc light_dialog_ant_regus = {
++    .regu_desc = (struct regulator_desc*) &light_dialog_ant_regu_desc,
++    .regu_num  = ARRAY_SIZE(light_dialog_ant_regu_desc),
++};
++
+ static const struct aon_regu_desc light_ricoh_regus = {
+     .regu_desc = (struct regulator_desc*)&light_ricoh_regu_desc,
+     .regu_num  = ARRAY_SIZE(light_ricoh_regu_desc),
+@@ -755,6 +822,7 @@ static int light_aon_regulator_probe(struct platform_device *pdev)
+ }
+ 
+ static const struct of_device_id light_pmic_dev_id[] = {
++	{ .compatible = "thead,light-dialog-pmic-ant", .data = &light_dialog_ant_regus},
+ 	{ .compatible = "thead,light-dialog-pmic", .data = &light_dialog_regus},
+ 	{ .compatible = "thead,light-ricoh-pmic",  .data = &light_ricoh_regus},
+ 	{},
+-- 
+2.17.1
+

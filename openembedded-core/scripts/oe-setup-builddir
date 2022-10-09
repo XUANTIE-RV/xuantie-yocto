@@ -122,8 +122,38 @@ EOM
 #    unset SHOWYPDOC
 fi
 
-if [ -z "$OECORENOTESCONF" ]; then
-    OECORENOTESCONF="$OEROOT/meta/conf/conf-notes.txt"
-fi
-[ ! -r "$OECORENOTESCONF" ] || cat $OECORENOTESCONF
+# if [ -z "$OECORENOTESCONF" ]; then
+#     OECORENOTESCONF="$OEROOT/meta/conf/conf-notes.txt"
+# fi
+# [ ! -r "$OECORENOTESCONF" ] || cat $OECORENOTESCONF
 unset OECORENOTESCONF
+cat <<EOF
+
+### Shell environment set up for builds. ###
+
+You can now run 'bitbake <target>'
+
+Common targets are:
+EOF
+targets=`find $OEROOT/../meta-* -wholename '*/images/*.bb'`
+for i in $targets;do
+	printf "    %s\n" `basename $i | sed 's,\.bb$,,g'`
+done
+cat <<EOF
+
+machines:
+EOF
+machines=`find $OEROOT/../meta-* -wholename '*/conf/machine/*.conf'`
+for i in $machines;do
+	printf "    %s\n" `basename $i | sed 's,\.conf$,,g'`
+done
+
+cat <<EOF
+
+You can also run generated qemu images with a command like 'runqemu qemux86'.
+
+Other commonly useful commands are:
+ - 'devtool' and 'recipetool' handle common recipe tasks
+ - 'bitbake-layers' handles common layer tasks
+ - 'oe-pkgdata-util' handles common target package tasks
+EOF

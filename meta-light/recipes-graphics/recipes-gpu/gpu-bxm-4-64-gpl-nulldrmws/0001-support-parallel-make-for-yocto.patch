@@ -1,0 +1,21 @@
+From 83bf12da373cd4eb1426f1291fbf87e46e235c03 Mon Sep 17 00:00:00 2001
+Date: Tue, 1 Mar 2022 18:25:15 +0800
+Subject: [PATCH] support-parallel-make-for-yocto
+
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index c08dd78e8..a77f8cd5c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -74,7 +74,7 @@ info:
+ 
+ driver:
+ 	@echo $(BUILD_LOG_START)
+-	make -C $(DRIVERDIR)/build/linux/thead_linux CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) BUILD=$(BUILD) RGX_BVNC=$(RGX_BVNC)
++	make -j 64 -C $(DRIVERDIR)/build/linux/thead_linux CROSS_COMPILE=$(CROSS_COMPILE) ARCH=$(ARCH) BUILD=$(BUILD) RGX_BVNC=$(RGX_BVNC)
+ 	@echo $(BUILD_LOG_END)
+ 
+ clean_driver:

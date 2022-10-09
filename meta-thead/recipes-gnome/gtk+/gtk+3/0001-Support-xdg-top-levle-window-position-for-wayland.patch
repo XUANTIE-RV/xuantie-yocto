@@ -1,0 +1,87 @@
+From b9de35673026d0751b5834402e148b442656dc43 Mon Sep 17 00:00:00 2001
+Date: Wed, 15 Jun 2022 09:46:35 +0800
+Subject: [PATCH] Support xdg top levle window position for wayland.
+
+---
+ gdk/wayland/gdkwindow-wayland.c | 37 +++++++++++++++++++++++++++++----
+ 1 file changed, 33 insertions(+), 4 deletions(-)
+
+diff --git a/gdk/wayland/gdkwindow-wayland.c b/gdk/wayland/gdkwindow-wayland.c
+index c91b882c9d..979fd451ab 100644
+--- a/gdk/wayland/gdkwindow-wayland.c
++++ b/gdk/wayland/gdkwindow-wayland.c
+@@ -162,6 +162,8 @@ struct _GdkWindowImplWayland
+ 
+   int subsurface_x;
+   int subsurface_y;
++  int topsurface_x;
++  int topsurface_y;
+ 
+   gchar *title;
+ 
+@@ -1330,8 +1332,8 @@ gdk_wayland_window_get_window_geometry (GdkWindow    *window,
+   GdkWindowImplWayland *impl = GDK_WINDOW_IMPL_WAYLAND (window->impl);
+ 
+   *geometry = (GdkRectangle) {
+-    .x = impl->margin_left,
+-    .y = impl->margin_top,
++    .x = impl->topsurface_x,
++    .y = impl->topsurface_y,
+     .width = calculate_width_without_margin (window, window->width),
+     .height = calculate_height_without_margin (window, window->height)
+   };
+@@ -1357,8 +1359,8 @@ gdk_wayland_window_sync_margin (GdkWindow *window)
+     {
+     case GDK_WAYLAND_SHELL_VARIANT_XDG_SHELL:
+       xdg_surface_set_window_geometry (impl->display_server.xdg_surface,
+-                                       geometry.x,
+-                                       geometry.y,
++                                       impl->topsurface_x,
++                                       impl->topsurface_y,
+                                        geometry.width,
+                                        geometry.height);
+       break;
+@@ -1537,6 +1539,28 @@ gdk_wayland_window_set_subsurface_position (GdkWindow *window,
+   gdk_window_request_transient_parent_commit (window);
+ }
+ 
++static void
++gdk_wayland_window_set_tlsurface_position (GdkWindow *window,
++                                            int        x,
++                                            int        y,
++                                            int        w,
++                                            int        h)
++{
++  GdkWindowImplWayland *impl;
++
++  impl = GDK_WINDOW_IMPL_WAYLAND (window->impl);
++
++  if (!impl->display_server.xdg_surface)
++    return;
++
++  xdg_surface_set_window_geometry(impl->display_server.xdg_surface, x, y, w, h);
++
++  impl->topsurface_x = x;
++  impl->topsurface_y = y;
++
++  gdk_window_request_transient_parent_commit (window);
++}
++
+ static void
+ gdk_wayland_window_create_subsurface (GdkWindow *window)
+ {
+@@ -3476,6 +3500,11 @@ gdk_window_wayland_move_resize (GdkWindow *window,
+                                                           y + window->abs_y);
+             }
+         }
++      else {
++          gdk_wayland_window_set_tlsurface_position(window,
++                                                    x + window->abs_x,
++                                                    y + window->abs_y, width, height);
++      }
+     }
+ 
+   if (window->state & (GDK_WINDOW_STATE_FULLSCREEN |
+-- 
+2.17.1
+

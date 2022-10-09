@@ -1,0 +1,11 @@
+[Unit]
+Description=Kernel crash dump capture service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/default/kdump-conf
+ExecStart=/usr/bin/kdump-tools
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

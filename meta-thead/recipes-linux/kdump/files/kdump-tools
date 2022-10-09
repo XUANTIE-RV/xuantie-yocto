@@ -1,0 +1,71 @@
+#! /bin/sh
+
+VMCORE_FILE=/proc/vmcore
+KEXEC=/usr/bin/kexec
+VMCORE_DMESG=/usr/bin/vmcore-dmesg
+
+sys_kexec_crash=/sys/kernel/kexec_crash_loaded
+crash_post_notify=/sys/module/kernel/parameters/crash_kexec_post_notifiers
+
+# Global Setup
+KDUMP_DEFAULTS=/etc/default/kdump-conf
+[ -r $KDUMP_DEFAULTS ] && . $KDUMP_DEFAULTS
+
+[ $USE_KDUMP -ne 0 ] || exit 0;
+
+if [ ! -f $KEXEC ] || [ ! -f $KDUMP_KERNEL ]; then
+	exit 1;
+fi
+
+# Set up defaults
+KDUMP_NUM_DUMPS=${KDUMP_NUM_DUMPS:=0}
+KDUMP_COREDIR=${KDUMP_COREDIR:=/var/crash}
+KDUMP_SYSCTL=${KDUMP_SYSCTL:="kernel.panic_on_oops=1"}
+[ -d $KDUMP_COREDIR ] || mkdir -p $KDUMP_COREDIR ;
+
+# If we have a /proc/vmcore, then we just kdump'ed
+if [ -e $VMCORE_FILE -a -s $VMCORE_FILE ]; then
+	num_dumps=$(ls -1dv $KDUMP_COREDIR/vmcore* | wc -l)
+	if [ $KDUMP_NUM_DUMPS -ne 0 -a $num_dumps -ge $KDUMP_NUM_DUMPS ]; then
+		purge_num=$((num_dumps - KDUMP_NUM_DUMPS + 1))
+		purge_dir=$(ls -1dv $KDUMP_COREDIR/vmcore* | head -n $purge_num | tr "\n" " ")
+		rm -rf $purge_dir
+		purge_dir=$(ls -1dv $KDUMP_COREDIR/dmesg* | head -n $purge_num | tr "\n" " ")
+		rm -rf $purge_dir
+	fi
+
+	echo -n "Starting dump vmcore... "
+	KDUMP_STAMP=`date +"%Y%m%d%H%M"`
+	if [ -f $VMCORE_DMESG -a $KDUMP_DUMP_DMESG -eq 1 ]; then
+		$VMCORE_DMESG $VMCORE_FILE > $KDUMP_COREDIR/dmesg.$KDUMP_STAMP
+	fi
+	tar zcvf $KDUMP_COREDIR/vmcore.$KDUMP_STAMP.tar.gz $VMCORE_FILE 
+	if [ $? -ne 0 -a -n "$KDUMP_FAIL_CMD" ] ; then
+		date -R >> $KDUMP_COREDIR/failed_log
+		echo "save vmcore failed" >> $KDUMP_COREDIR/failed_log
+		$KDUMP_FAIL_CMD ;
+	else
+		date -R ;
+		reboot -f ;
+	fi
+# Else, we've just booted and need to load the kdump kernel
+else
+	if [ -n "$KDUMP_SYSCTL" ]; then
+		sysctl -w $KDUMP_SYSCTL
+	fi
+
+	if [ $CRASH_POST_NOTIFIERS -eq 0 ]; then
+		echo 0 > $crash_post_notify
+	fi
+
+	echo -n "Starting load crashkernel..."
+	$KEXEC -p $KDUMP_KERNEL --reuse-cmdline 
+
+	if [ -e $sys_kexec_crash -a `cat $sys_kexec_crash` -eq 1 ] ; then
+		echo "done"
+	else
+		echo "load failed";
+	fi
+fi
+
+exit 0

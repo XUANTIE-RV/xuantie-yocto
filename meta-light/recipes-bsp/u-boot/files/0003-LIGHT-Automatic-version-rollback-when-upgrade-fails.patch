@@ -1,0 +1,170 @@
+From 0bed3750d8ab2827e32cf7cb65d39241c6fc9e30 Mon Sep 17 00:00:00 2001
+Date: Thu, 7 Jul 2022 17:30:10 +0800
+Subject: [PATCH] LIGHT: Automatic version rollback when upgrade fails
+
+---
+ board/thead/light-c910/Makefile           |   1 +
+ board/thead/light-c910/version_rollback.c | 100 ++++++++++++++++++++++
+ include/configs/light-c910.h              |   8 +-
+ 3 files changed, 105 insertions(+), 4 deletions(-)
+ create mode 100644 board/thead/light-c910/version_rollback.c
+
+diff --git a/board/thead/light-c910/Makefile b/board/thead/light-c910/Makefile
+index 128165a285..0614ecac89 100644
+--- a/board/thead/light-c910/Makefile
++++ b/board/thead/light-c910/Makefile
+@@ -65,4 +65,5 @@ endif
+ 
+ obj-y += light-sv/pll_io_test.o
+ obj-y += light-sv/adc_test.o
++obj-y += version_rollback.o
+ endif
+diff --git a/board/thead/light-c910/version_rollback.c b/board/thead/light-c910/version_rollback.c
+new file mode 100644
+index 0000000000..e20ca3bef0
+--- /dev/null
++++ b/board/thead/light-c910/version_rollback.c
+@@ -0,0 +1,100 @@
++/*
++ * Copyright (C) 2017-2020 Alibaba Group Holding Limited
++ *
++ * SPDX-License-Identifier: GPL-2.0+
++ */
++
++#include <common.h>
++#include <command.h>
++#include <env.h>
++
++
++static int rollback_part(const char *partition, const char *partition_alt)
++{
++	char *p;
++	int ret;
++	int tmp;
++
++	p = env_get(partition_alt);
++	if (p == NULL) {
++		return 0;
++	}
++	tmp = 1;
++	printf("Rollback partition %s to %s\n", partition, p);
++	ret = env_set(partition, p);
++	if (ret) {
++		printf("Failed to set env %s %s: ret = %d\n", partition, p, ret);
++		tmp = -1;
++	}
++	ret = env_set(partition_alt, NULL);
++	if (ret) {
++		printf("Failed to del env %s: ret = %d\n", partition_alt, ret);
++		tmp = -1;
++	}
++	return tmp;
++}
++
++static int upgrade_rollback_check(void)
++{
++	unsigned long bootlimit;
++	unsigned long bootcount;
++	char *p;
++	char buf[20];
++	int ret;
++	int save;
++
++	p = env_get("bootlimit");
++	if (p == NULL) {
++		return -1;
++	}
++	if (!strcmp(p, "0")) {
++		return 0;
++	} else {
++		if (strict_strtoul(p, 16, &bootlimit) < 0) {
++			printf("Failed to strict_strtoul bootlimit\n");
++			return -1;
++		}
++	}
++	p = env_get("bootcount");
++	if (p == NULL) {
++		bootcount = 0;
++	} else if (strict_strtoul(p, 16, &bootcount) < 0) {
++		bootcount = 0;
++	}
++	save = 0;
++	bootcount++;
++	if (bootcount == bootlimit + 1) {
++		save = 1;
++		printf("Failed to start for %lu times, will rollback!\n", bootlimit);
++		rollback_part("boot_partition", "boot_partition_alt");
++		rollback_part("root_partition", "root_partition_alt");
++	} else if (bootcount < bootlimit + 1) {
++		save = 1;
++	}
++	if (save) {
++		snprintf(buf, sizeof(buf), "%lu", bootcount);
++		ret = env_set("bootcount", buf);
++		if (ret) {
++			printf("Failed to set env bootcount %s: ret = %d\n", buf, ret);
++		}
++		ret = env_save();
++		if (ret) {
++			printf("Failed to env_save: ret = %d\n", ret);
++		}
++	}
++	
++	return 0;
++}
++
++static int do_rollback(cmd_tbl_t *cmdtp, int flag, int argc,
++			char * const argv[])
++{
++    upgrade_rollback_check();
++	return CMD_RET_SUCCESS;
++}
++
++U_BOOT_CMD(
++	rollback, 1, 1,	do_rollback,
++	"Automatic rollback if upgrade fails",
++	NULL
++);
+diff --git a/include/configs/light-c910.h b/include/configs/light-c910.h
+index 9ba7f7d9f0..7ae0e5e773 100644
+--- a/include/configs/light-c910.h
++++ b/include/configs/light-c910.h
+@@ -218,7 +218,7 @@
+ 	"mmcdev=0\0" \
+ 	"boot_partition=bootA\0" \
+ 	"root_partition=rootfsA\0" \
+-	"findpart=if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
++	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
+ 	"fdt_file=light-b-product.dtb\0" \
+ 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
+ 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
+@@ -246,7 +246,7 @@
+ 	"mmcdev=0\0" \
+ 	"boot_partition=bootA\0" \
+ 	"root_partition=rootfsA\0" \
+-	"findpart=if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
++	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
+ 	"fdt_file=light-ant-evt.dtb\0" \
+ 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
+ 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
+@@ -274,7 +274,7 @@
+ 	"mmcdev=0\0" \
+ 	"boot_partition=bootA\0" \
+ 	"root_partition=rootfsA\0" \
+-	"findpart=if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
++	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
+ 	"fdt_file=light-ant-discrete.dtb\0" \
+ 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
+ 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
+@@ -302,7 +302,7 @@
+ 	"mmcdev=0\0" \
+ 	"boot_partition=bootA\0" \
+ 	"root_partition=rootfsA\0" \
+-	"findpart=if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
++	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
+ 	"fdt_file=light-a-val.dtb\0" \
+ 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
+ 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
+-- 
+2.17.1
+

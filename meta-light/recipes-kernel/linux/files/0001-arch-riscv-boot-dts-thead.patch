@@ -1,0 +1,26 @@
+From b43c9d470ec89c7e9ac0c013f484ed79780302e3 Mon Sep 17 00:00:00 2001
+Date: Sat, 7 May 2022 18:49:26 +0800
+Subject: [PATCH] arch: riscv: boot: dts: thead:
+
+modify pdn pin-index for cam-sensor
+
+---
+ arch/riscv/boot/dts/thead/light-val-ant-evt.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/riscv/boot/dts/thead/light-val-ant-evt.dts b/arch/riscv/boot/dts/thead/light-val-ant-evt.dts
+index 8bd7cb1c5e4e..fa4ac3a72353 100644
+--- a/arch/riscv/boot/dts/thead/light-val-ant-evt.dts
++++ b/arch/riscv/boot/dts/thead/light-val-ant-evt.dts
+@@ -973,7 +973,7 @@
+     sensor_regulators = "DOVDD18_IR", "DVDD12_IR", "AVDD25_IR";
+     sensor_regulator_timing_us = <100 50 0>;
+     i2c_addr = /bits/ 8 <0x31>;
+-    sensor_pdn = <&gpio1_porta 21 0>; //powerdown pin / shutdown pin 
++    sensor_pdn = <&gpio1_porta 28 0>; //powerdown pin / shutdown pin 
+     sensor_rst = <&gpio1_porta 24 0>;
+     DOVDD18_IR-supply = <&soc_dovdd18_ir_reg>;
+     DVDD12_IR-supply = <&soc_dvdd12_ir_reg>;
+-- 
+2.17.1
+

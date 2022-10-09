@@ -40,7 +40,6 @@ bitbake-layers add-layer ../meta-openembedded/meta-oe
 bitbake-layers add-layer ../meta-openembedded/meta-python
 bitbake-layers add-layer ../meta-openembedded/meta-multimedia
 bitbake-layers add-layer ../meta-openembedded/meta-networking
-bitbake-layers add-layer ../meta-external-toolchain
 bitbake-layers add-layer ../meta-riscv
 
 # fix the configuration
@@ -73,7 +72,6 @@ DISTRO_FEATURES_append = " largefile opengl ptest multiarch wayland pam  systemd
 DISTRO_FEATURES_BACKFILL_CONSIDERED += "sysvinit"
 VIRTUAL-RUNTIME_init_manager = "systemd"
 HOSTTOOLS_NONFATAL_append = " ssh"
-DISTRO_FEATURES_BACKFILL_CONSIDERED += "gobject-introspection-data"
 EOF
 
 echo "To build an image run"

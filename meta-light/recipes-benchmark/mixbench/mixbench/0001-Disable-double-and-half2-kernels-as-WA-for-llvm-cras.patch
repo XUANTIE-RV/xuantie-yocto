@@ -1,0 +1,40 @@
+From f278f635b54c6ffe9e84902f83c77a627d84b85f Mon Sep 17 00:00:00 2001
+Date: Wed, 1 Dec 2021 17:21:06 +0800
+Subject: [PATCH] Disable double and half2 kernels as WA for llvm crash.
+
+---
+ mixbench-opencl/mix_kernels_ocl.cpp    | 3 +++
+ mixbench-opencl/mix_kernels_ocl_ro.cpp | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/mixbench-opencl/mix_kernels_ocl.cpp b/mixbench-opencl/mix_kernels_ocl.cpp
+index 6f038f3..c131afb 100644
+--- a/mixbench-opencl/mix_kernels_ocl.cpp
++++ b/mixbench-opencl/mix_kernels_ocl.cpp
+@@ -242,6 +242,9 @@ extern "C" void mixbenchGPU(cl_device_id dev_id, double *c, long size, bool bloc
+ 	if( !enable_hp )
+ 		printf("Warning:                Half precision computations are not supported\n");
+ 
++        enable_dp = 0;
++        enable_hp = 0;
++
+ 	cl_context_properties ctxProps[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)p_id, 0 };
+ 
+ 	cl_int errno;
+diff --git a/mixbench-opencl/mix_kernels_ocl_ro.cpp b/mixbench-opencl/mix_kernels_ocl_ro.cpp
+index 36e79fb..c070780 100644
+--- a/mixbench-opencl/mix_kernels_ocl_ro.cpp
++++ b/mixbench-opencl/mix_kernels_ocl_ro.cpp
+@@ -231,6 +231,9 @@ extern "C" void mixbenchGPU(cl_device_id dev_id, double *c, long size, bool bloc
+ 	if( !enable_hp )
+ 		printf("Warning:                Half precision computations are not supported\n");
+ 
++        enable_hp = 0;
++        enable_dp = 0;
++
+ 	cl_context_properties ctxProps[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)p_id, 0 };
+ 
+ 	cl_int errno;
+-- 
+2.17.1
+

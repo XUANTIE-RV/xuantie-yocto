@@ -1,0 +1,31 @@
+From 1ccfefe43a6275405679f923ec46a5a42b26a5a5 Mon Sep 17 00:00:00 2001
+Date: Mon, 23 Aug 2021 16:27:24 +0800
+Subject: [PATCH] mozjs: a workaround for gnome-shell hang.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+For unknown reason, realloc in mozjs' destructor always
+meet “invalid old size”, but not find any places in code
+related to the updating of the base_ pointer. so we do
+the WA first and find the root cause later.
+---
+ js/src/vm/RegExpObject.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/js/src/vm/RegExpObject.cpp b/js/src/vm/RegExpObject.cpp
+index 6f791fc69..593b4175c 100644
+--- a/js/src/vm/RegExpObject.cpp
++++ b/js/src/vm/RegExpObject.cpp
+@@ -938,7 +938,7 @@ void RegExpShared::finalize(FreeOp* fop) {
+   size_t length = input->length();
+ 
+   // Reset the Irregexp backtrack stack if it grows during execution.
+-  irregexp::RegExpStackScope stackScope(cx);
++  //irregexp::RegExpStackScope stackScope(cx);
+ 
+   if (re->canStringMatch) {
+     MOZ_ASSERT(re->pairCount() == 1);
+-- 
+2.17.1
+

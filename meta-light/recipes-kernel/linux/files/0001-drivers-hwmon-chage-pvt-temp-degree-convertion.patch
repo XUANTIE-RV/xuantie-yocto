@@ -1,0 +1,57 @@
+From 1c0d8e05f61027a94bd31d033ebd2aa0475e62c9 Mon Sep 17 00:00:00 2001
+Date: Fri, 13 May 2022 15:50:26 +0800
+Subject: [PATCH] drivers: hwmon: chage pvt-temp degree convertion
+
+change as follow
+
+light use following degree conversion, temp value in degress
+   /* use Mode1 output conversion(calibrated)
+     * temp = A + B * Eqbs + C * Fclk
+     * where:
+     * Eqbs = (raw_data)/cal5 - 0.5
+     * Fclk = sensor synth clk,unit in MHZ
+     * A=42.74
+     * cal5= 4094
+     * B = 0.22
+     * C = -0.16
+     * *****************************************/
+
+---
+ drivers/hwmon/mr75203.c | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hwmon/mr75203.c b/drivers/hwmon/mr75203.c
+index 55096c5a4add..1fa01b599180 100644
+--- a/drivers/hwmon/mr75203.c
++++ b/drivers/hwmon/mr75203.c
+@@ -165,10 +165,26 @@ static int pvt_read_temp(struct device *dev, u32 attr, int channel, long *val)
+ 		 * Convert the register value to
+ 		 * degrees centigrade temperature
+ 		 */
++#if 0
+ 		tmp = nbs * PVT_H_CONST;
+ 		do_div(tmp, PVT_CAL5_CONST);
+ 		*val = tmp - PVT_G_CONST - pvt->ip_freq;
+-
++#else
++    /* use Mode1 output conversion(calibrated)
++     * temp = A + B * Eqbs + C * Fclk
++     * where:
++     * Eqbs = (raw_data)/cal5 - 0.5
++     * Fclk = sensor synth clk,unit in MHZ
++     * A=42.74
++     * cal5= 4094
++     * B = 0.22
++     * C = -0.16
++     * *****************************************/
++
++		tmp = nbs*1000;
++		do_div(tmp, 4094);
++		*val = 42740 + 220 * (tmp -500) -160*pvt->ip_freq/100;
++#endif
+ 		return 0;
+ 	default:
+ 		return -EOPNOTSUPP;
+-- 
+2.17.1
+
