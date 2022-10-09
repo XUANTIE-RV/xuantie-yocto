@@ -16,7 +16,11 @@ DEPENDS += " \
 "
 inherit pkgconfig
 
+<<<<<<< HEAD
 SRC_URI = "git://git@github.com/T-head-Semi/gpu_bxm_4_64-kernel.git;branch=master;protocol=http \
+=======
+SRC_URI = "git://git@gitee.com/thead-yocto/gpu_bxm_4_64-kernel.git;branch=master;protocol=http \
+>>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
            file://.param \
            file://0001-delete-um-for-yocto.patch \
            file://0001-support-parallel-make-for-yocto.patch \

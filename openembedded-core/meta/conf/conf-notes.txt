@@ -5,9 +5,19 @@ You can now run 'bitbake <target>'
 
 Common targets are:
     core-image-minimal
+<<<<<<< HEAD
     core-image-sato
     meta-toolchain
     meta-ide-support
+=======
+<<<<<<< HEAD
+    thead-image-base
+=======
+    core-image-sato
+    meta-toolchain
+    meta-ide-support
+>>>>>>> Linux_SDK_V0.9.5
+>>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
 
 You can also run generated qemu images with a command like 'runqemu qemux86'.
 

@@ -40,6 +40,13 @@ bitbake-layers add-layer ../meta-openembedded/meta-oe
 bitbake-layers add-layer ../meta-openembedded/meta-python
 bitbake-layers add-layer ../meta-openembedded/meta-multimedia
 bitbake-layers add-layer ../meta-openembedded/meta-networking
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+bitbake-layers add-layer ../meta-external-toolchain
+=======
+>>>>>>> Linux_SDK_V0.9.5
+>>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
 bitbake-layers add-layer ../meta-riscv
 
 # fix the configuration
@@ -72,6 +79,13 @@ DISTRO_FEATURES_append = " largefile opengl ptest multiarch wayland pam  systemd
 DISTRO_FEATURES_BACKFILL_CONSIDERED += "sysvinit"
 VIRTUAL-RUNTIME_init_manager = "systemd"
 HOSTTOOLS_NONFATAL_append = " ssh"
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+DISTRO_FEATURES_BACKFILL_CONSIDERED += "gobject-introspection-data"
+=======
+>>>>>>> Linux_SDK_V0.9.5
+>>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
 EOF
 
 echo "To build an image run"

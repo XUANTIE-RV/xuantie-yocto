@@ -5,7 +5,11 @@ COMPATIBLE_MACHINE = "light-*"
 DEPENDS = "linux-thead"
 
 SRC_URI = " \
+<<<<<<< HEAD
             git://git@github.com/T-head-Semi/vi-kernel.git;branch=master;protocol=http \
+=======
+            git://git@gitee.com/thead-yocto/vi-kernel.git;branch=master;protocol=http \
+>>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
             file://vi-kernel.service \
             file://98-vi-kernel.preset\
             file://0001-fix-isp-ry-not-free-cma-memroy-issue.patch\

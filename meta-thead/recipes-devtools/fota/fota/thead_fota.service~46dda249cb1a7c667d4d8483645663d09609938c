@@ -1,0 +1,12 @@
+[Unit]
+Description=haasui_app Service
+After=voice.service
+#DefaultDependencies=no
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/fota-service
+ExecStop=/usr/bin/killall -9 fota-service
+
+[Install]
+WantedBy=multi-user.target

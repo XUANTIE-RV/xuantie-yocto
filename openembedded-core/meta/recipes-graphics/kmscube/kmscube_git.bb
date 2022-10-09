@@ -2,8 +2,17 @@ DESCRIPTION = "Demo application to showcase 3D graphics using kms and gbm"
 HOMEPAGE = "https://cgit.freedesktop.org/mesa/kmscube/"
 LICENSE = "MIT"
 SECTION = "graphics"
+<<<<<<< HEAD
 #DEPENDS = "virtual/libgles2 virtual/egl libdrm"
 DEPENDS = "mesa libdrm"
+=======
+<<<<<<< HEAD
+DEPENDS = "virtual/libgles2 virtual/egl libdrm"
+=======
+#DEPENDS = "virtual/libgles2 virtual/egl libdrm"
+DEPENDS = "mesa libdrm"
+>>>>>>> Linux_SDK_V0.9.5
+>>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
 
 LIC_FILES_CHKSUM = "file://kmscube.c;beginline=1;endline=23;md5=8b309d4ee67b7315ff7381270dd631fb"
 
