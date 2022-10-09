@@ -5,11 +5,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 COMPATIBLE_MACHINE = "light-*"
 
 SRC_URI = " \
-<<<<<<< HEAD
             git://git@github.com/T-head-Semi/vpu-vc8000e-kernel.git;branch=master;protocol=http \
-=======
-            git://git@gitee.com/thead-yocto/vpu-vc8000e-kernel.git;branch=master;protocol=http \
->>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
           "
 
 THEAD_BSP_TAG ?= "${AUTOREV}"

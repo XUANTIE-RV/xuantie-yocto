@@ -7,16 +7,11 @@ DEPENDS = " openssl cmake-native python3 zlib boost linux-thead vi-bt video-memo
 RDEPENDS_${PN} = "video-memory"
 
 SRC_URI = " \
-<<<<<<< HEAD
             git://git@github.com/T-head-Semi/xtensa_dsp.git;branch=master;protocol=http \
-=======
-            git://git@gitee.com/thead-yocto/xtensa_dsp.git;branch=master;protocol=http \
->>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
             file://xtensa-dsp.service \
             file://98-xtensa-dsp.preset\
           "
 SRC_URI_light-fm-bsp-v1.0.6 = " \
-<<<<<<< HEAD
             git://git@github.com/T-head-Semi/xtensa_dsp.git;branch=master;protocol=http \
             "
 SRC_URI_light-fm-b-bsp-v1.0.6 = " \
@@ -24,25 +19,12 @@ SRC_URI_light-fm-b-bsp-v1.0.6 = " \
        "
 SRC_URI_light-fm-a-linux = " \
             git://git@github.com/T-head-Semi/xtensa_dsp.git;branch=master;protocol=http \
-=======
-            git://git@gitee.com/thead-yocto/xtensa_dsp.git;branch=master;protocol=http \
-            "
-SRC_URI_light-fm-b-bsp-v1.0.6 = " \
-            git://git@gitee.com/thead-yocto/xtensa_dsp.git;branch=master;protocol=http \
-       "
-SRC_URI_light-fm-a-linux = " \
-            git://git@gitee.com/thead-yocto/xtensa_dsp.git;branch=master;protocol=http \
->>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
             file://xtensa-dsp.service \
             file://98-xtensa-dsp.preset\
        "
 
 SRC_URI_light-fm-b-linux = " \
-<<<<<<< HEAD
             git://git@github.com/T-head-Semi/xtensa_dsp.git;branch=master;protocol=http \
-=======
-            git://git@gitee.com/thead-yocto/xtensa_dsp.git;branch=master;protocol=http \
->>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
             file://xtensa-dsp.service \
             file://98-xtensa-dsp.preset\
        "

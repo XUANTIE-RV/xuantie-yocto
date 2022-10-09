@@ -122,26 +122,11 @@ EOM
 #    unset SHOWYPDOC
 fi
 
-<<<<<<< HEAD
 # if [ -z "$OECORENOTESCONF" ]; then
 #     OECORENOTESCONF="$OEROOT/meta/conf/conf-notes.txt"
 # fi
 # [ ! -r "$OECORENOTESCONF" ] || cat $OECORENOTESCONF
 unset OECORENOTESCONF
-=======
-<<<<<<< HEAD
-if [ -z "$OECORENOTESCONF" ]; then
-    OECORENOTESCONF="$OEROOT/meta/conf/conf-notes.txt"
-fi
-[ ! -r "$OECORENOTESCONF" ] || cat $OECORENOTESCONF
-unset OECORENOTESCONF
-=======
-# if [ -z "$OECORENOTESCONF" ]; then
-#     OECORENOTESCONF="$OEROOT/meta/conf/conf-notes.txt"
-# fi
-# [ ! -r "$OECORENOTESCONF" ] || cat $OECORENOTESCONF
-unset OECORENOTESCONF
->>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
 cat <<EOF
 
 ### Shell environment set up for builds. ###
@@ -172,7 +157,3 @@ Other commonly useful commands are:
  - 'bitbake-layers' handles common layer tasks
  - 'oe-pkgdata-util' handles common target package tasks
 EOF
-<<<<<<< HEAD
-=======
->>>>>>> Linux_SDK_V0.9.5
->>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c

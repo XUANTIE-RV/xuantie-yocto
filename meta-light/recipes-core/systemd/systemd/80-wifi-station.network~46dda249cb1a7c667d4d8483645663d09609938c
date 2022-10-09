@@ -1,9 +1,0 @@
-[Match]
-Name=wlan*
-WLANInterfaceType=station
-
-[Network]
-DHCP=yes
-
-[DHCP]
-RouteMetric=20

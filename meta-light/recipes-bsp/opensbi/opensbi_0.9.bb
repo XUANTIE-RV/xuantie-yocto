@@ -7,11 +7,7 @@ DEPENDS = "e2fsprogs-native"
 COMPATIBLE_MACHINE = "light-*"
 
 SRC_URI = " \
-<<<<<<< HEAD
             git://git@github.com/T-head-Semi/opensbi.git;branch=th1520;protocol=http \
-=======
-            git://git@gitee.com/thead-yocto/opensbi.git;branch=master;protocol=http \
->>>>>>> 46dda249cb1a7c667d4d8483645663d09609938c
             file://light_aon_fpga.bin;md5=eb0b2fc3765b2a8771b53915487d8a75 \
             file://light_aon_fpga.elf;md5=09dab875b6bbbbde6b2eeef126f11c8e \
             file://light_c906_audio.bin;md5=d11d1c42e6cbe432279286eac1eae940 \
