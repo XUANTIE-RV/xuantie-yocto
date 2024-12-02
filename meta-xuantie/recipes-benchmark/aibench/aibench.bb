@@ -4,7 +4,7 @@ LICENSE = "CLOSED"
 SRC_URI = "git://git@gitee.com/xuantie-yocto/xtai-benchmark.git;branch=1.0;protocol=ssh;name=xtai-benchmark"
 
 XUANTIE_LINUX_TAG ?= "${AUTOREV}"
-SRCREV = "${XUANTIE_LINUX_TAG}"
+SRCREV = "b1f182d9c6f3621116fe12b81e13bf1e47105fb3"
 PV = "1.0"
 S = "${WORKDIR}/git"
 

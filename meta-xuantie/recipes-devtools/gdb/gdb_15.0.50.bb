@@ -6,7 +6,7 @@ DEPENDS = "expat mpfr zlib ncurses virtual/libiconv bison-native"
 
 SRC_URI = "git://git@gitee.com/xuantie-yocto/gdb-xuantie-private.git;branch=1.0;protocol=ssh"
 XUANTIE_LINUX_TAG ?= "${AUTOREV}"
-SRCREV = "${XUANTIE_LINUX_TAG}"
+SRCREV = "892dd7338ac1ea5fc55437f4851b7cf477bf58ca"
 
 S:riscv32 = "${WORKDIR}/git/gdb_prebuilt/gdb-xuantie-private_15.0.50-r0_riscv32/usr"
 S:riscv64 = "${WORKDIR}/git/gdb_prebuilt/gdb-xuantie-private_15.0.50-r0_riscv64/usr"

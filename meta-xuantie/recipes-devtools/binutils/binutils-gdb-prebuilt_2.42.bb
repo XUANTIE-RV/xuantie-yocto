@@ -2,7 +2,7 @@ LICENSE = "CLOSED"
 DEPENDS += "zlib perl-native"
 
 XUANTIE_LINUX_TAG ?= "${AUTOREV}"
-SRCREV = "${XUANTIE_LINUX_TAG}"
+SRCREV = "ca98d362a6ec40da2867bd00509c538424bb6c6e"
 INSANE_SKIP:${PN} = "debug-files file-rdeps already-stripped textrel staticdev dev-so"
 
 SRC_URI = "git://git@gitee.com/xuantie-yocto/binutils-gdb-prebuilt.git;branch=1.0;protocol=ssh"
