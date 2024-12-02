@@ -4,7 +4,7 @@ LICENSE = "MIT"
 require xuantie-image-minimal.bb
 
 #testing basic tools
-IMAGE_INSTALL += " glibc-external-utils time unzip ldd binutils-gdb-prebuilt file procps"
+IMAGE_INSTALL += " glibc-external-utils time unzip ldd binutils file procps"
 
 #buildroot lite
 IMAGE_INSTALL += " hello hexedit memtool phytool os-release "

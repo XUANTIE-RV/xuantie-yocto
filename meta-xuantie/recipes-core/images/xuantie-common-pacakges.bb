@@ -12,7 +12,7 @@ RDEPENDS:${PN} += " \
     autoconf \
     automake \
     bc \
-    binutils-gdb-prebuilt \
+    binutils \
     bison \
     cmake \
     coreutils \
