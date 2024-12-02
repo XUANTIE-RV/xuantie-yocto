@@ -190,7 +190,7 @@ fi
 
 if [ ${params_array["opensbi_ver"]} == "0.9" ] && \
      ( [ ${params_array["kernel_ver"]} == "5.10" ] || \
-       [ ${params_array["kernel_ver"]} == "5.10@c906fdv" ] \
+       [ ${params_array["kernel_ver"]} == "5.10@c906fdv" ] || \
        [ ${params_array["kernel_ver"]} == "5.10@c908v" ] \
      ); then
 	gdb_control_array["opensbi_0_9_with_kernel_5_10"]=1
