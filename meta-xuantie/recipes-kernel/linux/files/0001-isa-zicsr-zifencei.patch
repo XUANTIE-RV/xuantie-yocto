@@ -1,0 +1,40 @@
+From e95eb1daf994c33f3e58b2b09955a4d98584149b Mon Sep 17 00:00:00 2001
+From: "Chen Pei" <cp0613@linux.alibaba.com>
+Date: Tue, 10 Sep 2024 20:44:12 +0800
+Subject: [PATCH] riscv:build: Fix build with gcc-14
+
+Signed-off-by: Chen Pei <cp0613@linux.alibaba.com>
+---
+ arch/riscv/include/asm/csr.h | 2 +-
+ arch/riscv/kernel/vector.S   | 2 +-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/riscv/include/asm/csr.h b/arch/riscv/include/asm/csr.h
+index 06a90ba24..151329da8 100644
+--- a/arch/riscv/include/asm/csr.h
++++ b/arch/riscv/include/asm/csr.h
+@@ -26,7 +26,7 @@
+ 
+ #define SR_VS_OFF	_AC(0x00000000, UL)
+ 
+-#if (defined(CONFIG_VECTOR_1_0) && defined(__THEAD_VERSION__))
++#ifdef CONFIG_VECTOR_1_0
+ #define SR_VS		_AC(0x00000600, UL) /* Vector Status */
+ #define SR_VS_INITIAL	_AC(0x00000200, UL)
+ #define SR_VS_CLEAN	_AC(0x00000400, UL)
+diff --git a/arch/riscv/kernel/vector.S b/arch/riscv/kernel/vector.S
+index 88221a1a4..0705257bf 100644
+--- a/arch/riscv/kernel/vector.S
++++ b/arch/riscv/kernel/vector.S
+@@ -20,7 +20,7 @@
+ #include <asm/csr.h>
+ #include <asm/asm-offsets.h>
+ 
+-#if (defined(CONFIG_VECTOR_1_0) && defined(__THEAD_VERSION__))
++#ifdef CONFIG_VECTOR_1_0
+ #define V_ST	vse8.v
+ #define V_LD	vle8.v
+ #else
+-- 
+2.17.1
+

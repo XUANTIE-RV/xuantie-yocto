@@ -1,0 +1,39 @@
+From 8208e13ace577e63b2c8c57191a3d365a198d744 Mon Sep 17 00:00:00 2001
+From: qiangming <luyangtianyu.lyty@alibaba-inc.com>
+Date: Mon, 26 Jun 2023 06:58:49 +0000
+Subject: [PATCH] coremark add cflags
+
+---
+ Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index c2db7cc..580dc01 100644
+--- a/Makefile
++++ b/Makefile
+@@ -56,6 +56,7 @@ FORCE_REBUILD=force_rebuild
+ endif
+ 
+ CFLAGS += -DITERATIONS=$(ITERATIONS)
++CFLAGS += -static -O3 -funroll-all-loops -finline-limit=500 -fgcse-sm -DITERATIONS=10000 -msignedness-cmpiv -fno-code-hoisting -mno-thread-jumps1 -mno-iv-adjust-addr-cost -mno-expand-split-imm -fselective-scheduling -fgcse-las  
+ 
+ CORE_FILES = core_list_join core_main core_matrix core_state core_util
+ ORIG_SRCS = $(addsuffix .c,$(CORE_FILES))
+ 	
+ .PHONY: gen_pgo_data
+
+diff --git a/posix/core_portme.mak b/posix/core_portme.mak
+index 2852069..54ab641 100755
+--- a/posix/core_portme.mak
++++ b/posix/core_portme.mak
+@@ -24,7 +24,7 @@ OUTFLAG= -o
+ CC?= cc
+ # Flag: CFLAGS
+ #	Use this flag to define compiler options. Note, you can add compiler options from the command line using XCFLAGS="other flags"
+-PORT_CFLAGS = -O2
++PORT_CFLAGS = -O3
+ FLAGS_STR = "$(PORT_CFLAGS) $(XCFLAGS) $(XLFLAGS) $(LFLAGS_END)"
+ CFLAGS = $(PORT_CFLAGS) -I$(PORT_DIR) -Iposix -I. -DFLAGS_STR=\"$(FLAGS_STR)\"
+ # Flag: NO_LIBRT
+-- 
+2.17.1

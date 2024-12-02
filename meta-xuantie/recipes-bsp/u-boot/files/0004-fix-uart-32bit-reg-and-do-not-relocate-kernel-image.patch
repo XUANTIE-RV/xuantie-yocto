@@ -1,0 +1,70 @@
+From f0c46da17cb11c00552fd84398cecda3aaaa94ff Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Mon, 18 Nov 2024 17:57:00 +0800
+Subject: [PATCH] fix uart 32bit reg and do not relocate kernel image
+
+---
+ arch/riscv/lib/image.c           | 2 +-
+ board/thead/th1520_lpi4a/Kconfig | 2 +-
+ include/configs/th1520_lpi4a.h   | 2 ++
+ include/ns16550.h                | 4 ++++
+ 4 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/riscv/lib/image.c b/arch/riscv/lib/image.c
+index a82f48e9a5..ab3c71fb78 100644
+--- a/arch/riscv/lib/image.c
++++ b/arch/riscv/lib/image.c
+@@ -51,7 +51,7 @@ int booti_setup(ulong image, ulong *relocated_addr, ulong *size,
+ 	*size = lhdr->image_size;
+ 	if (force_reloc ||
+ 	   (gd->ram_base <= image && image < gd->ram_base + gd->ram_size)) {
+-		*relocated_addr = gd->ram_base + lhdr->text_offset;
++		*relocated_addr = image;
+ 	} else {
+ 		*relocated_addr = image;
+ 	}
+diff --git a/board/thead/th1520_lpi4a/Kconfig b/board/thead/th1520_lpi4a/Kconfig
+index 622246127c..9a23977081 100644
+--- a/board/thead/th1520_lpi4a/Kconfig
++++ b/board/thead/th1520_lpi4a/Kconfig
+@@ -19,7 +19,7 @@ config SYS_CONFIG_NAME
+ config TEXT_BASE
+ 	default 0x01b00000 if SPL
+ 	default 0x01c00000 if !RISCV_SMODE
+-	default 0x01c00000 if RISCV_SMODE
++	default 0x60400000 if RISCV_SMODE
+ 
+ config SPL_TEXT_BASE
+ 	default 0x08000000
+diff --git a/include/configs/th1520_lpi4a.h b/include/configs/th1520_lpi4a.h
+index 87496a52c4..4c1bd00136 100644
+--- a/include/configs/th1520_lpi4a.h
++++ b/include/configs/th1520_lpi4a.h
+@@ -9,6 +9,8 @@
+ 
+ #include <linux/sizes.h>
+ 
++#define CFG_SYS_NS16550_COM1		0x1900d000
++#define CFG_SYS_NS16550_CLK		36000000
+ #define CFG_SYS_SDRAM_BASE		0x00000000
+ 
+ #define UART_BASE	0xffe7014000
+diff --git a/include/ns16550.h b/include/ns16550.h
+index 7f48130008..af0afe3a8b 100644
+--- a/include/ns16550.h
++++ b/include/ns16550.h
+@@ -33,7 +33,11 @@
+  * differences in the driver. In the case of CONFIG_NS16550_DYNAMIC we do
+  * similar, and CONFIG_DEBUG_UART is responsible for shifts in its own manner.
+  */
++#if (CONFIG_SYS_NS16550_REG_SIZE == 4) || (CONFIG_SYS_NS16550_REG_SIZE == -4)
++#define UART_REG(x)	u32 x
++#else
+ #define UART_REG(x)	unsigned char x
++#endif
+ #else
+ #if !defined(CONFIG_SYS_NS16550_REG_SIZE) || (CONFIG_SYS_NS16550_REG_SIZE == 0)
+ #error "Please define NS16550 registers size."
+-- 
+2.17.1
+

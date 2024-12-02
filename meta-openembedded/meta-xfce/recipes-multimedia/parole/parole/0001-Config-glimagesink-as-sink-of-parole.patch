@@ -1,0 +1,68 @@
+From 81f37a81d89d3ef504534204d37f97673e4f62c2 Mon Sep 17 00:00:00 2001
+From: "yangtianyu.lu" <luyangtianyu.lyty@alibaba-inc.com>
+Date: Thu, 14 Dec 2023 12:52:22 +0000
+Subject: [PATCH] Config glimagesink as sink of parole
+
+---
+ src/gst/parole-gst.c | 28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/src/gst/parole-gst.c b/src/gst/parole-gst.c
+index be94371..cb15e70 100644
+--- a/src/gst/parole-gst.c
++++ b/src/gst/parole-gst.c
+@@ -93,7 +93,8 @@ typedef enum {
+     AUTOIMAGESINK,
+     XIMAGESINK,
+     XVIMAGESINK,
+-    CLUTTERSINK
++    CLUTTERSINK,
++    GLIMAGESINK
+ } ParoleGstVideoSink;
+ 
+ struct ParoleGstPrivate {
+@@ -1987,6 +1988,11 @@ parole_gst_constructed(GObject *object) {
+     }
+ 
+     /* Configure the video sink */
++    if (g_strcmp0(videosink, "glimagesink") == 0) {
++        gst->priv->image_sink = GLIMAGESINK;
++        gst->priv->video_sink = gst_element_factory_make("glimagesink", "video");
++    }
++
+     if (g_strcmp0(videosink, "autoimagesink") == 0) {
+         gst->priv->image_sink = AUTOIMAGESINK;
+         gst->priv->video_sink = gst_element_factory_make("autoimagesink", "video");
+@@ -2004,10 +2010,28 @@ parole_gst_constructed(GObject *object) {
+     }
+ #endif
+ 
++    if (G_UNLIKELY(gst->priv->video_sink == NULL)) {
++        gst->priv->image_sink = GLIMAGESINK;
++        g_debug("%s trying to load glimagesink",
++                g_strcmp0(videosink, "xvimagesink") ? "xvimagesink not found " : "xv disabled ");
++        gst->priv->video_sink = gst_element_factory_make("glimagesink", "video");
++
++        if (G_UNLIKELY(gst->priv->video_sink == NULL)) {
++            GError *error;
++            error = g_error_new(1, 0, _("Unable to load \"%s\" plugin"
++                                     ", check your GStreamer installation."),
++                                     videosink);
++            parole_gst_show_error(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(gst))),
++                                    error);
++            g_error_free(error);
++            g_error("glimagesink load failed");
++        }
++    }
++
+     if (G_UNLIKELY(gst->priv->video_sink == NULL)) {
+         gst->priv->image_sink = XIMAGESINK;
+         g_debug("%s trying to load ximagesink",
+-                g_strcmp0(videosink, "xvimagesink") ? "xvimagesink not found " : "xv disabled ");
++                g_strcmp0(videosink, "glimagesink") ? "glimagesink not found " : "gl disabled ");
+         gst->priv->video_sink = gst_element_factory_make("ximagesink", "video");
+ 
+         if (G_UNLIKELY(gst->priv->video_sink == NULL)) {
+-- 
+2.17.1
+

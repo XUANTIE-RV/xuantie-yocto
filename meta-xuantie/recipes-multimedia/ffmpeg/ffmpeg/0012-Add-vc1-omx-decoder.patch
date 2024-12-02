@@ -1,0 +1,108 @@
+From 84d40522ce7b4251afc2680ff5a1ee06e2f9b6dd Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Wed, 3 Apr 2024 11:31:43 +0800
+Subject: [PATCH] Add vc1 omx decoder
+
+---
+ configure               |  1 +
+ libavcodec/Makefile     |  1 +
+ libavcodec/allcodecs.c  |  1 +
+ libavcodec/omxdecoder.c | 14 ++++++++++++--
+ 4 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/configure b/configure
+index 6afeacc..81d4807 100755
+--- a/configure
++++ b/configure
+@@ -3258,6 +3258,7 @@ vp9_qsv_encoder_select="qsvenc"
+ vp9_v4l2m2m_decoder_deps="v4l2_m2m vp9_v4l2_m2m"
+ wmv3_crystalhd_decoder_select="crystalhd"
+ av1_qsv_decoder_select="qsvdec"
++vc1_omx_decoder_deps="omx"
+ 
+ # parsers
+ aac_parser_select="adts_header mpeg4audio"
+diff --git a/libavcodec/Makefile b/libavcodec/Makefile
+index dc98584..d6fb8d4 100644
+--- a/libavcodec/Makefile
++++ b/libavcodec/Makefile
+@@ -732,6 +732,7 @@ OBJS-$(CONFIG_VC1_CUVID_DECODER)       += cuviddec.o
+ OBJS-$(CONFIG_VC1_MMAL_DECODER)        += mmaldec.o
+ OBJS-$(CONFIG_VC1_QSV_DECODER)         += qsvdec.o
+ OBJS-$(CONFIG_VC1_V4L2M2M_DECODER)     += v4l2_m2m_dec.o
++OBJS-$(CONFIG_VC1_OMX_DECODER)         += omxdecoder.o
+ OBJS-$(CONFIG_VC2_ENCODER)             += vc2enc.o vc2enc_dwt.o diractab.o
+ OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
+ OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdaudio.o
+diff --git a/libavcodec/allcodecs.c b/libavcodec/allcodecs.c
+index bf36754..2bb123c 100644
+--- a/libavcodec/allcodecs.c
++++ b/libavcodec/allcodecs.c
+@@ -46,6 +46,7 @@ extern const FFCodec ff_jpeg_omx_decoder;
+ extern const FFCodec ff_mpeg4_omx_encoder;
+ extern const FFCodec ff_mpeg4_omx_decoder;
+ extern const FFCodec ff_h263_omx_decoder;
++extern const FFCodec ff_vc1_omx_decoder;
+ 
+ extern const FFCodec ff_a64multi_encoder;
+ extern const FFCodec ff_a64multi5_encoder;
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index bf0be00..9e309a1 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1517,6 +1517,9 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+     case AV_CODEC_ID_H263:
+         formatIn.eCompressionFormat = OMX_VIDEO_CodingH263;
+         break;
++    case AV_CODEC_ID_VC1:
++        formatIn.eCompressionFormat = OMX_VIDEO_CodingWMV;
++        break;
+     default:
+         formatIn.eCompressionFormat = OMX_VIDEO_CodingAutoDetect;
+         break;
+@@ -1766,6 +1769,7 @@ static av_cold int omx_decode_init(AVCodecContext *avctx)
+     case AV_CODEC_ID_WMV1:
+     case AV_CODEC_ID_WMV2:
+     case AV_CODEC_ID_WMV3:
++    case AV_CODEC_ID_VC1:
+         role = "video_decoder.wmv";
+         break;
+     case AV_CODEC_ID_VP6:
+@@ -1885,7 +1889,11 @@ static int ff_omx_dec_flush(AVCodecContext *avctx, OMXCodecDecoderContext *s)
+     s->draining = 0;
+     if (!s->flushing) {
+         s->flushing = 1;
+-        s->pkt_sent_num = 0;
++        if (avctx->codec->id == AV_CODEC_ID_VC1) {
++            s->pkt_sent_num = -20;
++        } else {
++            s->pkt_sent_num = 0;
++        }
+         av_log(avctx, AV_LOG_INFO, "ff_omx_dec_flush\n");
+         if (OMX_ErrorNone != OMX_SendCommand(s->handle, OMX_CommandStateSet, OMX_StateIdle, NULL)) {
+             av_log(avctx, AV_LOG_ERROR, "Unable to set IDLE state before flush data\n");
+@@ -1992,7 +2000,7 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+ 
+             } else if (ret < 0) {
+                 return ret;
+-            } else {
++            } else if (s->buffered_pkt.size > 0) {
+                 //success
+                 s->pkt_full = 1;
+             }
+@@ -2008,6 +2016,7 @@ static void omx_decode_flush(AVCodecContext *avctx)
+     if (s->buffered_pkt.size > 0) {
+         av_packet_unref(&s->buffered_pkt);
+         s->buffered_pkt.size = 0;
++        s->pkt_full = 0;
+     }
+     ff_omx_dec_flush(avctx, s);
+ }
+@@ -2138,3 +2147,4 @@ DECLARE_OMX_VDEC(hevc, "H.265", AV_CODEC_ID_HEVC, "hevc_mp4toannexb")
+ DECLARE_OMX_VDEC(mpeg4, "MPEG-4 part 2", AV_CODEC_ID_MPEG4, NULL)
+ DECLARE_OMX_VDEC(vp9, "VP9", AV_CODEC_ID_VP9, NULL)
+ DECLARE_OMX_VDEC(h263, "H263", AV_CODEC_ID_H263, NULL)
++DECLARE_OMX_VDEC(vc1, "VC1", AV_CODEC_ID_VC1, NULL)
+-- 
+2.17.1
+

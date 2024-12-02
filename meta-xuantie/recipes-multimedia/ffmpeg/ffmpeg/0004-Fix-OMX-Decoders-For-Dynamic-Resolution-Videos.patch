@@ -1,0 +1,72 @@
+From ff01a440537b2263a740658b3ff65fea9dbe93fb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Mon, 25 Sep 2023 20:55:32 +0000
+Subject: [PATCH] Fix OMX Decoders For Dynamic Resolution Videos
+
+---
+ libavcodec/omxdecoder.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 2d43d44..5e309cd 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1026,6 +1026,7 @@ static int copyNV12toDst(OMXCodecDecoderContext *s, AVFrame *avframe, OMX_BUFFER
+         for (int i = 0; i < avframe->height / 2; i++) {
+             memcpy(uv_dst + i * avframe->linesize[1], y_src + src_stride * avframe->height + i * src_stride, avframe->linesize[1]);
+         }
++        buffer->pAppPrivate = avframe;
+     }
+     //else {
+     //    memcpy(y_dst, y_src, avframe->width *  avframe->height);
+@@ -1114,7 +1115,7 @@ static int omx_try_fillbuffer(OMXCodecDecoderContext *s, OMX_BUFFERHEADERTYPE *b
+     return 0;
+ }
+ 
+-static int check_buffer_outsize(OMXCodecDecoderContext *s, OMX_BUFFERHEADERTYPE *buffer)
++static int check_buffer_outsize(OMXCodecDecoderContext *s)
+ {
+     OMX_ERRORTYPE err;
+     AVCodecContext *avctx = s->avctx;
+@@ -1130,6 +1131,14 @@ static int check_buffer_outsize(OMXCodecDecoderContext *s, OMX_BUFFERHEADERTYPE
+         avctx->coded_width = out_port_params.format.video.nFrameWidth;
+         avctx->coded_height = out_port_params.format.video.nFrameHeight;
+         s->resolution_changed = 1;
++        for (int i = 0; i < s->num_out_buffers; i++) {
++            OMX_BUFFERHEADERTYPE *buffer = s->out_buffer_headers[i];
++            err = omx_try_fillbuffer(s, buffer);
++            if (err != OMX_ErrorNone) {
++                av_log(avctx, AV_LOG_ERROR, "Fill buffer failed when resolution changed.\n");
++                return err;
++            }
++        }
+     }
+     return 0;
+ }
+@@ -1166,7 +1175,11 @@ static int ff_omx_dec_receive(AVCodecContext *avctx, OMXCodecDecoderContext *s,
+     }
+ 
+     s->output_count++;
+-    check_buffer_outsize(s, buffer);
++    ret = check_buffer_outsize(s);
++    if (ret < 0) {
++        av_log(avctx, AV_LOG_ERROR, "Check buffer outsize in receive function failed: %x\n", ret);
++        return ret;
++    }
+ #ifdef FORMAT_NV12
+     avctx->pix_fmt = AV_PIX_FMT_NV12;
+ #endif
+@@ -1761,6 +1774,10 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+             pthread_mutex_unlock(&s->buffer_control_mutex);
+         }
+ 
++        ret = check_buffer_outsize(s);
++        if (ret < 0) {
++            return AVERROR_UNKNOWN;
++        }
+         /* try to flush any buffered packet data */
+         if (s->buffered_pkt.size > 0 && !s->outport_disabled && s->pkt_sent_num < s->pkt_upper_bound) {
+             ret = ff_omx_dec_send(avctx, s, &s->buffered_pkt, true);
+-- 
+2.17.1
+

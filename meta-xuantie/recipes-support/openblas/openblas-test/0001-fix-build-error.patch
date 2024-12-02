@@ -1,0 +1,53 @@
+diff --git a/Makefile.rule b/Makefile.rule
+index 4ad9324..d288002 100644
+--- a/Makefile.rule
++++ b/Makefile.rule
+@@ -6,9 +6,8 @@
+ # Default compiler
+ # Supports gcc & icc.
+ #
+- CC = gcc
++# CC = gcc
+ # CC = icc
+- FC = gfortran
+ 
+ #
+ # CPU architecture
+@@ -27,6 +26,9 @@
+ #
+ # For ARM 64-bit
+ # ARCH = ARM64
++#
++# For C-SKY C910V
++# ARCH = C910V
+ 
+ #
+ # define BINARY=32 or BINARY=64
+diff --git a/Makefile.system b/Makefile.system
+index bb99ac6..e6163f1 100644
+--- a/Makefile.system
++++ b/Makefile.system
+@@ -5,9 +5,6 @@ endif
+ include $(TOPDIR)/Makefile.rule
+ 
+ ICC = $(CC)
+-ifndef FC
+-FC = gfortran
+-endif
+ 
+ CODEBITS	=
+ ALIGNLOOP	=	32
+@@ -21,11 +18,11 @@ F2CDEFS		=	-DAdd_  -DStringSunStyle
+ ARCHDEFS	=	-DATL_OS_Linux
+ CDEFS		=	$(INCLUDES) $(F2CDEFS) $(ARCHDEFS) $(CODEBITS) -DTHREADNUM=$(NUMTHREADS)
+ ICCFLAGS	=	$(CDEFS) 
+-LIBS		=	-lm -lgfortran
++LIBS		=	-lgfortran -lm
+ 
+ 
+ ifndef TEST_BLAS
+-TEST_BLAS	= /opt/OpenBLAS/lib/libopenblas.a
++TEST_BLAS	= -lopenblas
+ endif
+ 
+ ifndef ONLY_PERFORMANCE

@@ -1,0 +1,28 @@
+From d2334981140bc87d2d024ffd5a4dbab2bfa349c1 Mon Sep 17 00:00:00 2001
+From: "yangtianyu.lu" <luyangtianyu.lyty@alibaba-inc.com>
+Date: Thu, 23 Nov 2023 04:06:31 +0000
+Subject: [PATCH] Fixed OMX_UseBuffer() api unsupported bug
+
+---
+ libavcodec/omx.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/libavcodec/omx.c b/libavcodec/omx.c
+index 9dafd18..bf90fa4 100644
+--- a/libavcodec/omx.c
++++ b/libavcodec/omx.c
+@@ -977,10 +977,7 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
+     if (!s->in_buffer_headers || !s->free_in_buffers || !s->out_buffer_headers || !s->done_out_buffers)
+         return AVERROR(ENOMEM);
+     for (i = 0; i < s->num_in_buffers && err == OMX_ErrorNone; i++) {
+-        if (s->input_zerocopy)
+-            err = OMX_UseBuffer(s->handle, &s->in_buffer_headers[i], s->in_port, s, in_port_params.nBufferSize, NULL);
+-        else
+-            err = OMX_AllocateBuffer(s->handle, &s->in_buffer_headers[i],  s->in_port,  s, in_port_params.nBufferSize);
++        err = OMX_AllocateBuffer(s->handle, &s->in_buffer_headers[i],  s->in_port,  s, in_port_params.nBufferSize);
+         if (err == OMX_ErrorNone)
+             s->in_buffer_headers[i]->pAppPrivate = s->in_buffer_headers[i]->pOutputPortPrivate = NULL;
+     }
+-- 
+2.17.1
+

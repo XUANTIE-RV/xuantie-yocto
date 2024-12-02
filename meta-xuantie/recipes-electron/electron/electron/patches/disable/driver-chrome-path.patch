@@ -1,0 +1,24 @@
+description: Disable usage of google-chrome in driver
+author: Michel Le Bihan <michel@lebihan.pl>
+
+--- a/src/chrome/test/chromedriver/chrome/chrome_finder.cc
++++ b/src/chrome/test/chromedriver/chrome/chrome_finder.cc
+@@ -63,9 +63,6 @@ void GetApplicationDirs(std::vector<base
+   locations->push_back(base::FilePath("/usr/bin"));
+   locations->push_back(base::FilePath("/sbin"));
+   locations->push_back(base::FilePath("/bin"));
+-  // Lastly, try the default installation location.
+-  locations->push_back(base::FilePath("/opt/google/chrome"));
+-  locations->push_back(base::FilePath("/opt/chromium.org/chromium"));
+ }
+ #elif BUILDFLAG(IS_ANDROID)
+ void GetApplicationDirs(std::vector<base::FilePath>* locations) {
+@@ -139,8 +136,6 @@ bool FindChrome(base::FilePath* browser_
+ #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
+     base::FilePath(chrome::kBrowserProcessExecutablePath),
+ #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+-    base::FilePath("google-chrome"),
+-    base::FilePath(chrome::kBrowserProcessExecutablePath),
+     base::FilePath("chromium"),
+     base::FilePath("chromium-browser")
+ #else

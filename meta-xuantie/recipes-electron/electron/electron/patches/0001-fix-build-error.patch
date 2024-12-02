@@ -1,0 +1,187 @@
+diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
+index 944a039d066f6..41681ff020809 100644
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -30,6 +30,9 @@ if (current_cpu == "mipsel" || current_cpu == "mips64el" ||
+     current_cpu == "mips" || current_cpu == "mips64") {
+   import("//build/config/mips.gni")
+ }
++if (current_cpu == "riscv32" || current_cpu == "riscv64") {
++  import("//build/config/riscv.gni")
++}
+ if (is_mac) {
+   import("//build/config/apple/symbols.gni")
+ }
+@@ -642,11 +645,6 @@ config("compiler") {
+     cflags_cc += [ "-Wno-trigraphs" ]
+   }
+ 
+-  if (use_relative_vtables_abi) {
+-    cflags_cc += [ "-fexperimental-relative-c++-abi-vtables" ]
+-    ldflags += [ "-fexperimental-relative-c++-abi-vtables" ]
+-  }
+-
+   # Add flags for link-time optimization. These flags enable
+   # optimizations/transformations that require whole-program visibility at link
+   # time, so they need to be applied to all translation units, and we may end up
+@@ -774,7 +772,7 @@ config("compiler") {
+   # present. On Android this increases binary size due to more thinks for long
+   # jumps. Turn it off by default and enable selectively for targets where it's
+   # beneficial.
+-  if (use_lld && !enable_call_graph_profile_sort) {
++  if (use_lld && !enable_call_graph_profile_sort && is_a_target_toolchain && current_cpu == target_cpu) {
+     if (is_win) {
+       ldflags += [ "/call-graph-profile-sort:no" ]
+     } else {
+@@ -963,6 +961,10 @@ config("compiler_cpu_abi") {
+         "-msse3",
+       ]
+       ldflags += [ "-m64" ]
++      if (is_clang && !is_android && target_cpu == "riscv64") {
++          cflags += [ "--target=x86_64-unknown-linux-gnu" ]
++          ldflags += [ "--target=x86_64-unknown-linux-gnu" ]
++      }
+     } else if (current_cpu == "x86") {
+       cflags += [ "-m32" ]
+       ldflags += [ "-m32" ]
+@@ -1234,11 +1236,19 @@ config("compiler_cpu_abi") {
+         ldflags += [ "-m64" ]
+       }
+     } else if (current_cpu == "riscv64") {
+-      if (is_clang) {
++      if (is_clang && !is_android) {
+         cflags += [ "--target=riscv64-linux-gnu" ]
+         ldflags += [ "--target=riscv64-linux-gnu" ]
+       }
+-      cflags += [ "-mabi=lp64d" ]
++#      cflags += [ "-mabi=lp64d" ]
++      cflags += [ "-mcpu=c920" ]
++      ldflags += [ "-mcpu=c920" ]
++      if (riscv_use_static) {
++        ldflags += [ "-static", "-Wno-unused-command-line-argument" ]
++      }
++      if (riscv_use_xuantie) {
++        defines += [ "RISCV_USE_XUANTIE" ]
++      }
+     } else if (current_cpu == "loong64") {
+       if (is_clang) {
+         cflags += [ "--target=loongarch64-linux-gnu" ]
+diff --git a/build/config/sysroot.gni b/build/config/sysroot.gni
+index dea380727e732..1c48223224eb6 100644
+--- a/build/config/sysroot.gni
++++ b/build/config/sysroot.gni
+@@ -21,7 +21,8 @@ declare_args() {
+   # is empty, default sysroot is calculated.
+   use_sysroot = current_cpu == "x86" || current_cpu == "x64" ||
+                 current_cpu == "arm" || current_cpu == "arm64" ||
+-                current_cpu == "mipsel" || current_cpu == "mips64el"
++                current_cpu == "mipsel" || current_cpu == "mips64el" ||
++                current_cpu == "riscv64"
+ }
+ 
+ if (sysroot == "") {
+@@ -48,6 +49,8 @@ if (sysroot == "") {
+       sysroot = "$target_sysroot_dir/debian_bullseye_arm-sysroot"
+     } else if (current_cpu == "arm64") {
+       sysroot = "$target_sysroot_dir/debian_bullseye_arm64-sysroot"
++    } else if (current_cpu == "riscv64") {
++      sysroot = "$target_sysroot_dir/debian_bullseye_riscv64-sysroot"
+     } else {
+       assert(false, "No linux sysroot for cpu: $target_cpu")
+     }
+diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
+index e702004c4bc8a..564dd2960d701 100755
+--- a/build/linux/sysroot_scripts/install-sysroot.py
++++ b/build/linux/sysroot_scripts/install-sysroot.py
+@@ -47,7 +47,7 @@ SYSTOORS_CONFIG_DIR = os.path.join(SRC_DIR, 'electron', 'script')
+ URL_PREFIX = 'https://dev-cdn.electronjs.org'
+ URL_PATH = 'linux-sysroots'
+ 
+-VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
++VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el', 'riscv64')
+ 
+ ARCH_TRANSLATIONS = {
+     'x64': 'amd64',
+diff --git a/build/linux/sysroot_scripts/sysroots.json b/build/linux/sysroot_scripts/sysroots.json
+index cfb3b3aa302f7..b7a82282f1a62 100644
+--- a/build/linux/sysroot_scripts/sysroots.json
++++ b/build/linux/sysroot_scripts/sysroots.json
+@@ -40,5 +40,11 @@
+         "Sha1Sum": "817d0905f294c9c5af828fa5c5b814dbe9610a24",
+         "SysrootDir": "debian_bullseye_mips64el-sysroot",
+         "Tarball": "debian_bullseye_mips64el_sysroot.tar.xz"
++    },
++    "bullseye_riscv64": {
++        "Key": "20220331T153654Z-0",
++        "Sha1Sum": "1234567890",
++        "SysrootDir": "debian_bullseye_riscv64-sysroot",
++        "Tarball": "debian_bullseye_riscv64_sysroot.tar.xz"
+     }
+ }
+diff --git a/chrome/installer/linux/BUILD.gn b/chrome/installer/linux/BUILD.gn
+index 5639b9ffc996e..24d309f5619a2 100644
+--- a/chrome/installer/linux/BUILD.gn
++++ b/chrome/installer/linux/BUILD.gn
+@@ -482,6 +482,8 @@ template("linux_package") {
+       deb_arch = "mips64el"
+     } else if (current_cpu == "loong64") {
+       deb_arch = "loongarch64"
++    } else if (current_cpu == "riscv64") {
++      deb_arch = "riscv64"
+     } else {
+       assert(false, "Linux installer not configured for this architecture.")
+     }
+@@ -533,6 +535,8 @@ template("linux_package") {
+         rpm_arch = "mips64el"
+       } else if (current_cpu == "loong64") {
+         rpm_arch = "loongarch64"
++      } else if (current_cpu == "riscv64") {
++        rpm_arch = "riscv64"
+       } else {
+         assert(false, "Linux installer not configured for this architecture.")
+       }
+diff --git a/build/config/riscv.gni b/build/config/riscv.gni
+new file mode 100644
+index 0000000000000..806a78042d8d2
+--- /dev/null
++++ b/build/config/riscv.gni
+@@ -0,0 +1,23 @@
++# Copyright 2023-2024 The Chromium Authors
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++import("//build/config/v8_target_cpu.gni")
++if (current_cpu == "riscv64" || v8_current_cpu == "riscv64" ||
++    current_cpu == "riscv32" || v8_current_cpu == "riscv32" ||
++    target_cpu == "riscv32"  || v8_target_cpu == "riscv32"  ||
++    target_cpu == "riscv64"  || v8_target_cpu == "riscv64") {
++  declare_args() {
++    riscv_use_xthead = false
++    riscv_use_static = false
++    riscv_use_std_pow = false
++    riscv_use_ufic = false
++    riscv_use_opt_nop = false
++    riscv_use_opt_ijmp = false
++    riscv_use_sv39 = false
++    riscv_use_xuantie = false
++
++    # for closed source library generation
++    riscv_closed_source_gen = false
++    riscv_closed_source_compile = false
++  }
++}
+diff --git a/electron/script/sysroots.json b/electron/script/sysroots.json
+index 3fd04b5450..0a19a7f9bb 100644
+--- a/electron/script/sysroots.json
++++ b/electron/script/sysroots.json
+@@ -40,5 +40,11 @@
+         "Sha1Sum": "d73dcddfc3cc7b0c5aa1a24ccda54809ba13983b",
+         "SysrootDir": "debian_bullseye_mips64el-sysroot",
+         "Tarball": "debian_bullseye_mips64el_sysroot.tar.xz"
++    },
++    "bullseye_riscv64": {
++        "Key": "20220331T153654Z-0",
++        "Sha1Sum": "1234567890",
++        "SysrootDir": "debian_bullseye_riscv64-sysroot",
++        "Tarball": "debian_bullseye_riscv64_sysroot.tar.xz"
+     }
+ }

@@ -1,0 +1,16 @@
+description: Disable Widevine CDM component updater
+author: Michel Le Bihan <michel@lebihan.pl>
+
+--- a/src/chrome/browser/component_updater/registration.cc
++++ b/src/chrome/browser/component_updater/registration.cc
+@@ -117,10 +117,6 @@ void RegisterComponentsForUpdate() {
+   RegisterMediaFoundationWidevineCdmComponent(cus);
+ #endif
+ 
+-#if BUILDFLAG(ENABLE_WIDEVINE_CDM_COMPONENT)
+-  RegisterWidevineCdmComponent(cus);
+-#endif  // BUILDFLAG(ENABLE_WIDEVINE_CDM_COMPONENT)
+-
+ #if BUILDFLAG(ENABLE_NACL) && !BUILDFLAG(IS_ANDROID)
+ #if BUILDFLAG(IS_CHROMEOS_ASH)
+   // PNaCl on Chrome OS is on rootfs and there is no need to download it. But

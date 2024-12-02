@@ -1,0 +1,20 @@
+--- a/src/electron/shell/browser/extensions/api/runtime/electron_runtime_api_delegate.cc
++++ b/src/electron/shell/browser/extensions/api/runtime/electron_runtime_api_delegate.cc
+@@ -66,6 +66,8 @@
+     info->arch = extensions::api::runtime::PLATFORM_ARCH_X86_32;
+   } else if (strcmp(arch, "x64") == 0) {
+     info->arch = extensions::api::runtime::PLATFORM_ARCH_X86_64;
++  } else if (strcmp(arch, "riscv64") == 0) {
++    info->arch = extensions::api::runtime::PLATFORM_ARCH_RISCV64;
+   } else {
+     NOTREACHED();
+     return false;
+@@ -81,6 +83,8 @@
+     info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_X86_32;
+   } else if (strcmp(nacl_arch, "x86-64") == 0) {
+     info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_X86_64;
++  } else if (strcmp(nacl_arch, "riscv64") == 0) {
++    info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_RISCV64;
+   } else {
+     NOTREACHED();
+     return false;

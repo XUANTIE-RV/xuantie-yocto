@@ -1,0 +1,67 @@
+From ee148750a6bfd083cc4ac690071e1a1c71fbc2fb Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Thu, 24 Oct 2024 19:07:33 +0800
+Subject: [PATCH] Resolve incorrect float ABI flag settings for RISC-V
+ libraries
+
+---
+ readelflib.c | 36 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 35 insertions(+), 1 deletion(-)
+
+diff --git a/readelflib.c b/readelflib.c
+index a01e1ce..7f67390 100644
+--- a/readelflib.c
++++ b/readelflib.c
+@@ -110,6 +110,30 @@ process_elf_file32 (const char *file_name, const char *lib, int *flag,
+      libc5/libc6.  */
+   *flag = FLAG_ELF;
+ 
++  /* Set flags according to information in ELF header to align with target
++     ldconfig */
++  switch (elf_header->e_machine)
++  {
++    case EM_RISCV:
++      /* RISC-V libraries are always libc.so.6+. */
++      /* NOTE: This does not correctly handle soft-float binaries */
++      /* see sysdeps/unix/sysv/linux/riscv/readelflib.c */
++      switch (read32(elf_header->e_flags, be) & EF_RISCV_FLOAT_ABI)
++      {
++        case EF_RISCV_FLOAT_ABI_SOFT:
++          *flag |= FLAG_ELF_LIBC6 | FLAG_RISCV_FLOAT_ABI_SOFT;
++          break;
++        case EF_RISCV_FLOAT_ABI_DOUBLE:
++          *flag |= FLAG_ELF_LIBC6 | FLAG_RISCV_FLOAT_ABI_DOUBLE;
++          break;
++        default:
++          return 1;
++      }
++      break;
++    default:
++      break;
++  }
++
+   loadaddr = -1;
+   dynamic_addr = 0;
+   dynamic_size = 0;
+@@ -339,7 +363,17 @@ process_elf_file64 (const char *file_name, const char *lib, int *flag,
+       /* RISC-V libraries are always libc.so.6+. */
+       /* NOTE: This does not correctly handle soft-float binaries */
+       /* see sysdeps/unix/sysv/linux/riscv/readelflib.c */
+-      *flag |= FLAG_RISCV_FLOAT_ABI_DOUBLE|FLAG_ELF_LIBC6;
++      switch (read32(elf_header->e_flags, be) & EF_RISCV_FLOAT_ABI)
++      {
++        case EF_RISCV_FLOAT_ABI_SOFT:
++          *flag |= FLAG_ELF_LIBC6 | FLAG_RISCV_FLOAT_ABI_SOFT;
++          break;
++        case EF_RISCV_FLOAT_ABI_DOUBLE:
++          *flag |= FLAG_ELF_LIBC6 | FLAG_RISCV_FLOAT_ABI_DOUBLE;
++          break;
++        default:
++          return 1;
++      }
+       break;
+     default:
+       error(0, 0, "%s is a 64-bit ELF for unknown machine %lx\n",
+-- 
+2.17.1
+

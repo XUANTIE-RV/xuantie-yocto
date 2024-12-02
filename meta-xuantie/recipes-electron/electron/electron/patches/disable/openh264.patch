@@ -1,0 +1,32 @@
+description: disable support for openh264, will be added later
+author: Michael Gilbert <mgilbert@debian.org>
+
+--- a/src/third_party/webrtc/webrtc.gni
++++ b/src/third_party/webrtc/webrtc.gni
+@@ -174,8 +174,7 @@ declare_args() {
+   #
+   # Enabling H264 when building with MSVC is currently not supported, see
+   # bugs.webrtc.org/9213#c13 for more info.
+-  rtc_use_h264 =
+-      proprietary_codecs && !is_android && !is_ios && !(is_win && !is_clang)
++  rtc_use_h264 = false
+ 
+   # Enable this flag to make webrtc::Mutex be implemented by absl::Mutex.
+   rtc_use_absl_mutex = false
+--- a/src/media/media_options.gni
++++ b/src/media/media_options.gni
+@@ -37,12 +37,9 @@ declare_args() {
+     media_use_libvpx = false
+   }
+ 
+-  # Enable usage of OpenH264 within the media library. Used for software based
++  # Disable usage of OpenH264 within the media library. Used for software based
+   # encoding of H264 content.
+-  media_use_openh264 = true
+-  if (is_ios || is_android || !proprietary_codecs) {
+-    media_use_openh264 = false
+-  }
++  media_use_openh264 = false
+ 
+   # Override to dynamically link the cras (ChromeOS audio) library.
+   use_cras = is_chromeos_device

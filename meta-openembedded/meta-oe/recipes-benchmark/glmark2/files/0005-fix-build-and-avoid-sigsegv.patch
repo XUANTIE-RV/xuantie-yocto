@@ -1,0 +1,47 @@
+commit 7d4c4da5d34e2e70a285c345c979e5e3c1eb2c3a
+Author: Patrick Welche <prlw1@cam.ac.uk>
+Date:   Sat May 20 13:57:48 2023 +0100
+
+    meson.build: fix build and avoid sigsegv
+    
+    1) Not all unix systems have libdl (#85), nor need said library for dlopen()
+       e.g., quoting dlfcn(3) on NetBSD:
+    
+       NAME
+         dlopen, dlclose, dlsym, dlvsym, dladdr, dlctl, dlerror – dynamic link
+         interface
+    
+       LIBRARY
+         (These functions are not in a library.  They are included in every
+         dynamically linked program automatically.)
+    
+    2) glmark2 dlopens libraries like libGL.so. libGL.so is built with thread
+       support, therefore glmark2 also needs to built with thread supoort to
+       avoid segfaulting.
+
+diff --git a/meson.build b/meson.build
+index abc92a1..8f78303 100644
+--- a/meson.build
++++ b/meson.build
+@@ -23,7 +23,8 @@ if extras_path != ''
+ endif
+ 
+ m_dep = cpp.find_library('m', required : false)
+-dl_dep = cpp.find_library('dl')
++dl_dep = cpp.find_library('dl', required : false)
++thread_dep = dependency('threads')
+ libjpeg_dep = dependency('libjpeg')
+ libpng_dep = dependency('libpng')
+ 
+diff --git a/src/meson.build b/src/meson.build
+index bbb08b7..07b1269 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -71,6 +71,7 @@ libmatrix_headers_dep = declare_dependency(
+ common_deps = [
+     m_dep,
+     dl_dep,
++    thread_dep,
+     libjpeg_dep,
+     libpng_dep,
+     libmatrix_headers_dep,

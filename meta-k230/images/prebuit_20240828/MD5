@@ -1,0 +1,7 @@
+a8777eaa7a9a13eafd7aa3d685603add  boot/fw_jump_add_uboot_head.bin
+bf6678ba632c125b1c0952d792a0d259  boot/nuttx-7000000-uart2.bin
+2aa3826a5180ddaea6f7661486264697  uboot/env.env
+3d9c74d308537459e8d705e06b379f42  uboot/fn_u-boot-spl.bin
+3c114f078dc32fdd6fbdf18a988fa63c  uboot/fn_ug_u-boot.bin
+9b32b70e3fcf0fc349b25321afa57695  uboot/swap_fn_u-boot-spl.bin
+9f7179ac2aa083dc118274eee937b605  uboot/u-boot-spl.bin

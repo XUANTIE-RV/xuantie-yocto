@@ -1,0 +1,38 @@
+SUMMARY = "A Communication Library."
+DESCRIPTION = "Unified Communication X (UCX) is an award winning, optimized production proven-communication framework for modern, high-bandwidth and low-latency networks."
+HOMEPAGE = "https://www.openucx.org/"
+LICENSE = "BSD-3-Clause"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=cbe4fe88c540f18985ee4d32d590f683"
+
+SRC_URI = "git://github.com/openucx/ucx.git;protocol=https;branch=master"
+SRCREV = "98633e7235e064e1962c1dbed842e769242e735a"
+
+S = "${WORKDIR}/git"
+B = "${S}"
+
+inherit autotools pkgconfig
+
+PACKAGECONFIG[ucg] = "--enable-ucg, --disable-ucg"
+PACKAGECONFIG[doxygen-dot] = "--enable-doxygen-dot, --disable-doxygen-dot"
+PACKAGECONFIG[doxygen-rtf] = "--enable-doxygen-rtf, --disable-doxygen-rtf"
+PACKAGECONFIG[doxygen-xml] = "--enable-doxygen-xml, --disable-doxygen-xml"
+PACKAGECONFIG[doxygen-chm] = "--enable-doxygen-chm, --disable-doxygen-chm"
+PACKAGECONFIG[doxygen-chi] = "--enable-doxygen-chi, --disable-doxygen-chi"
+PACKAGECONFIG[doxygen-ps] = "--enable-doxygen-ps, --disable-doxygen-ps"
+PACKAGECONFIG[gcov] = "--enable-gcov, --disable-gcov"
+PACKAGECONFIG[optimizations] = "--enable-optimizations, --disable-optimizations"
+PACKAGECONFIG[frame-pointer] = "--enable-frame-pointer, --disable-frame-pointer"
+PACKAGECONFIG[asan] = "--enable-asan, --disable-asan"
+PACKAGECONFIG[gtest] = "--enable-gtest, --disable-gtest"
+PACKAGECONFIG[lcov] = "--enable-lcov, --disable-lcov"
+PACKAGECONFIG[profiling] = "--enable-profiling, --disable-profiling"
+PACKAGECONFIG[stats] = "--enable-stats, --disable-stats"
+PACKAGECONFIG[tuning] = "--enable-tuning, --disable-tuning"
+PACKAGECONFIG[cma] = "--enable-cma, --disable-cma"
+PACKAGECONFIG[debug-data] = "--enable-debug-data, --disable-debug-data"
+PACKAGECONFIG[mt] = "--enable-mt, --disable-mt"
+PACKAGECONFIG[experimental-api] = "--enable-experimental-api, --disable-experimental-api"
+PACKAGECONFIG[devel-headers] = "--enable-devel-headers, --disable-devel-headers"
+PACKAGECONFIG[examples] = "--enable-examples, --disable-examples"
+
+FILES:${PN}-dev += "${libdir}/ucx/*.so"

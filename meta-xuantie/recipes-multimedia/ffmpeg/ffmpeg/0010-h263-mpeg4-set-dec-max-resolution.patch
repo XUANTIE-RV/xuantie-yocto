@@ -1,0 +1,32 @@
+From 4e25afd0c12b62c7a5e3f9312f9e5a920b87dec8 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Thu, 7 Mar 2024 16:21:12 +0800
+Subject: [PATCH] h263/mpeg4: set dec max resolution
+
+---
+ libavcodec/omxdecoder.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 005339e..6ce22ea 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1711,6 +1711,15 @@ static av_cold int omx_decode_init(AVCodecContext *avctx)
+     int ret = AVERROR_DECODER_NOT_FOUND;
+     const char *role;
+     av_log(avctx, AV_LOG_INFO, "omx_decode_init enter\n");
++
++    if (avctx->codec->id == AV_CODEC_ID_MPEG4 || avctx->codec->id == AV_CODEC_ID_H263) {
++        if (avctx->width > 1920 || avctx->height > 1088) {
++            av_log(avctx, AV_LOG_FATAL, "%s: Unsupported resolution (%lux%lu), max 1920x1088\n",
++                avcodec_get_name(avctx->codec->id), avctx->width, avctx->height);
++            return AVERROR_DECODER_NOT_FOUND;
++        }
++    }
++
+     /* cleanup relies on the mutexes/conditions being initialized first. */
+     s->omx_context = omx_init(avctx, s->libname, s->libprefix);
+     if (!s->omx_context)
+-- 
+2.17.1
+

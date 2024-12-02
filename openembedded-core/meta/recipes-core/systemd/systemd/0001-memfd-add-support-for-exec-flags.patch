@@ -1,0 +1,132 @@
+From 7257ee0c5e741d11f67a268b315d86929a821028 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=9C=B1=E5=81=A5=E9=94=8B?=
+ <zhujianfeng@U-KYH9FXXG-1945.local>
+Date: Mon, 29 Jul 2024 19:24:31 +0800
+Subject: [PATCH] memfd add support for exec flags
+
+Upstream-Status: Pending
+
+---
+ src/basic/memfd-util.c   | 18 +++++++++++++++++-
+ src/basic/memfd-util.h   |  2 ++
+ src/basic/missing_mman.h |  8 ++++++++
+ src/home/homed-home.c    |  6 ++++--
+ src/shared/serialize.c   |  3 ++-
+ 5 files changed, 33 insertions(+), 4 deletions(-)
+
+diff --git a/src/basic/memfd-util.c b/src/basic/memfd-util.c
+index f05fb15..e8c6c39 100644
+--- a/src/basic/memfd-util.c
++++ b/src/basic/memfd-util.c
+@@ -20,6 +20,22 @@
+ #include "string-util.h"
+ #include "utf8.h"
+
++int memfd_create_wrapper(const char *name, unsigned mode) {
++        unsigned mode_compat;
++        int mfd;
++
++        mfd = RET_NERRNO(memfd_create(name, mode));
++        if (mfd != -EINVAL)
++                return mfd;
++
++        mode_compat = mode & ~(MFD_EXEC | MFD_NOEXEC_SEAL);
++
++        if (mode == mode_compat)
++                return mfd;
++
++        return RET_NERRNO(memfd_create(name, mode_compat));
++}
++
+ int memfd_new(const char *name) {
+         _cleanup_free_ char *g = NULL;
+
+@@ -49,7 +65,7 @@ int memfd_new(const char *name) {
+                 }
+         }
+
+-        return RET_NERRNO(memfd_create(name, MFD_ALLOW_SEALING | MFD_CLOEXEC));
++        return memfd_create_wrapper(name, MFD_ALLOW_SEALING | MFD_CLOEXEC | MFD_NOEXEC_SEAL);
+ }
+
+ int memfd_map(int fd, uint64_t offset, size_t size, void **p) {
+diff --git a/src/basic/memfd-util.h b/src/basic/memfd-util.h
+index 8596c1a..ff5092d 100644
+--- a/src/basic/memfd-util.h
++++ b/src/basic/memfd-util.h
+@@ -6,6 +6,8 @@
+ #include <stdint.h>
+ #include <sys/types.h>
+
++int memfd_create_wrapper(const char *name, unsigned mode);
++
+ int memfd_new(const char *name);
+ int memfd_new_and_map(const char *name, size_t sz, void **p);
+
+diff --git a/src/basic/missing_mman.h b/src/basic/missing_mman.h
+index 4a10912..198c125 100644
+--- a/src/basic/missing_mman.h
++++ b/src/basic/missing_mman.h
+@@ -10,3 +10,11 @@
+ #ifndef MFD_CLOEXEC
+ #define MFD_CLOEXEC 0x0001U
+ #endif
++
++#ifndef MFD_NOEXEC_SEAL
++#define MFD_NOEXEC_SEAL 0x0008U
++#endif
++
++#ifndef MFD_EXEC
++#define MFD_EXEC 0x0010U
++#endif
+\ No newline at end of file
+diff --git a/src/home/homed-home.c b/src/home/homed-home.c
+index 79c5689..577f8d6 100644
+--- a/src/home/homed-home.c
++++ b/src/home/homed-home.c
+@@ -22,7 +22,9 @@
+ #include "home-util.h"
+ #include "homed-home-bus.h"
+ #include "homed-home.h"
++#include "memfd-util.h"
+ #include "missing_magic.h"
++#include "missing_mman.h"
+ #include "missing_syscall.h"
+ #include "mkdir.h"
+ #include "path-util.h"
+@@ -1175,9 +1177,9 @@ static int home_start_work(Home *h, const char *verb, UserRecord *hr, UserRecord
+
+         log_debug("Sending to worker: %s", formatted);
+
+-        stdout_fd = memfd_create("homework-stdout", MFD_CLOEXEC);
++        stdout_fd = memfd_create_wrapper("homework-stdout", MFD_CLOEXEC | MFD_NOEXEC_SEAL);
+         if (stdout_fd < 0)
+-                return -errno;
++                return stdout_fd;
+
+         r = safe_fork_full("(sd-homework)",
+                            (int[]) { stdin_fd, stdout_fd }, 2,
+diff --git a/src/shared/serialize.c b/src/shared/serialize.c
+index cd48286..9d1a213 100644
+--- a/src/shared/serialize.c
++++ b/src/shared/serialize.c
+@@ -6,6 +6,7 @@
+ #include "env-util.h"
+ #include "escape.h"
+ #include "fileio.h"
++#include "memfd-util.h"
+ #include "missing_mman.h"
+ #include "missing_syscall.h"
+ #include "parse-util.h"
+@@ -197,7 +198,7 @@ int deserialize_environment(const char *value, char ***list) {
+ int open_serialization_fd(const char *ident) {
+         int fd;
+
+-        fd = memfd_create(ident, MFD_CLOEXEC);
++        fd = memfd_create_wrapper(ident, MFD_CLOEXEC | MFD_NOEXEC_SEAL);
+         if (fd < 0) {
+                 const char *path;
+
+--
+2.39.3 (Apple Git-146)
+

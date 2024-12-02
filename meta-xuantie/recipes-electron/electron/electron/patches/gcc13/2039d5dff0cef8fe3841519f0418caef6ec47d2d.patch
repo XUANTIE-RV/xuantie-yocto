@@ -1,0 +1,25 @@
+From 2039d5dff0cef8fe3841519f0418caef6ec47d2d Mon Sep 17 00:00:00 2001
+From: Derek Mauro <dmauro@google.com>
+Date: Thu, 19 Jan 2023 12:04:44 -0800
+Subject: [PATCH] Add missing include and remove unused includes
+
+PiperOrigin-RevId: 503229681
+Change-Id: I72817b43c547bd142144d0887866c4e26ec09fb2
+---
+ absl/strings/internal/damerau_levenshtein_distance.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/absl/strings/internal/damerau_levenshtein_distance.h b/absl/strings/internal/damerau_levenshtein_distance.h
+index 1a9684254aa..7a4bd644626 100644
+--- a/src/third_party/abseil-cpp/absl/strings/internal/damerau_levenshtein_distance.h
++++ b/src/third_party/abseil-cpp/absl/strings/internal/damerau_levenshtein_distance.h
+@@ -15,8 +15,7 @@
+ #ifndef ABSL_STRINGS_INTERNAL_DAMERAU_LEVENSHTEIN_DISTANCE_H_
+ #define ABSL_STRINGS_INTERNAL_DAMERAU_LEVENSHTEIN_DISTANCE_H_
+ 
+-#include <numeric>
+-#include <vector>
++#include <cstdint>
+ 
+ #include "absl/strings/string_view.h"
+ 

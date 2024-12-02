@@ -1,0 +1,31 @@
+From 8b53ad902fdb1869cfa08afef381f1bff18baf8b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Thu, 12 Sep 2024 07:35:42 +0000
+Subject: [PATCH] modify entry path
+
+---
+ bl31/riscv64/bl31_entrypoint.S | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/bl31/riscv64/bl31_entrypoint.S b/bl31/riscv64/bl31_entrypoint.S
+index 52d522bf9..c71279ef9 100644
+--- a/bl31/riscv64/bl31_entrypoint.S
++++ b/bl31/riscv64/bl31_entrypoint.S
+@@ -5,11 +5,11 @@
+  */
+ 
+ #if defined(OPENSBI_0_9)
+-#include "../../../trusted-firmware-a/lib/opensbi-0.9/firmware/fw_jump.S"
++#include "../../../git/lib/opensbi-0.9/firmware/fw_jump.S"
+ #elif defined(OPENSBI_1_2)
+-#include "../../../trusted-firmware-a/lib/opensbi-1.2/firmware/fw_jump.S"
++#include "../../../git/lib/opensbi-1.2/firmware/fw_jump.S"
+ #elif defined(OPENSBI_1_4)
+-#include "../../../trusted-firmware-a/lib/opensbi-1.4/firmware/fw_jump.S"
++#include "../../../git/lib/opensbi-1.4/firmware/fw_jump.S"
+ #else
+ #error "Unsupported OpenSBI Version!"
+ #endif
+-- 
+2.17.1
+

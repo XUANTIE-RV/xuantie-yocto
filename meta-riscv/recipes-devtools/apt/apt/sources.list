@@ -1,0 +1,5 @@
+deb http://mirrors.aliyun.com/debian-ports sid main
+
+deb http://mirrors.aliyun.com/debian-ports unreleased main
+
+deb http://mirrors.aliyun.com/thead/debian-riscv64 sid main

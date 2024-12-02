@@ -1,0 +1,53 @@
+From 81282523a6ff14e7b3243c56c22fdab6b93ecac6 Mon Sep 17 00:00:00 2001
+From: "yangtianyu.lu" <luyangtianyu.lyty@alibaba-inc.com>
+Date: Tue, 19 Dec 2023 11:59:26 +0000
+Subject: [PATCH] fix flush time sequence disordered
+
+---
+ libavcodec/omxdecoder.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 60edda8..7f1ea3d 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1734,14 +1734,18 @@ static int ff_omx_dec_flush(AVCodecContext *avctx, OMXCodecDecoderContext *s)
+             av_log(avctx, AV_LOG_ERROR, "Unable to set IDLE state before flush data\n");
+             return AVERROR_UNKNOWN;
+         }
++        if (wait_for_state(s, OMX_StateIdle) < 0) {
++            av_log(avctx, AV_LOG_ERROR, "Didn't get OMX_StateIdle after flushing\n");
++            return AVERROR_UNKNOWN;
++        }
+ 
+-        err = OMX_SendCommand(s->handle, OMX_CommandFlush, s->in_port, NULL);
+-        if (err != OMX_ErrorNone)
+-            return -1;
++        // err = OMX_SendCommand(s->handle, OMX_CommandFlush, s->in_port, NULL);
++        // if (err != OMX_ErrorNone)
++        //     return -1;
+ 
+-        err = OMX_SendCommand(s->handle, OMX_CommandFlush, s->out_port, NULL);
+-        if (err != OMX_ErrorNone)
+-            return -1;
++        // err = OMX_SendCommand(s->handle, OMX_CommandFlush, s->out_port, NULL);
++        // if (err != OMX_ErrorNone)
++        //     return -1;
+ 
+         while (s->num_done_out_buffers > 0) {
+             buffer = get_buffer(&s->output_mutex, &s->output_cond,
+@@ -1758,10 +1762,7 @@ static int ff_omx_dec_flush(AVCodecContext *avctx, OMXCodecDecoderContext *s)
+                 return AVERROR_UNKNOWN;
+             }
+         }
+-        if (wait_for_state(s, OMX_StateIdle) < 0) {
+-            av_log(avctx, AV_LOG_ERROR, "Didn't get OMX_StateIdle after flushing\n");
+-            return AVERROR_UNKNOWN;
+-        }
++
+         err = OMX_SendCommand(s->handle, OMX_CommandStateSet, OMX_StateExecuting, NULL);
+         CHECK(err);
+         if (wait_for_state(s, OMX_StateExecuting) < 0) {
+-- 
+2.17.1
+

@@ -1,0 +1,16 @@
+diff --git a/Makefile.RISCV64 b/Makefile.RISCV64
+index d0c86ce..b07cb96 100644
+--- a/Makefile.RISCV64
++++ b/Makefile.RISCV64
+@@ -10,10 +10,7 @@ CXX = riscv64-unknown-linux-musl-g++
+ STRIP = riscv64-unknown-linux-musl-strip
+ AR  = riscv64-unknown-linux-musl-ar
+ else
+-CC  = riscv64-unknown-linux-gnu-gcc
+-CXX = riscv64-unknown-linux-gnu-g++
+-STRIP = riscv64-unknown-linux-gnu-strip
+-AR  = riscv64-unknown-linux-gnu-ar
++
+ endif
+ 
+ XT_GCC_VERSION := $(shell ${CC} -E -dM -</dev/null | grep __GNUC__ | awk '{print $$3}')

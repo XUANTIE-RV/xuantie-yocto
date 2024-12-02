@@ -1,0 +1,40 @@
+diff --git a/patches/linux/use-node16.patch b/patches/linux/use-node16.patch
+index 4a22f7f..287e6b0 100644
+--- a/patches/linux/use-node16.patch
++++ b/patches/linux/use-node16.patch
+@@ -1,11 +1,32 @@
+-diff --git a/build/lib/fetch.js b/build/lib/fetch.js
+-index 2fed63b..9a9f013 100644
++index 2fed63b..68431be 100644
+ --- a/build/lib/fetch.js
+ +++ b/build/lib/fetch.js
+-@@ -15,2 +15,3 @@ const crypto = require("crypto");
++@@ -13,6 +13,9 @@ const log = require("fancy-log");
++ const ansiColors = require("ansi-colors");
++ const crypto = require("crypto");
+  const through2 = require("through2");
+ +const fetch = require("node-fetch");
+++const { HttpsProxyAgent } = require('https-proxy-agent');
+++
+  function fetchUrls(urls, options) {
++     if (options === undefined) {
++         options = {};
++@@ -34,6 +37,7 @@ function fetchUrls(urls, options) {
++ }
++ async function fetchUrl(url, options, retries = 10, retryDelay = 1000) {
++     const verbose = !!options.verbose ?? (!!process.env['CI'] || !!process.env['BUILD_ARTIFACTSTAGINGDIRECTORY']);
+++    const agent = process.env.https_proxy ? new HttpsProxyAgent(process.env.https_proxy) : null;
++     try {
++         let startTime = 0;
++         if (verbose) {
++@@ -45,6 +49,7 @@ async function fetchUrl(url, options, retries = 10, retryDelay = 1000) {
++         try {
++             const response = await fetch(url, {
++                 ...options.nodeFetchOptions,
+++                agent,
++                 signal: controller.signal /* Typings issue with lib.dom.d.ts */
++             });
++             if (verbose) {
+ diff --git a/build/linux/debian/install-sysroot.js b/build/linux/debian/install-sysroot.js
+ index feca7d3..b4f6540 100644
+ --- a/build/linux/debian/install-sysroot.js

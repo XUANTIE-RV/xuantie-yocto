@@ -1,0 +1,44 @@
+From 5e077e40e768b484cd33d7e925aff664592c15dd Mon Sep 17 00:00:00 2001
+From: "hanyu.cp" <hanyu.cp@alibaba-inc.com>
+Date: Tue, 23 Jul 2024 18:52:22 +0800
+Subject: [PATCH] riscv:kdump: Fix gen /proc/vmcore
+
+Signed-off-by: hanyu.cp <hanyu.cp@alibaba-inc.com>
+Change-Id: I24357a9169cbe2ccdb2efda60ccd294a4652f3a2
+---
+ arch/riscv/mm/init.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/arch/riscv/mm/init.c b/arch/riscv/mm/init.c
+index fc9790ba9193..d3925c9423ea 100644
+--- a/arch/riscv/mm/init.c
++++ b/arch/riscv/mm/init.c
+@@ -1494,6 +1494,25 @@ static void __init reserve_crashkernel(void)
+ 	crashk_res.end = crash_base + crash_size - 1;
+ }
+ 
++#ifdef CONFIG_CRASH_DUMP
++/*
++ * We keep track of the ELF core header of the crashed
++ * kernel with a reserved-memory region with compatible
++ * string "linux,elfcorehdr". Here we register a callback
++ * to populate elfcorehdr_addr/size when this region is
++ * present. Note that this region will be marked as
++ * reserved once we call early_init_fdt_scan_reserved_mem()
++ * later on.
++ */
++static int elfcore_hdr_setup(struct reserved_mem *rmem)
++{
++	elfcorehdr_addr = rmem->base;
++	elfcorehdr_size = rmem->size;
++	return 0;
++}
++RESERVEDMEM_OF_DECLARE(elfcorehdr, "linux,elfcorehdr", elfcore_hdr_setup);
++#endif
++
+ void __init paging_init(void)
+ {
+ 	setup_bootmem();
+-- 
+2.17.1
+

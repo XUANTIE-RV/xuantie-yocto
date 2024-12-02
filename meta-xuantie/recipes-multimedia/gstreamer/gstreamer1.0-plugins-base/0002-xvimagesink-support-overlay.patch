@@ -1,0 +1,1456 @@
+From 11f2a4f3ebf9ce8ed0639f34ac8a281637922a13 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Sun, 7 Jul 2024 17:34:48 +0800
+Subject: [PATCH] xvimagesink: support overlay
+
+---
+ sys/xvimage/meson.build        |  10 +-
+ sys/xvimage/xvcontext.c        |  40 +-
+ sys/xvimage/xvcontext.h        |  67 ++-
+ sys/xvimage/xvimageallocator.c |  55 +-
+ sys/xvimage/xvimageallocator.h |   7 +-
+ sys/xvimage/xvimagesink.c      | 885 ++++++++++++++++++++++++++++++++-
+ sys/xvimage/xvimagesink.h      |  37 ++
+ 7 files changed, 1070 insertions(+), 31 deletions(-)
+
+diff --git a/sys/xvimage/meson.build b/sys/xvimage/meson.build
+index f1aaecf..2932222 100644
+--- a/sys/xvimage/meson.build
++++ b/sys/xvimage/meson.build
+@@ -13,13 +13,21 @@ if cc.has_argument ('-Wno-deprecated-declarations')
+ endif
+ 
+ xvideo_dep = dependency('xv', required : get_option('xvideo'))
++libx11_xcb_dep = dependency('x11-xcb', required: true)
++libxcb_dep = dependency('xcb', required: true)
++libxcb_shm_dep = dependency('xcb-shm', required: true)
++libxcb_xv_dep = dependency('xcb-xv', required: true)
++libgbm_dep = dependency('gbm', required: true)
++libcsi_g2d_dep = cc.find_library('csi-g2d', required: true)
++libvmem_dep = cc.find_library('vmem', required: true)
++
+ 
+ if xvideo_dep.found()
+   gstxvimage = library('gstxvimagesink',
+     xvimage_sources,
+     c_args : gst_plugins_base_args + no_warn_args,
+     include_directories: [configinc, libsinc],
+-    dependencies : glib_deps + [video_dep, gst_base_dep, gst_dep, x11_dep, xshm_dep, xvideo_dep, libm],
++    dependencies: glib_deps + [video_dep, gst_base_dep, gst_dep, x11_dep, xshm_dep, xvideo_dep, libm, libx11_xcb_dep, libxcb_dep, libxcb_shm_dep, allocators_dep, libxcb_xv_dep, libgbm_dep, libcsi_g2d_dep, libvmem_dep],
+     install : true,
+     install_dir : plugins_install_dir,
+   )
+diff --git a/sys/xvimage/xvcontext.c b/sys/xvimage/xvcontext.c
+index 56dee97..2d8ec9b 100644
+--- a/sys/xvimage/xvcontext.c
++++ b/sys/xvimage/xvcontext.c
+@@ -720,10 +720,17 @@ gst_xvcontext_new (GstXvContextConfig * config, GError ** error)
+       gst_xvcontext_check_xshm_calls (context)) {
+     context->use_xshm = TRUE;
+     GST_DEBUG ("xvimagesink is using XShm extension");
++
++    context->connection = XGetXCBConnection(context->disp);
++    if (context->connection)
++      context->use_shm_fd = TRUE;
++    else
++      context->use_shm_fd = FALSE;
+   } else
+ #endif /* HAVE_XSHM */
+   {
+     context->use_xshm = FALSE;
++    context->use_shm_fd = FALSE;
+     GST_DEBUG ("xvimagesink is not using XShm extension");
+   }
+   if (XkbQueryExtension (context->disp, &opcode, &event, &err, &major, &minor)) {
+@@ -1040,9 +1047,13 @@ gst_xvcontext_create_xwindow_from_xid (GstXvContext * context, XID xid)
+ }
+ 
+ void
+-gst_xwindow_destroy (GstXWindow * window)
++gst_xwindow_destroy (GstXWindow * window, InputFdMappingNode * input_mapping_head, PreConvertBuffer ** pre_buf)
+ {
+   GstXvContext *context;
++#ifdef HAVE_XSHM
++  int i;
++  InputFdMappingNode *current;
++#endif /* HAVE_XSHM */
+ 
+   g_return_if_fail (window != NULL);
+ 
+@@ -1058,6 +1069,29 @@ gst_xwindow_destroy (GstXWindow * window)
+ 
+   XFreeGC (context->disp, window->gc);
+ 
++#ifdef HAVE_XSHM
++  if (context->connection) {
++    xcb_free_gc(context->connection, window->xcb_gc);
++
++    for (i = 0; i < XVIMAGE_SINK_PRE_CONVERT_BUFFER_MAX; i++) {
++      if (pre_buf[i] && pre_buf[i]->shm.attached) {
++        xcb_shm_detach(context->connection, pre_buf[i]->shm.shmseg);
++        pre_buf[i]->shm.attached = FALSE;
++      }
++    }
++
++    current = input_mapping_head;
++    while (current != NULL) {
++      if (current->mapping.shm.attached) {
++        xcb_shm_detach(context->connection, current->mapping.shm.shmseg);
++        current->mapping.shm.attached = FALSE;
++      }
++      current = current->next;
++    }
++    context->connection = NULL;
++  }
++#endif /* HAVE_XSHM */
++
+   XSync (context->disp, FALSE);
+ 
+   g_mutex_unlock (&context->lock);
+@@ -1081,11 +1115,11 @@ gst_xwindow_set_event_handling (GstXWindow * window, gboolean handle_events)
+     if (window->internal) {
+       XSelectInput (context->disp, window->win,
+           ExposureMask | StructureNotifyMask | PointerMotionMask |
+-          KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask);
++          KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | FocusChangeMask);
+     } else {
+       XSelectInput (context->disp, window->win,
+           ExposureMask | StructureNotifyMask | PointerMotionMask |
+-          KeyPressMask | KeyReleaseMask);
++          KeyPressMask | KeyReleaseMask | FocusChangeMask);
+     }
+   } else {
+     XSelectInput (context->disp, window->win, 0);
+diff --git a/sys/xvimage/xvcontext.h b/sys/xvimage/xvcontext.h
+index 701b527..e9fd8bc 100644
+--- a/sys/xvimage/xvcontext.h
++++ b/sys/xvimage/xvcontext.h
+@@ -33,6 +33,16 @@
+ #include <X11/extensions/XShm.h>
+ #endif /* HAVE_XSHM */
+ 
++#ifdef HAVE_XSHM
++#include <xcb/xcb.h>
++#include <xcb/shm.h>
++#include <X11/Xlib-xcb.h>
++#include <xcb/xv.h>
++#include <csi-g2d/csi_g2d_types.h>
++#include <csi-g2d/csi_g2d.h>
++#include <gbm.h>
++#endif /* HAVE_XSHM */
++
+ #include <X11/extensions/Xv.h>
+ #include <X11/extensions/Xvlib.h>
+ 
+@@ -42,6 +52,19 @@
+ 
+ #include <gst/video/video.h>
+ 
++
++// #define USE_GBM_MEM
++
++#ifndef USE_GBM_MEM
++#include <sys/mman.h>
++#include <sys/ioctl.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <unistd.h>
++#include <memory.h>
++#include "vidmem/video_mem.h"
++#endif
++
+ G_BEGIN_DECLS
+ 
+ typedef struct _GstXvContextConfig GstXvContextConfig;
+@@ -121,6 +144,43 @@ struct _GstXvImageFormat
+  * Structure used to store various information collected/calculated for a
+  * Display.
+  */
++
++#define XVIMAGE_SINK_PRE_CONVERT_BUFFER_MAX   4
++#define XVIMAGE_SINK_PRE_CONVERT_ZOOM_RATIO_THRESHOLD 2
++#define XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX    4096
++#define XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX   4096 // It could be a vertical video
++
++typedef struct {
++  gboolean attached;
++  xcb_shm_seg_t shmseg;
++} XcbShmSegmentInfo;
++
++typedef struct {
++  csi_g2d_surface target;
++  gboolean target_initialized;
++  int32_t output_fd;
++#ifndef USE_GBM_MEM
++  VmemParams *vmparams;
++#else
++  struct gbm_bo *bo;
++#endif
++  XcbShmSegmentInfo shm;
++} PreConvertBuffer;
++
++typedef struct {
++  csi_g2d_surface source;
++  gboolean source_initialized;
++  int32_t fd_memory;
++  GstBuffer *gst_buf;
++  PreConvertBuffer *pre_buf;
++  XcbShmSegmentInfo shm;
++} InputFdMapping;
++
++typedef struct _InputFdMappingNode {
++  InputFdMapping mapping;
++  struct _InputFdMappingNode *next;
++} InputFdMappingNode;
++
+ struct _GstXvContext
+ {
+   GstMiniObject parent;
+@@ -173,6 +233,9 @@ struct _GstXvContext
+   gint last_format;
+   gint last_width;
+   gint last_height;
++
++  gboolean use_shm_fd;
++  xcb_connection_t *connection;
+ };
+ 
+ GType gst_xvcontext_get_type (void);
+@@ -230,6 +293,7 @@ struct _GstXWindow
+   GstVideoRectangle render_rect;
+   gboolean internal;
+   GC gc;
++  xcb_gcontext_t xcb_gc;
+ };
+ 
+ G_END_DECLS
+@@ -238,7 +302,8 @@ GstXWindow *   gst_xvcontext_create_xwindow     (GstXvContext * context,
+                                                  gint width, gint height);
+ GstXWindow *   gst_xvcontext_create_xwindow_from_xid (GstXvContext * context, XID xid);
+ 
+-void           gst_xwindow_destroy              (GstXWindow * window);
++void           gst_xwindow_destroy              (GstXWindow * window, InputFdMappingNode * input_mapping_head,
++                                                PreConvertBuffer ** pre_buf);
+ 
+ void           gst_xwindow_set_event_handling   (GstXWindow * window, gboolean handle_events);
+ void           gst_xwindow_set_title            (GstXWindow * window, const gchar * title);
+diff --git a/sys/xvimage/xvimageallocator.c b/sys/xvimage/xvimageallocator.c
+index bf1f2bd..fa4bb72 100644
+--- a/sys/xvimage/xvimageallocator.c
++++ b/sys/xvimage/xvimageallocator.c
+@@ -628,10 +628,13 @@ gst_xwindow_draw_borders (GstXWindow * window, GstVideoRectangle * rect)
+ 
+ void
+ gst_xvimage_memory_render (GstXvImageMemory * mem, GstVideoRectangle * src_crop,
+-    GstXWindow * window, GstVideoRectangle * dst_crop, gboolean draw_border)
++    GstXWindow * window, GstVideoRectangle * dst_crop, gboolean draw_border,
++    gboolean use_shm_fd, InputFdMapping * mapping, gboolean pre_convert,
++    uint32_t xv_format_id, GstVideoRectangle * res_crop)
+ {
+   GstXvContext *context;
+   XvImage *xvimage;
++  XcbShmSegmentInfo *shm;
+ 
+   context = window->context;
+ 
+@@ -647,12 +650,47 @@ gst_xvimage_memory_render (GstXvImageMemory * mem, GstVideoRectangle * src_crop,
+         src_crop->w, src_crop->h, window->render_rect.w, window->render_rect.h,
+         mem);
+ 
+-    XvShmPutImage (context->disp,
+-        context->xv_port_id,
+-        window->win,
+-        window->gc, xvimage,
+-        src_crop->x, src_crop->y, src_crop->w, src_crop->h,
+-        dst_crop->x, dst_crop->y, dst_crop->w, dst_crop->h, FALSE);
++    if (use_shm_fd) {
++      if(mapping == NULL) {
++        g_mutex_unlock (&context->lock);
++        return;
++      }
++      if (pre_convert)
++        shm = &mapping->pre_buf->shm;
++      else
++        shm = &mapping->shm;
++      if (!shm->attached) {
++        shm->shmseg = xcb_generate_id(context->connection);
++        if (pre_convert) {
++          xcb_shm_attach_fd(context->connection, shm->shmseg, mapping->pre_buf->output_fd, 1);
++        } else {
++          xcb_shm_attach_fd(context->connection, shm->shmseg, mapping->fd_memory, 1);
++        }
++        shm->attached = TRUE;
++      }
++      if (!pre_convert) {
++        xcb_xv_shm_put_image(context->connection, context->xv_port_id,
++          window->win, window->xcb_gc, shm->shmseg, xv_format_id, 0,
++          src_crop->x, src_crop->y, src_crop->w, src_crop->h,
++          dst_crop->x, dst_crop->y, dst_crop->w, dst_crop->h,
++          src_crop->w, src_crop->h, 0);
++      } else {
++        xcb_xv_shm_put_image(context->connection, context->xv_port_id,
++          window->win, window->xcb_gc, shm->shmseg, xv_format_id, 0,
++          src_crop->x, src_crop->y, XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX, XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX,
++          dst_crop->x, dst_crop->y, dst_crop->w, dst_crop->h,
++          res_crop->w, res_crop->h, 0);
++        }
++      // xcb_flush(context->connection);
++      // xcb_aux_sync(context->connection);
++    } else {
++      XvShmPutImage (context->disp,
++          context->xv_port_id,
++          window->win,
++          window->gc, xvimage,
++          src_crop->x, src_crop->y, src_crop->w, src_crop->h,
++          dst_crop->x, dst_crop->y, dst_crop->w, dst_crop->h, FALSE);
++    }
+   } else
+ #endif /* HAVE_XSHM */
+   {
+@@ -663,7 +701,8 @@ gst_xvimage_memory_render (GstXvImageMemory * mem, GstVideoRectangle * src_crop,
+         src_crop->x, src_crop->y, src_crop->w, src_crop->h,
+         dst_crop->x, dst_crop->y, dst_crop->w, dst_crop->h);
+   }
+-  XSync (context->disp, FALSE);
++  if (!use_shm_fd)
++    XSync (context->disp, FALSE);
+ 
+   g_mutex_unlock (&context->lock);
+ }
+diff --git a/sys/xvimage/xvimageallocator.h b/sys/xvimage/xvimageallocator.h
+index f9b7ee3..dc7020f 100644
+--- a/sys/xvimage/xvimageallocator.h
++++ b/sys/xvimage/xvimageallocator.h
+@@ -63,7 +63,12 @@ void                  gst_xvimage_memory_render         (GstXvImageMemory *mem,
+                                                          GstVideoRectangle *src_crop,
+                                                          GstXWindow *window,
+                                                          GstVideoRectangle *dst_crop,
+-                                                         gboolean draw_border);
++                                                         gboolean draw_border,
++                                                         gboolean use_shm_fd,
++                                                         InputFdMapping *mapping,
++                                                         gboolean pre_convert,
++                                                         uint32_t xv_format_id,
++                                                         GstVideoRectangle *res_crop);
+ 
+ G_END_DECLS
+ 
+diff --git a/sys/xvimage/xvimagesink.c b/sys/xvimage/xvimagesink.c
+index 993d3f7..5ae2ef6 100644
+--- a/sys/xvimage/xvimagesink.c
++++ b/sys/xvimage/xvimagesink.c
+@@ -132,6 +132,14 @@
+ /* for XkbKeycodeToKeysym */
+ #include <X11/XKBlib.h>
+ 
++#ifdef HAVE_XSHM
++#include <gst/allocators/gstdmabuf.h>
++#include <xcb/xcb.h>
++#include <xcb/shm.h>
++#include <X11/Xlib-xcb.h>
++#include <xcb/xv.h>
++#endif /* HAVE_XSHM */
++
+ GST_DEBUG_CATEGORY_EXTERN (gst_debug_xv_context);
+ GST_DEBUG_CATEGORY_EXTERN (gst_debug_xv_image_pool);
+ GST_DEBUG_CATEGORY (gst_debug_xv_image_sink);
+@@ -189,6 +197,7 @@ enum
+   PROP_DRAW_BORDERS,
+   PROP_WINDOW_WIDTH,
+   PROP_WINDOW_HEIGHT,
++  PROP_PRE_CONVERT_FORMAT,
+   PROP_LAST
+ };
+ 
+@@ -230,12 +239,598 @@ GST_ELEMENT_REGISTER_DEFINE_WITH_CODE (xvimagesink, "xvimagesink",
+ /*                                                               */
+ /* ============================================================= */
+ 
++static unsigned int gst_xv_image_csi_g2d_format_map(GstVideoFormat format)
++{
++  switch (format) {
++    case GST_VIDEO_FORMAT_ARGB:
++      return CSI_G2D_FMT_ARGB8888;
++    case GST_VIDEO_FORMAT_NV12:
++      return CSI_G2D_FMT_NV12;
++    default:
++      return 0;
++  }
++}
++
++// g2d needs to run on the same thread
++static void g2d_thread_main(G2dThreadContext *context)
++{
++  G2dTask *task;
++
++  while (1) {
++    g_mutex_lock(&context->lock);
++
++    while (!context->stop && g_queue_is_empty(context->task_queue)) {
++      g_cond_wait(&context->cond, &context->lock);
++    }
++
++    if (context->stop && g_queue_is_empty(context->task_queue)) {
++      g_mutex_unlock(&context->lock);
++      break;
++    }
++
++    task = g_queue_pop_head(context->task_queue);
++
++    g_mutex_unlock(&context->lock);
++
++    if (task) {
++      task->result = task->operation(task->arg);
++
++      g_mutex_lock(&context->lock);
++      task->done = TRUE;
++      g_cond_signal(&context->tesk_cond);
++      g_mutex_unlock(&context->lock);
++    }
++  }
++}
++
++static int g2d_thread_start(G2dThreadContext *context)
++{
++  context->stop = FALSE;
++  context->task_queue = g_queue_new();
++  g_mutex_init(&context->lock);
++  g_cond_init(&context->cond);
++  g_cond_init(&context->tesk_cond);
++  context->thread = g_thread_new("g2d_thread", (GThreadFunc)g2d_thread_main, context);
++  if (!context->thread) {
++    return -1;
++  }
++  return 0;
++}
++
++static void g2d_thread_stop(G2dThreadContext *context)
++{
++  g_mutex_lock(&context->lock);
++  context->stop = TRUE;
++  g_cond_signal(&context->cond);
++  g_mutex_unlock(&context->lock);
++
++  g_thread_join(context->thread);
++  context->thread = NULL;
++
++  g_queue_free(context->task_queue);
++  context->task_queue = NULL;
++
++  g_mutex_clear(&context->lock);
++  g_cond_clear(&context->cond);
++  g_cond_clear(&context->tesk_cond);
++}
++
++static int g2d_post_task(G2dThreadContext *context, int (*operation)(void *), void *arg)
++{
++  G2dTask task = {
++    .operation = operation,
++    .arg = arg,
++    .result = 0,
++    .done = FALSE
++  };
++
++  g_mutex_lock(&context->lock);
++  g_queue_push_tail(context->task_queue, &task);
++  g_cond_signal(&context->cond);
++  g_mutex_unlock(&context->lock);
++
++  g_mutex_lock(&context->lock);
++  while (!task.done) {
++    g_cond_wait(&context->tesk_cond, &context->lock);
++  }
++  g_mutex_unlock(&context->lock);
++  return task.result;
++}
++
++static int csi_g2d_open_task(void *arg)
++{
++  if (csi_g2d_open()) {
++    GST_ERROR ("open csi g2d failed\n");
++    return -1;
++  }
++  return 0;
++}
++
++static int csi_g2d_close_task(void *arg)
++{
++  if (csi_g2d_close()) {
++    GST_ERROR ("close csi g2d failed\n");
++    return -1;
++  }
++  return 0;
++}
++
++static int gst_xv_image_sink_xvimage_pre_convert_close(GstXvImageSink *xvimagesink)
++{
++  if (!xvimagesink->g2d_thread_context) {
++    return 0;
++  }
++  g2d_post_task(xvimagesink->g2d_thread_context, csi_g2d_close_task, xvimagesink);
++  g2d_thread_stop(xvimagesink->g2d_thread_context);
++  free(xvimagesink->g2d_thread_context);
++  xvimagesink->g2d_thread_context = NULL;
++  return 0;
++}
++
++static int gst_xv_image_sink_xvimage_pre_convert_surface_destroy_task(void *arg)
++{
++  if (csi_g2d_surface_destroy(arg)) {
++    GST_ERROR ("destroy source surface failed\n");
++    return -1;
++  }
++  return 0;
++}
++
++static int gst_xv_image_sink_xvimage_pre_convert_surface_destroy(GstXvImageSink *xvimagesink, csi_g2d_surface *surface)
++{
++  return g2d_post_task(xvimagesink->g2d_thread_context, gst_xv_image_sink_xvimage_pre_convert_surface_destroy_task, surface);
++}
++
++typedef struct {
++  GstXvImageSink *xvimagesink;
++  csi_g2d_surface *surface;
++  GstVideoFormat format;
++  int w;
++  int h;
++  int32_t fd;
++} g2d_init_task_t;
++
++static int gst_xv_image_sink_xvimage_pre_convert_surface_init_task(void *arg)
++{
++  g2d_init_task_t *p;
++
++  p = (g2d_init_task_t *)arg;
++  memset(p->surface, 0, sizeof(*p->surface));
++  p->surface->width = p->w;
++  p->surface->height = p->h;
++  p->surface->pool = CSI_G2D_POOL_USER;
++  p->surface->format = gst_xv_image_csi_g2d_format_map(p->format);
++  if (csi_g2d_surface_create(p->surface)) {
++    GST_ERROR ("create surface failed %dx%d\n", p->surface->width, p->surface->height);
++    return -1;
++  }
++  if (csi_g2d_surface_import(p->surface, p->fd)) {
++    GST_ERROR ("surface_import failed: %d\n", p->fd);
++    if (csi_g2d_surface_destroy(p->surface))
++      GST_ERROR ("destroy surface failed\n");
++    return -1;
++  }
++  return 0;
++}
++
++static int gst_xv_image_sink_xvimage_pre_convert_surface_init(GstXvImageSink *xvimagesink,
++  csi_g2d_surface *surface, GstVideoFormat format, int w, int h, int32_t fd)
++{
++  g2d_init_task_t data;
++
++  if (!xvimagesink->g2d_thread_context) {
++    xvimagesink->g2d_thread_context = malloc(sizeof(*xvimagesink->g2d_thread_context));
++    if (!xvimagesink->g2d_thread_context) {
++      GST_ERROR ("Failed to malloc xvimagesink->g2d_thread_context");
++      return -1;
++    }
++    memset(xvimagesink->g2d_thread_context, 0, sizeof(*xvimagesink->g2d_thread_context));
++    if (g2d_thread_start(xvimagesink->g2d_thread_context)) {
++      GST_ERROR ("g2d_thread_start failed\n");
++      free(xvimagesink->g2d_thread_context);
++      xvimagesink->g2d_thread_context = NULL;
++      return -1;
++    }
++    if (g2d_post_task(xvimagesink->g2d_thread_context, csi_g2d_open_task, NULL)) {
++      GST_ERROR ("csi_g2d_open_task failed\n");
++      g2d_thread_stop(xvimagesink->g2d_thread_context);
++      free(xvimagesink->g2d_thread_context);
++      xvimagesink->g2d_thread_context = NULL;
++      return -1;
++    }
++  }
++  data.xvimagesink = xvimagesink;
++  data.surface     = surface;
++  data.format      = format;
++  data.w           = w;
++  data.h           = h;
++  data.fd          = fd;
++  return g2d_post_task(xvimagesink->g2d_thread_context, gst_xv_image_sink_xvimage_pre_convert_surface_init_task, &data);
++}
++
++typedef struct {
++  GstXvImageSink *xvimagesink;
++  csi_g2d_surface *source;
++  csi_g2d_surface *target;
++  GstVideoRectangle *dst;
++} g2d_convert_task_t;
++
++static int gst_xv_image_sink_xvimage_pre_convert_task(void *arg)
++{
++  g2d_convert_task_t *p;
++  csi_g2d_region dstRect;
++
++  p = (g2d_convert_task_t *)arg;
++
++  p->target->width = p->dst->w & 1 ? p->dst->w + 1 : p->dst->w;
++  p->target->height = p->dst->h & 1 ? p->dst->h + 1 : p->dst->h;
++  if (csi_g2d_surface_set_target(p->target)) {
++    GST_ERROR ("set target surface failed\n");
++    return -1;
++  }
++  if (csi_g2d_surface_set_source(p->source)) {
++    GST_ERROR ("set source surface failed\n");
++    return -1;
++  }
++
++  dstRect.left = dstRect.top = 0;
++  dstRect.right = p->target->width;
++  dstRect.bottom = p->target->height;
++
++  if (csi_g2d_blit_stretchblit(&dstRect, 1)) {
++    GST_ERROR ("bitblit failed\n");
++    return -1;
++  }
++
++  if (csi_g2d_flush()) {
++    GST_ERROR ("flush g2d failed\n");
++    return -1;
++  }
++  return 0;
++}
++
++static int gst_xv_image_sink_xvimage_pre_convert(GstXvImageSink *xvimagesink,
++  csi_g2d_surface *source, csi_g2d_surface *target, GstVideoRectangle *dst)
++{
++  g2d_convert_task_t data;
++
++  if (!dst->w || !dst->h)
++    return 0;
++
++  data.xvimagesink = xvimagesink;
++  data.source      = source;
++  data.target      = target;
++  data.dst         = dst;
++  return g2d_post_task(xvimagesink->g2d_thread_context, gst_xv_image_sink_xvimage_pre_convert_task, &data);
++}
++
++#ifndef USE_GBM_MEM
++static int gst_xv_image_pre_convert_buffer_malloc(GstXvImageSink *xvimagesink,
++   int width, int height, GstVideoFormat format, PreConvertBuffer *pre_buf)
++{
++  int alloc_flags[] =
++  {
++    VMEM_FLAG_CONTIGUOUS | VMEM_FLAG_4GB_ADDR,
++    VMEM_FLAG_NON_CONTIGUOUS,
++    VMEM_FLAG_CMA,
++    VMEM_FLAG_VI
++  };
++  int pgsize = getpagesize();
++  VmemParams *params;
++  int size;
++
++  if (!xvimagesink->vmem) {
++    if (VMEM_create(&xvimagesink->vmem) != VMEM_STATUS_OK)
++      return -1;
++  }
++  switch (format)
++  {
++    case GST_VIDEO_FORMAT_ARGB:
++      size = width * height * 4;
++      break;
++    case GST_VIDEO_FORMAT_NV12:
++      size = width * height * 3 / 2;
++      break;
++    default:
++      GST_ERROR ("unknow format %d", format);
++      return -1;
++  }
++  size = (size + pgsize - 1) / pgsize * pgsize;
++
++  params = malloc(sizeof(*params));
++  if (!params) {
++    GST_ERROR ("malloc VmemParams fail");
++    return -1;
++  }
++  memset(params, 0, sizeof(*params));
++
++  params->size = size;
++  params->flags = alloc_flags[0];
++
++  if (VMEM_allocate(xvimagesink->vmem, params) != VMEM_STATUS_OK)
++  {
++    printf("ERROR: Failed to allocate buffer\n");
++    free(params);
++    return -1;
++  }
++  if (VMEM_mmap(xvimagesink->vmem, params) != VMEM_STATUS_OK)
++  {
++    GST_ERROR ("ERROR: Failed to mmap buffer\n");
++    VMEM_free(xvimagesink->vmem, params);
++    free(params);
++    return -1;
++  }
++  if (VMEM_export(xvimagesink->vmem, params) != VMEM_STATUS_OK)
++  {
++    GST_ERROR ("ERROR: Failed to export buffer: 0x%lx\n",
++        params->phy_address);
++    VMEM_free(xvimagesink->vmem, params);
++    free(params);
++    return -1;
++  }
++  pre_buf->output_fd = params->fd;
++  pre_buf->vmparams = params;
++  return 0;
++}
++
++static int gst_xv_image_pre_convert_buffer_free(GstXvImageSink *xvimagesink,  PreConvertBuffer *pre_buf)
++{
++  if (xvimagesink->vmem == NULL || pre_buf == NULL || pre_buf->vmparams == NULL) {
++    return -1;
++  }
++  VMEM_free(xvimagesink->vmem, pre_buf->vmparams);
++  free(pre_buf->vmparams);
++  pre_buf->vmparams = NULL;
++  return 0;
++}
++
++#else /* USE_GBM_MEM */
++
++static int gst_xv_image_pre_convert_buffer_malloc(GstXvImageSink *xvimagesink,
++   int width, int height, GstVideoFormat format, PreConvertBuffer *gbm_buffer)
++{
++  int drm_fd;
++  struct gbm_device *gbm;
++  int32_t output_fd;
++  struct gbm_bo *bo;
++
++  if (xvimagesink->gbm == NULL) {
++    drm_fd = open("/dev/dri/card0", O_RDWR);
++    if (drm_fd < 0) {
++        GST_ERROR ("open DRM device");
++        return -1;
++    }
++    gbm = gbm_create_device(drm_fd);
++    if (!gbm) {
++      GST_ERROR ("Failed to create GBM device");
++      return -1;
++    }
++    xvimagesink->gbm = gbm;
++  }
++
++  bo = gbm_bo_create(xvimagesink->gbm, width,
++    xvimagesink->pre_convert_format == GST_VIDEO_FORMAT_NV12 ? height / 2 : height,
++    GBM_FORMAT_XRGB8888, GBM_BO_USE_RENDERING | GBM_BO_USE_LINEAR);
++  if (!bo) {
++    GST_ERROR ("Failed to create GBM buffer object");
++    return -1;
++  }
++  gbm_buffer->bo = bo;
++
++  output_fd = gbm_bo_get_fd(gbm_buffer->bo);
++  if (output_fd < 0) {
++    gbm_bo_destroy(bo);
++    GST_ERROR ("Failed to get gbm_bo file descriptor");
++    return -1;
++  }
++  gbm_buffer->output_fd = output_fd;
++  return 0;
++}
++
++static int gst_xv_image_pre_convert_buffer_free(GstXvImageSink *xvimagesink, PreConvertBuffer *gbm_buffer)
++{
++  if (xvimagesink->gbm == NULL || gbm_buffer == NULL || gbm_buffer->bo == NULL) {
++    return -1;
++  }
++  close(gbm_buffer->output_fd);
++  gbm_bo_destroy(gbm_buffer->bo);
++  free(gbm_buffer);
++  return 0;
++}
++#endif /* USE_GBM_MEM */
++
++static void gst_xv_image_shared_data_destroy(GstXvImageSink *xvimagesink)
++{
++  int i;
++  PreConvertBuffer *pre_buf;
++  InputFdMappingNode *current;
++  InputFdMappingNode *bak;
++
++  // free input buffer
++  current = xvimagesink->input_mapping_head;
++  while (current != NULL) {
++    if (current->mapping.source_initialized) {
++      gst_xv_image_sink_xvimage_pre_convert_surface_destroy(xvimagesink, &current->mapping.source);
++      current->mapping.source_initialized = FALSE;
++    }
++    bak = current;
++    current = current->next;
++    free(bak);
++  }
++  xvimagesink->input_mapping_head = NULL;
++
++  // free output buffer
++  for (i = 0; i < XVIMAGE_SINK_PRE_CONVERT_BUFFER_MAX; i++) {
++    pre_buf = xvimagesink->pre_buf[i];
++    if (pre_buf == NULL)
++      continue;
++    xvimagesink->pre_buf[i] = NULL;
++    if (pre_buf->target_initialized) {
++      gst_xv_image_sink_xvimage_pre_convert_surface_destroy(xvimagesink, &pre_buf->target);
++      pre_buf->target_initialized = FALSE;
++    }
++    gst_xv_image_pre_convert_buffer_free(xvimagesink, pre_buf);
++  }
++#ifndef USE_GBM_MEM
++  if (xvimagesink->vmem) {
++    VMEM_destroy(xvimagesink->vmem);
++    xvimagesink->vmem = NULL;
++  }
++#else
++  if (xvimagesink->gbm) {
++    gbm_device_destroy(xvimagesink->gbm);
++    xvimagesink->gbm = NULL;
++  }
++#endif
++  gst_xv_image_sink_xvimage_pre_convert_close(xvimagesink);
++}
++
++static int gst_xv_image_shared_data_init(GstXvImageSink *xvimagesink, GstVideoRectangle *src_crop)
++{
++  int i;
++  PreConvertBuffer *pre_buf;
++  int ret;
++
++  for (i = 0; i < XVIMAGE_SINK_PRE_CONVERT_BUFFER_MAX; i++) {
++    
++    pre_buf = malloc(sizeof(*pre_buf));
++    if (!pre_buf) {
++      GST_ERROR ("Failed to malloc pre_buf");
++      return -1;
++    }
++    memset(pre_buf, 0, sizeof(*pre_buf));
++    ret = gst_xv_image_pre_convert_buffer_malloc(xvimagesink, XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX,
++        XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX, xvimagesink->pre_convert_format, pre_buf);
++    if (ret < 0) {
++      GST_ERROR ("gst_xv_image_pre_convert_buffer_malloc failed %d", i);
++      free(pre_buf);
++      return -1;
++    }
++    g_queue_push_tail(xvimagesink->free_buffer_queue, pre_buf);
++    xvimagesink->pre_buf[i] = pre_buf;
++  }
++  return 0;
++}
++
++static PreConvertBuffer *gst_xv_image_shared_data_get(GstXvImageSink *xvimagesink)
++{
++  while (g_queue_is_empty(xvimagesink->free_buffer_queue)) {
++    g_cond_wait(&xvimagesink->free_buffer_cond, &xvimagesink->flow_lock);
++  }
++  return (PreConvertBuffer *)g_queue_pop_head(xvimagesink->free_buffer_queue);
++  
++}
++
++static int gst_xvimage_input_has_received_fd(GstXvImageSink *xvimagesink, int32_t fd, InputFdMapping **mapping)
++{
++  InputFdMappingNode *current;
++  InputFdMappingNode *new_node;
++
++  current = xvimagesink->input_mapping_head;
++  while (current != NULL) {
++    if (current->mapping.fd_memory == fd) {
++      *mapping = &current->mapping;
++      return 1;
++    }
++    current = current->next;
++  }
++
++  new_node = (InputFdMappingNode *)malloc(sizeof(*new_node));
++  if (!new_node) {
++    *mapping = NULL;
++    GST_ERROR ("Failed to allocate memory for fd mapping node\n");
++    return 0;
++  }
++  memset(new_node, 0, sizeof(*new_node));
++  memset(&new_node->mapping, 0, sizeof(new_node->mapping));
++  new_node->mapping.fd_memory = fd;
++  new_node->next = xvimagesink->input_mapping_head;
++  xvimagesink->input_mapping_head = new_node;
++
++  *mapping = &new_node->mapping;
++  return 0;
++}
++
++static void xsync_task_func(GstXvImageSink *xvimagesink)
++{
++  InputFdMapping *buf;
++
++  while (1) {
++    g_mutex_lock (&xvimagesink->flow_lock);
++
++    if (g_queue_is_empty(xvimagesink->in_use_buffer_queue)) {
++      if (!xvimagesink->should_run) {
++        g_mutex_unlock (&xvimagesink->flow_lock);
++        break;
++      }
++      g_cond_wait(&xvimagesink->xsync_cond, &xvimagesink->flow_lock);
++    }
++
++    if (!g_queue_is_empty(xvimagesink->in_use_buffer_queue)) {
++      XSync(xvimagesink->context->disp, False);
++      buf = g_queue_pop_head(xvimagesink->in_use_buffer_queue);
++      if (buf->gst_buf) {
++        gst_buffer_unref(buf->gst_buf);
++        buf->gst_buf = NULL;
++      }
++      if (buf->pre_buf) {
++        g_queue_push_tail(xvimagesink->free_buffer_queue, buf->pre_buf);
++        g_cond_signal(&xvimagesink->free_buffer_cond);
++        buf->pre_buf = NULL;
++      }
++    }
++    g_mutex_unlock (&xvimagesink->flow_lock);
++  }
++}
++
++static gboolean gst_xv_image_sink_xvimage_need_pre_convert(GstXvImageSink *xvimagesink,
++  GstVideoRectangle *src, GstVideoRectangle *result, GstVideoRectangle *res_crop)
++{
++  float w;
++  float h;
++
++  if (!xvimagesink->pre_convert_format)
++    return FALSE;
++
++  if (src->w > XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX
++    || src->h > XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX) {
++    if (result->w > XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX
++      || result->h > XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX) {
++      return FALSE;
++    }
++  }
++  if (src->w > result->w) {
++    if (result->w * XVIMAGE_SINK_PRE_CONVERT_ZOOM_RATIO_THRESHOLD >= src->w) {
++      return FALSE;
++    }
++  } else {
++    if (src->w * XVIMAGE_SINK_PRE_CONVERT_ZOOM_RATIO_THRESHOLD >= result->w) {
++      return FALSE;
++    }
++  }
++  // The maximum buffer is 4k
++  if (result->w > XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX) {
++    w = result->w;
++    h = result->h;
++    res_crop->w = XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX;
++    res_crop->h = (guint)(w * h / XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX);
++  } else if (result->h > XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX) {
++    w = result->w;
++    h = result->h;
++    res_crop->w = XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX;
++    res_crop->h = (guint)(h * w / XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX);
++  } else {
++    res_crop->w = result->w;
++    res_crop->h = result->h;
++  }
++  return TRUE;
++}
+ 
+ /* This function puts a GstXvImage on a GstXvImageSink's window. Returns FALSE
+  * if no window was available  */
+ static gboolean
+ gst_xv_image_sink_xvimage_put (GstXvImageSink * xvimagesink,
+-    GstBuffer * xvimage)
++    GstBuffer * xvimage, gboolean use_shm_fd, int32_t shm_fd, GstBuffer *buf)
+ {
+   GstXvImageMemory *mem;
+   GstVideoCropMeta *crop;
+@@ -245,6 +840,12 @@ gst_xv_image_sink_xvimage_put (GstXvImageSink * xvimagesink,
+   GstVideoRectangle dst = { 0, };
+   GstVideoRectangle mem_crop;
+   GstXWindow *xwindow;
++  InputFdMapping *mapping = NULL;
++
++  PreConvertBuffer *pre_buf;
++  gboolean pre_convert = FALSE;
++  uint32_t xv_format_id;
++  GstVideoRectangle res_crop = {0};
+ 
+   /* We take the flow_lock. If expose is in there we don't want to run
+      concurrently from the data flow thread */
+@@ -316,11 +917,94 @@ gst_xv_image_sink_xvimage_put (GstXvImageSink * xvimagesink,
+   } else {
+     memcpy (&result, &xwindow->render_rect, sizeof (GstVideoRectangle));
+   }
++  if (use_shm_fd) {
++    if (xvimagesink->xsync_task == NULL) {
++      xvimagesink->cur_fd = -1;
++      g_cond_init (&xvimagesink->xsync_cond);
++      xvimagesink->in_use_buffer_queue = g_queue_new();
++      xvimagesink->free_buffer_queue = g_queue_new();
++      g_cond_init(&xvimagesink->free_buffer_cond);
++
++      gst_xv_image_shared_data_init(xvimagesink, &src);
++      xvimagesink->should_run = 1;
++      xvimagesink->xsync_task = g_thread_new("xsync_thread", (GThreadFunc)xsync_task_func, xvimagesink);
++      if (xvimagesink->xsync_task == NULL)
++        GST_ERROR_OBJECT (xvimagesink, "failed gst_task_new.");
++      XSync(xvimagesink->context->disp, False);
++    }
++  }
++  if (use_shm_fd && shm_fd != -1) {
++    if(xvimagesink->cur_fd == shm_fd || !result.w || !result.h) {
++      g_mutex_unlock (&xvimagesink->flow_lock);
++      return TRUE;
++    }
++
++    xvimagesink->cur_fd = shm_fd;
++    pre_convert = gst_xv_image_sink_xvimage_need_pre_convert(xvimagesink, &src, &result, &res_crop);
++    mapping = NULL;
++    if (!gst_xvimage_input_has_received_fd(xvimagesink, shm_fd, &mapping)) {
++      if(mapping == NULL) {
++        g_mutex_unlock (&xvimagesink->flow_lock);
++        return TRUE;
++      }
++      if (xvimagesink->pre_convert_format) {
++        if (gst_xv_image_sink_xvimage_pre_convert_surface_init(xvimagesink, &mapping->source,
++          xvimagesink->info.finfo->format, src.w, src.h, shm_fd)) {
++          g_mutex_unlock (&xvimagesink->flow_lock);
++          return TRUE;
++        }
++        mapping->source_initialized = TRUE;
++      }
++    }
++    if (pre_convert) {
++      if (!mapping->source_initialized) {
++        g_mutex_unlock (&xvimagesink->flow_lock);
++        GST_ERROR ("convert source not initialized: %d", shm_fd);
++        return TRUE;
++      }
++      pre_buf = gst_xv_image_shared_data_get(xvimagesink);
++      if (!pre_buf) {
++        g_mutex_unlock (&xvimagesink->flow_lock);
++        GST_ERROR ("gst_xv_image_shared_data_get fail");
++        return TRUE;
++      }
++      mapping->pre_buf = pre_buf;
++      if (!pre_buf->target_initialized) {
++        if (gst_xv_image_sink_xvimage_pre_convert_surface_init(xvimagesink,
++            &pre_buf->target, xvimagesink->pre_convert_format, XVIMAGE_SINK_PRE_CONVERT_WIDTH_MAX,
++            XVIMAGE_SINK_PRE_CONVERT_HEIGTH_MAX, pre_buf->output_fd)) {
++          g_queue_push_tail(xvimagesink->free_buffer_queue, pre_buf);
++          g_mutex_unlock (&xvimagesink->flow_lock);
++          GST_ERROR ("convert target not initialized: %d", pre_buf->output_fd);
++          return TRUE;
++        }
++        pre_buf->target_initialized = TRUE;
++      }
++      if (gst_xv_image_sink_xvimage_pre_convert(xvimagesink, &mapping->source, &pre_buf->target, &res_crop) < 0) {
++        g_queue_push_tail(xvimagesink->free_buffer_queue, pre_buf);
++        g_mutex_unlock (&xvimagesink->flow_lock);
++        GST_ERROR ("convert fail: %d %d %dx%d", shm_fd, pre_buf->output_fd, result.w, result.h);
++        return TRUE;
++      }
++    }
++  }
+ 
+-  gst_xvimage_memory_render (mem, &src, xwindow, &result, draw_border);
++  xv_format_id = pre_convert ? xvimagesink->xv_format_id_convert : xvimagesink->xv_format_id_input;
+ 
+-  g_mutex_unlock (&xvimagesink->flow_lock);
++  gst_xvimage_memory_render (mem, &src, xwindow, &result, draw_border, use_shm_fd, mapping, pre_convert, xv_format_id, &res_crop);
+ 
++  if (use_shm_fd) {
++    if (xvimagesink->xsync_task && xvimagesink->should_run && shm_fd != -1 && buf) {
++      if (xvimagesink->cur_buf) {
++        g_queue_push_tail(xvimagesink->in_use_buffer_queue, xvimagesink->cur_buf);
++        g_cond_signal(&xvimagesink->xsync_cond);
++      }
++      xvimagesink->cur_buf = mapping;
++      if (!pre_convert)
++        mapping->gst_buf = gst_buffer_ref (buf);
++    }
++  }
++  g_mutex_unlock (&xvimagesink->flow_lock);
+   return TRUE;
+ }
+ 
+@@ -420,6 +1104,7 @@ gst_xv_image_sink_handle_xevents (GstXvImageSink * xvimagesink)
+   gint pointer_x = 0, pointer_y = 0;
+   gboolean pointer_moved = FALSE;
+   gboolean exposed = FALSE, configured = FALSE;
++  Atom xv_atom;
+ 
+   g_return_if_fail (GST_IS_XV_IMAGE_SINK (xvimagesink));
+ 
+@@ -543,6 +1228,21 @@ gst_xv_image_sink_handle_xevents (GstXvImageSink * xvimagesink)
+     }
+   }
+ 
++  while (XCheckWindowEvent (xvimagesink->context->disp,
++          xvimagesink->xwindow->win, FocusChangeMask, &e)) {
++    switch (e.type) {
++      case FocusIn:
++        xv_atom = XInternAtom (xvimagesink->context->disp, "XV_TOPFLAG", True);
++        if (xv_atom != None) {
++          XvSetPortAttribute (xvimagesink->context->disp, xvimagesink->context->xv_port_id, xv_atom, 1);
++        }
++        break;
++      default:
++        break;
++    }
++  }
++
++
+   if (xvimagesink->handle_expose && (exposed || configured)) {
+     g_mutex_unlock (&xvimagesink->context->lock);
+     g_mutex_unlock (&xvimagesink->flow_lock);
+@@ -569,7 +1269,7 @@ gst_xv_image_sink_handle_xevents (GstXvImageSink * xvimagesink)
+               ("Output window was closed"), (NULL));
+ 
+           g_mutex_unlock (&xvimagesink->context->lock);
+-          gst_xwindow_destroy (xvimagesink->xwindow);
++          gst_xwindow_destroy (xvimagesink->xwindow, xvimagesink->input_mapping_head, xvimagesink->pre_buf);
+           xvimagesink->xwindow = NULL;
+           g_mutex_lock (&xvimagesink->context->lock);
+         }
+@@ -710,6 +1410,11 @@ gst_xv_image_sink_setcaps (GstBaseSink * bsink, GstCaps * caps)
+   gint video_par_n, video_par_d;        /* video's PAR */
+   gint display_par_n, display_par_d;    /* display's PAR */
+   guint num, den;
++#ifdef HAVE_XSHM
++  xcb_screen_iterator_t iter;
++  xcb_screen_t *screen;
++  uint32_t gc_values[2] = {0};
++#endif /* HAVE_XSHM */
+ 
+   xvimagesink = GST_XV_IMAGE_SINK (bsink);
+   context = xvimagesink->context;
+@@ -806,6 +1511,16 @@ gst_xv_image_sink_setcaps (GstBaseSink * bsink, GstCaps * caps)
+         GST_VIDEO_SINK_WIDTH (xvimagesink),
+         GST_VIDEO_SINK_HEIGHT (xvimagesink));
+   }
++#ifdef HAVE_XSHM
++  if (xvimagesink->context->use_shm_fd) {
++    xvimagesink->xwindow->xcb_gc = xcb_generate_id(xvimagesink->context->connection);
++    iter = xcb_setup_roots_iterator(xcb_get_setup(xvimagesink->context->connection));
++    screen = iter.data;
++    gc_values[0] = screen->white_pixel;
++    xcb_create_gc(xvimagesink->context->connection, xvimagesink->xwindow->xcb_gc,
++     xvimagesink->xwindow->win, XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES, gc_values);
++  }
++#endif /* HAVE_XSHM */
+ 
+   if (xvimagesink->pending_render_rect) {
+     xvimagesink->pending_render_rect = FALSE;
+@@ -933,6 +1648,69 @@ gst_xv_image_sink_get_times (GstBaseSink * bsink, GstBuffer * buf,
+   }
+ }
+ 
++
++#ifdef HAVE_XSHM
++
++static const char *gst_xv_image_get_format_name(GstVideoFormat format)
++{
++  switch (format) {
++    case GST_VIDEO_FORMAT_NV12:
++      return "NV12";
++    case GST_VIDEO_FORMAT_ARGB:
++      return "AR24";
++    default:
++      return NULL;
++  }
++}
++
++static int gst_xv_image_set_xv_format_id(GstVideoSink * vsink, GstXvImageSink *xvimagesink)
++{
++  int num_formats;
++  xcb_xv_image_format_info_t *xv_formats;
++  xcb_xv_list_image_formats_reply_t *xv_formats_reply;
++  const char *format;
++  const char *convert_format;
++
++  format = gst_xv_image_get_format_name(xvimagesink->info.finfo->format);
++  convert_format = gst_xv_image_get_format_name(xvimagesink->pre_convert_format);
++  if (!format && !convert_format) {
++    return -1;
++  }
++  if (!convert_format) {
++    xvimagesink->pre_convert_format = 0;
++  }
++
++  xv_formats_reply = xcb_xv_list_image_formats_reply(xvimagesink->context->connection,
++    xcb_xv_list_image_formats(xvimagesink->context->connection, xvimagesink->context->xv_port_id), NULL);
++  if (!xv_formats_reply) {
++    GST_ERROR ("Failed to get Xv image formats\n");
++  }
++  num_formats = xcb_xv_list_image_formats_format_length(xv_formats_reply);
++  xv_formats = xcb_xv_list_image_formats_format(xv_formats_reply);
++  for (int i = 0; i < num_formats; ++i) {
++    if (!strncmp((const char *)&xv_formats[i].id, format, strlen(format))) {
++        xvimagesink->xv_format_id_input = xv_formats[i].id;
++        break;
++    }
++  }
++  if (xvimagesink->pre_convert_format) {
++    for (int i = 0; i < num_formats; ++i) {
++      if (!strncmp((const char *)&xv_formats[i].id, convert_format, strlen(convert_format))) {
++          xvimagesink->xv_format_id_convert = xv_formats[i].id;
++          break;
++      }
++    }
++  }
++  free(xv_formats_reply);
++  if (!xvimagesink->xv_format_id_input && !xvimagesink->xv_format_id_convert) {
++    GST_ERROR ("Supported %d -> %d format not found in Xv\n", xvimagesink->info.finfo->format, xvimagesink->pre_convert_format);
++    return -1;
++  }
++  GST_DEBUG ("xv_format_id = %x\n", xvimagesink->xv_format_id_input);
++  return 0;
++}
++#endif /* HAVE_XSHM */
++
+ static GstFlowReturn
+ gst_xv_image_sink_show_frame (GstVideoSink * vsink, GstBuffer * buf)
+ {
+@@ -940,6 +1718,8 @@ gst_xv_image_sink_show_frame (GstVideoSink * vsink, GstBuffer * buf)
+   GstXvImageSink *xvimagesink;
+   GstBuffer *to_put = NULL;
+   GstMemory *mem;
++  int32_t shm_fd = -1;
++  gboolean use_shm_fd = FALSE;
+ 
+   xvimagesink = GST_XV_IMAGE_SINK (vsink);
+ 
+@@ -986,18 +1766,34 @@ gst_xv_image_sink_show_frame (GstVideoSink * vsink, GstBuffer * buf)
+     GST_CAT_LOG_OBJECT (GST_CAT_PERFORMANCE, xvimagesink,
+         "slow copy buffer %p into bufferpool buffer %p", buf, to_put);
+ 
+-    if (!gst_video_frame_map (&src, &xvimagesink->info, buf, GST_MAP_READ))
+-      goto invalid_buffer;
++#ifdef HAVE_XSHM
++    if (xvimagesink->context->use_shm_fd && gst_is_dmabuf_memory((gst_buffer_peek_memory (buf, 0)))) {
++      if (!xvimagesink->xv_format_id_input
++          && gst_xv_image_set_xv_format_id(vsink, xvimagesink) < 0) {
++          xvimagesink->context->use_shm_fd = FALSE;
++          goto copy_frame;
++      }
++      if (gst_buffer_n_memory (buf) > 0) {
++        shm_fd = gst_dmabuf_memory_get_fd(gst_buffer_peek_memory (buf, 0));
++      }
++      use_shm_fd = TRUE;
++    } else
++#endif /* HAVE_XSHM */
++    {
++copy_frame:
++      if (!gst_video_frame_map (&src, &xvimagesink->info, buf, GST_MAP_READ))
++        goto invalid_buffer;
+ 
+-    if (!gst_video_frame_map (&dest, &xvimagesink->info, to_put, GST_MAP_WRITE)) {
+-      gst_video_frame_unmap (&src);
+-      goto invalid_buffer;
+-    }
++      if (!gst_video_frame_map (&dest, &xvimagesink->info, to_put, GST_MAP_WRITE)) {
++        gst_video_frame_unmap (&src);
++        goto invalid_buffer;
++      }
+ 
+-    gst_video_frame_copy (&dest, &src);
++      gst_video_frame_copy (&dest, &src);
+ 
+-    gst_video_frame_unmap (&dest);
+-    gst_video_frame_unmap (&src);
++      gst_video_frame_unmap (&dest);
++      gst_video_frame_unmap (&src);
++    }
+ 
+     if ((crop_meta = gst_buffer_get_video_crop_meta (buf))) {
+       GstVideoCropMeta *dmeta = gst_buffer_add_video_crop_meta (to_put);
+@@ -1009,7 +1805,7 @@ gst_xv_image_sink_show_frame (GstVideoSink * vsink, GstBuffer * buf)
+     }
+   }
+ 
+-  if (!gst_xv_image_sink_xvimage_put (xvimagesink, to_put))
++  if (!gst_xv_image_sink_xvimage_put (xvimagesink, to_put, use_shm_fd, shm_fd, buf))
+     goto no_window;
+ 
+ done:
+@@ -1256,7 +2052,7 @@ gst_xv_image_sink_set_window_handle (GstVideoOverlay * overlay, guintptr id)
+ 
+   /* If a window is there already we destroy it */
+   if (xvimagesink->xwindow) {
+-    gst_xwindow_destroy (xvimagesink->xwindow);
++    gst_xwindow_destroy (xvimagesink->xwindow, xvimagesink->input_mapping_head, xvimagesink->pre_buf);
+     xvimagesink->xwindow = NULL;
+   }
+ 
+@@ -1289,7 +2085,7 @@ gst_xv_image_sink_expose (GstVideoOverlay * overlay)
+ 
+   GST_DEBUG ("doing expose");
+   gst_xv_image_sink_xwindow_update_geometry (xvimagesink);
+-  gst_xv_image_sink_xvimage_put (xvimagesink, NULL);
++  gst_xv_image_sink_xvimage_put (xvimagesink, NULL, TRUE, -1, NULL);
+ }
+ 
+ static void
+@@ -1670,6 +2466,19 @@ gst_xv_image_sink_set_property (GObject * object, guint prop_id,
+     case PROP_DRAW_BORDERS:
+       xvimagesink->draw_borders = g_value_get_boolean (value);
+       break;
++    case PROP_PRE_CONVERT_FORMAT:
++      if (!g_value_get_string (value)) {
++        xvimagesink->pre_convert_format = 0;
++        break;
++      } 
++      if (!strcmp(g_value_get_string (value), "ARGB")) {
++        xvimagesink->pre_convert_format = GST_VIDEO_FORMAT_ARGB;
++      } else if (!strcmp(g_value_get_string (value), "NV12")) {
++        xvimagesink->pre_convert_format = GST_VIDEO_FORMAT_NV12;
++      } else {
++        xvimagesink->pre_convert_format = 0;
++      }
++      break;
+     default:
+       if (!gst_video_overlay_set_property (object, PROP_LAST, prop_id, value))
+         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+@@ -1760,6 +2569,19 @@ gst_xv_image_sink_get_property (GObject * object, guint prop_id,
+       else
+         g_value_set_uint64 (value, 0);
+       break;
++    case PROP_PRE_CONVERT_FORMAT:
++      switch (xvimagesink->pre_convert_format) {
++        case GST_VIDEO_FORMAT_ARGB:
++          g_value_set_string (value, "ARGB");
++          break;
++        case GST_VIDEO_FORMAT_NV12:
++          g_value_set_string (value, "NV12");
++          break;
++        default:
++          g_value_set_string (value, "none");
++          break;
++      }
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -1831,6 +2653,11 @@ gst_xv_image_sink_close (GstXvImageSink * xvimagesink)
+     xvimagesink->cur_image = NULL;
+   }
+ 
++  if (xvimagesink->xsync_task && xvimagesink->cur_buf && xvimagesink->cur_buf->gst_buf) {
++    gst_buffer_unref (xvimagesink->cur_buf->gst_buf);
++    xvimagesink->cur_buf->gst_buf = NULL;
++  }
++
+   g_mutex_lock (&xvimagesink->flow_lock);
+ 
+   if (xvimagesink->pool) {
+@@ -1840,7 +2667,7 @@ gst_xv_image_sink_close (GstXvImageSink * xvimagesink)
+ 
+   if (xvimagesink->xwindow) {
+     gst_xwindow_clear (xvimagesink->xwindow);
+-    gst_xwindow_destroy (xvimagesink->xwindow);
++    gst_xwindow_destroy (xvimagesink->xwindow, xvimagesink->input_mapping_head, xvimagesink->pre_buf);
+     xvimagesink->xwindow = NULL;
+   }
+   g_mutex_unlock (&xvimagesink->flow_lock);
+@@ -1850,6 +2677,22 @@ gst_xv_image_sink_close (GstXvImageSink * xvimagesink)
+     xvimagesink->allocator = NULL;
+   }
+ 
++  if (xvimagesink->xsync_task) {
++    xvimagesink->should_run = 0;
++    g_cond_signal(&xvimagesink->xsync_cond);
++    g_thread_join(xvimagesink->xsync_task);
++    xvimagesink->xsync_task = NULL;
++
++    gst_xv_image_shared_data_destroy(xvimagesink);
++    if (xvimagesink->cur_buf)
++      xvimagesink->cur_buf->pre_buf = NULL;
++    g_cond_clear(&xvimagesink->xsync_cond);
++    g_queue_free(xvimagesink->in_use_buffer_queue);
++    g_queue_free(xvimagesink->free_buffer_queue);
++    g_cond_clear(&xvimagesink->free_buffer_cond);
++    xvimagesink->cur_buf = NULL;
++  }
++
+   GST_OBJECT_LOCK (xvimagesink);
+   /* grab context and mark it as NULL */
+   context = xvimagesink->context;
+@@ -1920,6 +2763,9 @@ gst_xv_image_sink_init (GstXvImageSink * xvimagesink)
+   xvimagesink->handle_expose = TRUE;
+ 
+   xvimagesink->draw_borders = TRUE;
++
++  // xvimagesink->pre_convert_format = GST_VIDEO_FORMAT_ARGB;
++  xvimagesink->pre_convert_format = GST_VIDEO_FORMAT_NV12;
+ }
+ 
+ static void
+@@ -2056,6 +2902,11 @@ gst_xv_image_sink_class_init (GstXvImageSinkClass * klass)
+           "Height of the window", 0, G_MAXUINT64, 0,
+           G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
+ 
++  g_object_class_install_property (gobject_class, PROP_PRE_CONVERT_FORMAT,
++      g_param_spec_string ("pre-convert-format", "Pre convert format",
++          "The name of the pre convert format", "ARGB",
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
+   gobject_class->finalize = gst_xv_image_sink_finalize;
+ 
+   gst_element_class_set_static_metadata (gstelement_class,
+diff --git a/sys/xvimage/xvimagesink.h b/sys/xvimage/xvimagesink.h
+index 6f5ffa1..795eb12 100644
+--- a/sys/xvimage/xvimagesink.h
++++ b/sys/xvimage/xvimagesink.h
+@@ -44,6 +44,22 @@ typedef struct _GstXvImageSinkClass GstXvImageSinkClass;
+ #include "xvimagepool.h"
+ #include "xvcontext.h"
+ 
++typedef struct {
++  int (*operation)(void *arg);
++  void *arg;
++  int result;
++  gboolean done;
++} G2dTask;
++
++typedef struct {
++  GQueue *task_queue;
++  GMutex lock;
++  GCond cond;
++  GThread *thread;
++  gboolean stop;
++  GCond tesk_cond;
++} G2dThreadContext;
++
+ /**
+  * GstXvImageSink:
+  * @display_name: the name of the Display we want to render to
+@@ -124,6 +140,27 @@ struct _GstXvImageSink
+   /* saved render rectangle until we have a window */
+   gboolean pending_render_rect;
+   GstVideoRectangle render_rect;
++
++  /* XSync task */
++  GQueue *in_use_buffer_queue;
++  GQueue *free_buffer_queue;
++  GCond free_buffer_cond;
++  gboolean should_run;
++  GThread *xsync_task;
++  GCond xsync_cond;
++  InputFdMapping *cur_buf;
++  int32_t cur_fd;
++#ifndef USE_GBM_MEM
++  void *vmem;
++#else
++  struct gbm_device *gbm;
++#endif
++  uint32_t xv_format_id_input;
++  uint32_t xv_format_id_convert;
++  GstVideoFormat pre_convert_format;
++  G2dThreadContext *g2d_thread_context;
++  InputFdMappingNode *input_mapping_head;
++  PreConvertBuffer *pre_buf[XVIMAGE_SINK_PRE_CONVERT_BUFFER_MAX];
+ };
+ 
+ struct _GstXvImageSinkClass
+-- 
+2.17.1
+

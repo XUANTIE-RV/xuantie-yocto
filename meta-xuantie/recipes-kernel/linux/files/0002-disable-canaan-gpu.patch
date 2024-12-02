@@ -1,0 +1,13 @@
+diff --git a/arch/riscv/boot/dts/canaan/k230.dtsi b/arch/riscv/boot/dts/canaan/k230.dtsi
+index 0f5b37f4f105..982821450fe8 100644
+--- a/arch/riscv/boot/dts/canaan/k230.dtsi
++++ b/arch/riscv/boot/dts/canaan/k230.dtsi
+@@ -574,7 +574,7 @@
+ 		display: display-subsystem {
+ 			compatible = "canaan,display-subsystem";
+ 			ports = <&vo_out>;
+-			status = "okay";
++			status = "disabled";
+ 			power-domains = <&sysctl_power K230_PM_DOMAIN_DISP>;
+ 		};
+ 

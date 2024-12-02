@@ -1,0 +1,39 @@
+From f302bb7eddcba4dcebe6c58174aadb79eddf9d52 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Thu, 12 Sep 2024 06:22:59 +0000
+Subject: [PATCH] Modify py2 to py3.
+
+---
+ programs/fuzz/Makefile | 2 +-
+ tests/Makefile         | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/programs/fuzz/Makefile b/programs/fuzz/Makefile
+index fa17918fa..fe69f16e4 100644
+--- a/programs/fuzz/Makefile
++++ b/programs/fuzz/Makefile
+@@ -21,7 +21,7 @@ DLEXT ?= so
+ EXEXT=
+ SHARED_SUFFIX=
+ # python2 for POSIX since FreeBSD has only python2 as default.
+-PYTHON ?= python2
++PYTHON ?= python3
+ 
+ # Zlib shared library extensions:
+ ifdef ZLIB
+diff --git a/tests/Makefile b/tests/Makefile
+index 511db9db5..d7df6c97e 100644
+--- a/tests/Makefile
++++ b/tests/Makefile
+@@ -55,7 +55,7 @@ DLEXT ?= so
+ EXEXT=
+ SHARED_SUFFIX=
+ # python2 for POSIX since FreeBSD has only python2 as default.
+-PYTHON ?= python2
++PYTHON ?= python3
+ endif
+ 
+ # Zlib shared library extensions:
+-- 
+2.17.1
+

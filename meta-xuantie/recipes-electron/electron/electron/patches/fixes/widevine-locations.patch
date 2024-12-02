@@ -1,0 +1,29 @@
+description: try alternative locations for libwidevinecdm.so
+  - $HOME/.local/lib/ (snap-friendly, see https://launchpad.net/bugs/1738149)
+author: Olivier Tilloy <olivier.tilloy@canonical.com>
+
+--- a/src/chrome/common/chrome_paths.cc
++++ b/src/chrome/common/chrome_paths.cc
+@@ -319,6 +319,11 @@ bool PathProvider(int key, base::FilePat
+ 
+ #if BUILDFLAG(ENABLE_WIDEVINE)
+     case chrome::DIR_BUNDLED_WIDEVINE_CDM:
++      base::PathService::Get(base::DIR_HOME, &cur);
++      cur = cur.Append(FILE_PATH_LITERAL(".local/lib/libwidevinecdm.so"));
++      if (base::PathExists(cur)) {
++        break;
++      }
+       if (!GetComponentDirectory(&cur))
+         return false;
+       cur = cur.AppendASCII(kWidevineCdmBaseDirectory);
+--- a/src/third_party/widevine/cdm/BUILD.gn
++++ b/src/third_party/widevine/cdm/BUILD.gn
+@@ -22,7 +22,7 @@ buildflag_header("buildflags") {
+ 
+   flags = [
+     "ENABLE_WIDEVINE=$enable_widevine",
+-    "BUNDLE_WIDEVINE_CDM=$bundle_widevine_cdm",
++    "BUNDLE_WIDEVINE_CDM=true",
+     "ENABLE_WIDEVINE_CDM_COMPONENT=$enable_widevine_cdm_component",
+     "ENABLE_MEDIA_FOUNDATION_WIDEVINE_CDM=$enable_media_foundation_widevine_cdm",
+   ]

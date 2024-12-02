@@ -1,0 +1,104 @@
+From 9d3adebe03124029a9611ae5c217ef5a214c87c7 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Tue, 7 May 2024 18:08:23 +0800
+Subject: [PATCH] Fix the issue of ineffective extension parameters
+
+---
+ libavcodec/omxdecoder.c | 28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 9a81b27..5733028 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -278,7 +278,7 @@ typedef struct outport_buffer_table {
+ } outport_buffer_table;
+ 
+ typedef struct OMXCodecDecoderContext {
+-    const AVClass *class;
++    // const AVClass *class;
+     char *libname;
+     char *libprefix;
+     OMXContext *omx_context;
+@@ -372,8 +372,6 @@ typedef struct OMXCodecDecoderContext {
+     int now_pts;
+     int pkt_duration;
+     int resolution_changed;
+-    int output_width;
+-    int output_height;
+     OMX_COLOR_FORMATTYPE outformat;
+     outport_buffer_table buffer_table[MAX_TABLE_SIZE];
+     //AsyncQueue *pic_queue;
+@@ -390,6 +388,11 @@ typedef struct OMXCodecDecoderContext {
+ typedef struct {
+     const AVClass *class;
+     AVBufferRef *decoder_ref;
++    int output_width;
++    int output_height;
++#ifdef DRM_PRIME
++    bool drm_prime_mode;
++#endif
+ } OMXDecoderContext;
+ 
+ typedef struct {
+@@ -1495,14 +1498,17 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+     } else {
+         s->pkt_duration = 0;
+     }
+-    if (s->output_width)
+-        avctx->width = s->output_width;
+-    if (s->output_height)
+-        avctx->height = s->output_height;
++    if (c->output_width)
++        avctx->width = c->output_width;
++    if (c->output_height)
++        avctx->height = c->output_height;
+ 
+     if (avctx->width & 1)
+         avctx->width++;
+ 
++#ifdef DRM_PRIME
++    s->drm_prime_mode = c->drm_prime_mode;
++#endif
+ 
+     INIT_STRUCT(in_port_params);
+     in_port_params.nPortIndex =  s->in_port = OMX_DirInput;
+@@ -2148,7 +2154,7 @@ static av_cold int omx_decode_end(AVCodecContext *avctx)
+     return 0;
+ }
+ 
+-#define OFFSET(x) offsetof(OMXCodecDecoderContext, x)
++#define OFFSET(x) offsetof(OMXDecoderContext, x)
+ #define VDE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+ #define VE  AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+ #define VD  AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+@@ -2197,7 +2203,7 @@ const FFCodec ff_ ## short_name ## _omx_decoder = {
+     .p.type           = AVMEDIA_TYPE_VIDEO,                                                    \
+     .p.id             = codec_id,                                                              \
+     .p.priv_class     = &ff_##short_name##_omxcodec_dec_class,                                 \
+-    .priv_data_size = sizeof(OMXCodecDecoderContext),                                          \
++    .priv_data_size = sizeof(OMXDecoderContext),                                               \
+     .init           = omx_decode_init,                                                         \
+     FF_CODEC_RECEIVE_FRAME_CB(omx_receive_frame),                                              \
+     .close          = omx_decode_end,                                                          \
+@@ -2221,7 +2227,7 @@ const FFCodec ff_ ## short_name ## _omx_decoder = {
+     .p.type           = AVMEDIA_TYPE_VIDEO,                                                    \
+     .p.id             = codec_id,                                                              \
+     .p.priv_class     = &ff_##short_name##_omxcodec_dec_class,                                 \
+-    .priv_data_size = sizeof(OMXCodecDecoderContext),                                          \
++    .priv_data_size = sizeof(OMXDecoderContext),                                               \
+     .init           = omx_decode_init,                                                         \
+     FF_CODEC_RECEIVE_FRAME_CB(omx_receive_frame),                                              \
+     .close          = omx_decode_end,                                                          \
+@@ -2245,7 +2251,7 @@ const FFCodec ff_ ## short_name ## _omx_decoder = {
+     .p.type           = AVMEDIA_TYPE_VIDEO,                                                    \
+     .p.id             = codec_id,                                                              \
+     .p.priv_class     = &ff_##short_name##_omxcodec_dec_class,                                 \
+-    .priv_data_size = sizeof(OMXCodecDecoderContext),                                          \
++    .priv_data_size = sizeof(OMXDecoderContext),                                               \
+     .init           = omx_decode_init,                                                         \
+     FF_CODEC_RECEIVE_FRAME_CB(omx_receive_frame),                                              \
+     .close          = omx_decode_end,                                                          \
+-- 
+2.17.1
+

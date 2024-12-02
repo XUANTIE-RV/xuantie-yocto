@@ -1,0 +1,69 @@
+From 4beec1b98acebabe28d5dd322648f1cb47d431dd Mon Sep 17 00:00:00 2001
+From: "yangtianyu.lu" <luyangtianyu.lyty@alibaba-inc.com>
+Date: Thu, 14 Dec 2023 11:41:18 +0000
+Subject: [PATCH] Increase FPS when Encode Low Resolution Video
+
+---
+ libavcodec/omx.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/libavcodec/omx.c b/libavcodec/omx.c
+index bf90fa4..672ff82 100644
+--- a/libavcodec/omx.c
++++ b/libavcodec/omx.c
+@@ -493,12 +493,12 @@ static OMX_BUFFERHEADERTYPE *get_buffer(pthread_mutex_t *mutex, pthread_cond_t *
+     pthread_mutex_lock(mutex);
+     if (wait) {
+         while (!*array_size)
+-           pthread_cond_wait(cond, mutex);
++            pthread_cond_wait(cond, mutex);
+     }
+     if (*array_size > 0) {
+         buffer = array[0];
+-        (*array_size)--;
+         memmove(&array[0], &array[1], (*array_size) * sizeof(OMX_BUFFERHEADERTYPE*));
++        (*array_size)--;
+     } else {
+         buffer = NULL;
+     }
+@@ -736,6 +736,7 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
+     out_port_params.format.video.nBitrate      = s->bitrate ? s->bitrate : avctx->bit_rate;
+     out_port_params.format.video.xFramerate    = in_port_params.format.video.xFramerate;
+     out_port_params.format.video.bFlagErrorConcealment  = OMX_FALSE;
++    out_port_params.nBufferCountActual += 2;
+     if (avctx->codec->id == AV_CODEC_ID_MPEG4)
+         out_port_params.format.video.eCompressionFormat = OMX_VIDEO_CodingMPEG4;
+     else if (avctx->codec->id == AV_CODEC_ID_H264)
+@@ -955,6 +956,7 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
+         else
+             av_log(avctx, AV_LOG_INFO, "All intra coding\n");
+     }
++
+     if (s->input_zerocopy) {
+         INIT_STRUCT(bufferMode);
+         bufferMode.nPortIndex = s->in_port;
+@@ -1176,7 +1178,6 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+     OMX_BUFFERHEADERTYPE* buffer;
+     OMX_ERRORTYPE err;
+     int had_partial = 0;
+-    struct timespec abs_time;
+ 
+     if (frame) {
+         uint8_t *dst[4];
+@@ -1257,13 +1258,6 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+         // If not flushing, just poll the queue if there's finished packets.
+         // If flushing, do a blocking wait until we either get a completed
+         // packet, or get EOS.
+-        if (s->num_done_out_buffers == 0) {
+-            pthread_mutex_lock(&s->output_mutex);
+-            clock_gettime(CLOCK_REALTIME, &abs_time);
+-            abs_time.tv_sec += 3; // 3s
+-            pthread_cond_timedwait(&s->output_cond, &s->output_mutex, &abs_time);
+-            pthread_mutex_unlock(&s->output_mutex);
+-        }
+         buffer = get_buffer(&s->output_mutex, &s->output_cond,
+                             &s->num_done_out_buffers, s->done_out_buffers,
+                             !frame || had_partial);
+-- 
+2.17.1
+

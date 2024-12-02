@@ -1,0 +1,74 @@
+diff --git a/src/gl-state-egl.cpp b/src/gl-state-egl.cpp
+index 0d73859..c0adba7 100644
+--- a/src/gl-state-egl.cpp
++++ b/src/gl-state-egl.cpp
+@@ -679,6 +679,21 @@ GLStateEGL::gotValidConfig()
+         return false;
+     }
+ 
++    // Print out the config information, and let the user know the decision
++    unsigned int lineNumber(0);
++    Log::debug("Got %u suitable EGLConfigs:\n", num_configs);
++    for (vector<EGLConfig>::const_iterator configIt = configs.begin();
++         configIt != configs.end();
++         configIt++, lineNumber++)
++    {
++        EglConfig cfg(egl_display_, *configIt);
++        if (!(lineNumber % 32))
++        {
++            cfg.print_header();
++        }
++        cfg.print();
++    }
++
+     // Select the best matching config
+     egl_config_ = select_best_config(configs);
+     if (!egl_config_) {
+@@ -698,20 +713,8 @@ GLStateEGL::gotValidConfig()
+         }
+     }
+ 
+-    // Print out the config information, and let the user know the decision
++
+     // about the "best" one with respect to the options.
+-    unsigned int lineNumber(0);
+-    Log::debug("Got %u suitable EGLConfigs:\n", num_configs);
+-    for (vector<EglConfig>::const_iterator configIt = configVec.begin();
+-         configIt != configVec.end();
+-         configIt++, lineNumber++)
+-    {
+-        if (!(lineNumber % 32))
+-        {
+-            configIt->print_header();
+-        }
+-        configIt->print();
+-    }
+     Log::debug("\n");
+     Log::debug("Best EGLConfig ID: 0x%x\n", best_config_.configID());
+ 
+diff --git a/src/gl-visual-config.cpp b/src/gl-visual-config.cpp
+index de92f93..8427486 100644
+--- a/src/gl-visual-config.cpp
++++ b/src/gl-visual-config.cpp
+@@ -26,7 +26,7 @@
+ #include <vector>
+ 
+ GLVisualConfig::GLVisualConfig(const std::string &s) :
+-    id(0), red(1), green(1), blue(1), alpha(1), depth(1), stencil(0), buffer(1), samples(0)
++    id(0), red(8), green(8), blue(8), alpha(8), depth(32), stencil(1), buffer(24), samples(0)
+ {
+     std::vector<std::string> elems;
+ 
+diff --git a/src/gl-visual-config.h b/src/gl-visual-config.h
+index b28473f..31b7285 100644
+--- a/src/gl-visual-config.h
++++ b/src/gl-visual-config.h
+@@ -31,7 +31,7 @@ class GLVisualConfig
+ {
+ public:
+     GLVisualConfig():
+-        id(0), red(1), green(1), blue(1), alpha(1), depth(1), stencil(0), buffer(1), samples(0) {}
++        id(0), red(8), green(8), blue(8), alpha(8), depth(32), stencil(1), buffer(24), samples(0) {}
+     GLVisualConfig(const std::string &s);
+ 
+     /**

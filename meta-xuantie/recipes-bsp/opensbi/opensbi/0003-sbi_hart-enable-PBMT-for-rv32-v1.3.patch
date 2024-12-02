@@ -1,0 +1,30 @@
+From 7adc717300ba8b5eecf09c7e26b18c9e1fd91dd6 Mon Sep 17 00:00:00 2001
+From: Chen Pei <cp0613@linux.alibaba.com>
+Date: Wed, 27 Dec 2023 17:46:22 +0800
+Subject: [PATCH] sbi_hart: enable PBMT for rv32
+
+Signed-off-by: Guo Ren <guoren@linux.alibaba.com>
+Signed-off-by: Chen Pei <cp0613@linux.alibaba.com>
+---
+ lib/sbi/sbi_hart.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/lib/sbi/sbi_hart.c b/lib/sbi/sbi_hart.c
+index 6acff37..437680f 100644
+--- a/lib/sbi/sbi_hart.c
++++ b/lib/sbi/sbi_hart.c
+@@ -141,6 +141,11 @@ static void mstatus_init(struct sbi_scratch *scratch)
+ 		 */
+ #if __riscv_xlen > 32
+ 		menvcfg_val |= ENVCFG_PBMTE;
++#else
++		unsigned long menvcfgh_val;
++		menvcfgh_val = csr_read(CSR_MENVCFGH);
++		menvcfgh_val |= ENVCFGH_PBMTE;
++		csr_write(CSR_MENVCFGH, menvcfgh_val);
+ #endif
+ 
+ 		/*
+-- 
+2.25.1
+

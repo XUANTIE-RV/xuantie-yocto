@@ -1,0 +1,39 @@
+From 366445a70dcdf97590710245a713c61b96f8a71d Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Mon, 26 Feb 2024 15:05:01 +0800
+Subject: [PATCH 2/2] Enable mpeg4 omx decoder
+
+---
+ libavcodec/omxdecoder.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 4e134f3..81804ca 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1617,9 +1617,11 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+             s->done_out_buffers[s->num_done_out_buffers++] = s->out_buffer_headers[i];
+         }
+     }
+-#ifdef MPEG4_OMX
+-    omx_send_extradata(avctx);
+-#endif
++
++    if (avctx->codec->id == AV_CODEC_ID_MPEG4) {
++        omx_send_extradata(avctx);
++    }
++
+     return err != OMX_ErrorNone ? AVERROR_UNKNOWN : 0;
+ }
+ 
+@@ -2117,7 +2119,3 @@ DECLARE_OMX_VDEC(hevc, "H.265", AV_CODEC_ID_HEVC, "hevc_mp4toannexb")
+ DECLARE_OMX_VDEC(mpeg4, "MPEG-4 part 2", AV_CODEC_ID_MPEG4, NULL)
+ DECLARE_OMX_VDEC(vp9, "VP9", AV_CODEC_ID_VP9, NULL)
+ DECLARE_OMX_VDEC(h263, "H263", AV_CODEC_ID_H263, NULL)
+-
+-#ifdef MPEG4_OMX
+-DECLARE_OMX_VDEC(mpeg4, "MPEG4", AV_CODEC_ID_MPEG4, NULL)
+-#endif
+-- 
+2.17.1
+

@@ -1,0 +1,54 @@
+# kdump-tools configuration
+# ---------------------------------------------------------------------------
+# USE_KDUMP - controls kdump will be configured
+#     0 - kdump kernel will not be loaded
+#     1 - kdump kernel will be loaded and kdump is configured
+# KDUMP_SYSCTL - controls when a panic occurs, using the sysctl 
+#     interface.  The contents of this variable should be the
+#     "variable=value ..." portion of the 'sysctl -w ' command.
+#     If not set, the default value "kernel.panic_on_oops=1" will
+#     be used.  Disable this feature by setting KDUMP_SYSCTL=" "
+#     Example - also panic on oom, hang, rcu stall, softlockup:
+#         KDUMP_SYSCTL="kernel.panic_on_oops=1 vm.panic_on_oom=1 kernel.hung_task_panic=1 kernel.panic_on_rcu_stall=1 kernel.softlockup_panic=1"
+#
+USE_KDUMP=1
+KDUMP_SYSCTL="kernel.panic_on_oops=1 kernel.hung_task_panic=1 kernel.softlockup_panic=1"
+
+# ---------------------------------------------------------------------------
+# Crash Post notifiers:
+#	0 - don't run crash post notifiers
+#	1 - run crash post notifiers
+# 	Run kdump after running panic-notifiers and dumping kmsg.
+# 	This only for the users who doubt kdump always succeeds in any situation.
+# 	Note that this also increases risks of kdump failure, because some panic
+# 	notifiers can make the crashed kernel more unstable.
+CRASH_POST_NOTIFIERS=1
+
+# ---------------------------------------------------------------------------
+# Kdump Kernel:
+# KDUMP_KERNEL - A full pathname to a kdump kernel.
+# KDUMP_INITRD - A full pathname to the kdump initrd (if used).
+# KDUMP_CMDLINE - Custom kernel cmdline for crash system (if used,
+#		  otherwise reuse host's cmdline)
+KDUMP_KERNEL=/var/lib/kdump/vmlinux
+#KDUMP_CMDLINE="console=ttyS0,115200 root=PARTUUID=80a5a8e9-c744-491a-93c1-4f4194fd690b rootfstype=ext4 rdinit=/sbin/init rootwait rw"
+KDUMP_INITRD=/var/lib/kdump/rootfs.cpio.gz
+
+# ---------------------------------------------------------------------------
+# vmcore Handling:
+# KDUMP_COREDIR - local path to save the vmcore to.
+# KDUMP_FAIL_CMD - This variable can be used to cause a reboot or not
+#     if saving the vmcore fails.  If set to "no reboot", crash system don't reboot.
+#     If set to "reboot -f", crash system will reboot.
+# KDUMP_DUMP_DMESG - This variable controls if the dmesg buffer is dumped.
+#     If set to 1, the dmesg buffer is dumped. If set to 0, the dmesg
+#     buffer is not dumped.
+KDUMP_COREDIR="/var/crash"
+KDUMP_FAIL_CMD="reboot -f"
+KDUMP_DUMP_DMESG=1
+
+# ---------------------------------------------------------------------------
+# KDUMP_NUM_DUMPS - This variable controls how many dump files are kept on
+#     the machine to prevent running out of disk space. If set to 0 or unset,
+#     the variable is ignored and no dump files are automatically purged.
+KDUMP_NUM_DUMPS=2

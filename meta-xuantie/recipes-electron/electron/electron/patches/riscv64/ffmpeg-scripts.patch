@@ -1,0 +1,102 @@
+--- a/src/third_party/ffmpeg/chromium/scripts/build_ffmpeg.py
++++ b/src/third_party/ffmpeg/chromium/scripts/build_ffmpeg.py
+@@ -40,7 +40,7 @@
+ ARCH_MAP = {
+     'android': ['ia32', 'x64', 'arm-neon', 'arm64'],
+     'linux': [
+-        'ia32', 'x64', 'noasm-x64', 'arm', 'arm-neon', 'arm64'
++        'ia32', 'x64', 'noasm-x64', 'arm', 'arm-neon', 'arm64', 'riscv64'
+     ],
+     'mac': ['x64', 'arm64'],
+     'win': ['ia32', 'x64', 'arm64'],
+@@ -142,6 +142,8 @@
+     host_arch = 'mips64el'
+   elif platform.machine().startswith('arm'):
+     host_arch = 'arm'
++  elif platform.machine() == 'riscv64':
++    host_arch = 'riscv64'
+   else:
+     return None
+ 
+@@ -911,6 +913,10 @@
+             '--extra-cflags=--target=mips64el-linux-gnuabi64',
+             '--extra-ldflags=--target=mips64el-linux-gnuabi64',
+         ])
++    elif target_arch == 'riscv64':
++      configure_flags['Common'].extend([
++        '--arch=riscv64',
++      ])
+     else:
+       print(
+           'Error: Unknown target arch %r for target OS %r!' % (target_arch,
+@@ -924,7 +930,7 @@
+         '--disable-inline-asm',
+     ])
+ 
+-  if 'win' not in target_os and 'android' not in target_os:
++  if 'win' not in target_os and 'android' not in target_os and 'riscv64' not in target_arch:
+     configure_flags['Common'].extend([
+         '--enable-pic',
+         '--cc=clang',
+--- a/src/third_party/ffmpeg/chromium/scripts/copy_config.sh
++++ b/src/third_party/ffmpeg/chromium/scripts/copy_config.sh
+@@ -10,7 +10,7 @@
+     # Copy config files for various architectures:
+     #   - ia32/x64 have config.asm, config.h
+     #   - arm/arm-neon have config.h
+-    for arch in arm arm-neon arm64 ia32 x64 mipsel mips64el; do
++    for arch in arm arm-neon arm64 ia32 x64 mipsel mips64el riscv64; do
+       # Don't waste time on non-existent configs, if no config.h then skip.
+       [ ! -e "build.$arch.$os/$target/config.h" ] && continue
+       for f in config.h config_components.h config.asm libavutil/avconfig.h libavutil/ffversion.h libavcodec/bsf_list.c libavcodec/codec_list.c libavcodec/parser_list.c libavformat/demuxer_list.c libavformat/muxer_list.c libavformat/protocol_list.c; do
+--- a/src/third_party/ffmpeg/chromium/scripts/generate_gn.py
++++ b/src/third_party/ffmpeg/chromium/scripts/generate_gn.py
+@@ -78,7 +78,7 @@
+ Attr = collections.namedtuple('Attr', _Attrs)(*_Attrs)
+ SUPPORT_MATRIX = {
+     Attr.ARCHITECTURE:
+-        set(['ia32', 'x64', 'arm', 'arm64', 'arm-neon']),
++        set(['ia32', 'x64', 'arm', 'arm64', 'arm-neon', 'riscv64']),
+     Attr.TARGET:
+         set(['Chromium', 'Chrome', 'ChromeOS']),
+     Attr.PLATFORM:
+--- a/src/third_party/ffmpeg/chromium/scripts/generate_gn_unittest.py
++++ b/src/third_party/ffmpeg/chromium/scripts/generate_gn_unittest.py
+@@ -323,6 +323,10 @@
+     f = SourceSet(
+         set(['common', 'arm-neon', 'chrome', 'chromeos']),
+         set([SourceListCondition('arm-neon', 'ChromeOS', 'linux')]))
++    g = SourceSet(
++        set(['common']),
++        set([SourceListCondition('riscv64', 'Chromium', 'linux')]))
++
+ 
+     expected = set()
+     expected.add(
+@@ -334,7 +338,8 @@
+                 SourceListCondition('x64', 'Chromium', 'linux'),
+                 SourceListCondition('x64', 'Chrome', 'linux'),
+                 SourceListCondition('arm', 'Chromium', 'linux'),
+-                SourceListCondition('arm-neon', 'ChromeOS', 'linux')
++                SourceListCondition('arm-neon', 'ChromeOS', 'linux'),
++                SourceListCondition('riscv64', 'Chromium', 'linux')
+             ])))
+     expected.add(
+         SourceSet(
+@@ -362,7 +367,7 @@
+             set(['arm-neon', 'chromeos']),
+             set([SourceListCondition('arm-neon', 'ChromeOS', 'linux')])))
+ 
+-    source_sets = gg.CreatePairwiseDisjointSets([a, b, c, d, e, f])
++    source_sets = gg.CreatePairwiseDisjointSets([a, b, c, d, e, f, g])
+     self.assertEqualSourceSets(expected, set(source_sets))
+ 
+   def testReduceConditions(self):
+@@ -375,6 +380,7 @@
+             SourceListCondition('arm', 'Chromium', 'linux'),
+             SourceListCondition('arm64', 'Chromium', 'linux'),
+             SourceListCondition('arm-neon', 'Chromium', 'linux'),
++            SourceListCondition('riscv64', 'Chromium', 'linux'),
+         ]))
+     gg.ReduceConditionalLogic(a)
+ 

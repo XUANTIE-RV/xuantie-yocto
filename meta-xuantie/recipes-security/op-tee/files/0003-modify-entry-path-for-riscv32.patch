@@ -1,0 +1,31 @@
+From ef2232fd4a109e3a194d1e4c79254454ba4a1cf1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Thu, 17 Oct 2024 07:50:50 +0000
+Subject: [PATCH] modify entry path for riscv32.
+
+---
+ bl31/riscv32/bl31_entrypoint.S | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/bl31/riscv32/bl31_entrypoint.S b/bl31/riscv32/bl31_entrypoint.S
+index e7cc58e78..63083beba 100644
+--- a/bl31/riscv32/bl31_entrypoint.S
++++ b/bl31/riscv32/bl31_entrypoint.S
+@@ -5,11 +5,11 @@
+  */
+ 
+ #if defined(OPENSBI_0_9)
+-#include "../../../trusted-firmware-a/lib/opensbi-0.9/firmware/fw_jump.S"
++#include "../../../git/lib/opensbi-0.9/firmware/fw_jump.S"
+ #elif defined(OPENSBI_1_2)
+-#include "../../../trusted-firmware-a/lib/opensbi-1.2/firmware/fw_jump.S"
++#include "../../../git/lib/opensbi-1.2/firmware/fw_jump.S"
+ #elif defined(OPENSBI_1_4)
+-#include "../../../trusted-firmware-a/lib/opensbi-1.4/firmware/fw_jump.S"
++#include "../../../git/lib/opensbi-1.4/firmware/fw_jump.S"
+ #else
+ #error "Unsupported OpenSBI Version!"
+ #endif
+-- 
+2.47.0
+

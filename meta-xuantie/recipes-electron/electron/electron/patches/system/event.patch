@@ -1,0 +1,25 @@
+description: use system libevent
+author: Michael Gilbert <mgilbert@debian.org>
+
+--- a/src/third_party/webrtc/rtc_base/task_queue_libevent.cc
++++ b/src/third_party/webrtc/rtc_base/task_queue_libevent.cc
+@@ -36,7 +36,7 @@
+ #include "rtc_base/synchronization/mutex.h"
+ #include "rtc_base/thread_annotations.h"
+ #include "rtc_base/time_utils.h"
+-#include "third_party/libevent/event.h"
++#include <event.h>
+ 
+ namespace webrtc {
+ namespace {
+--- a/src/base/message_loop/message_pump_libevent.cc
++++ b/src/base/message_loop/message_pump_libevent.cc
+@@ -20,7 +20,7 @@
+ #include "base/time/time.h"
+ #include "base/trace_event/base_tracing.h"
+ #include "build/build_config.h"
+-#include "third_party/libevent/event.h"
++#include <event.h>
+ 
+ #if BUILDFLAG(ENABLE_MESSAGE_PUMP_EPOLL)
+ #include "base/message_loop/message_pump_epoll.h"

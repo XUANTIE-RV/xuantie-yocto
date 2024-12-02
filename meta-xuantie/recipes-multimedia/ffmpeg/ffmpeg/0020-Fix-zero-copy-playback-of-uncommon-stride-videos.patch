@@ -1,0 +1,52 @@
+From 7bd765a1c1fffbaaf0bd26af866b540c949df7a5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Wed, 22 May 2024 07:53:30 +0000
+Subject: [PATCH] Fix zero-copy playback of uncommon stride videos
+
+---
+ libavcodec/omxdecoder.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 3c5a1c3..305fa9b 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1094,8 +1094,11 @@ static int copyNV12toDst(AVCodecContext *avctx, AVFrame *avframe, OMX_BUFFERHEAD
+     avframe->linesize[1] = avframe->width;
+ #ifdef DRM_PRIME
+     int ret = 0;
++    int real_linesize = avframe->linesize[0] % OMX_OUT_STRIDE ? ((avframe->linesize[0] + OMX_OUT_STRIDE) / OMX_OUT_STRIDE * OMX_OUT_STRIDE) : avframe->linesize[0];
++    avframe->linesize[0] = real_linesize;
++    avframe->linesize[1] = real_linesize;
+ #endif
+-    int y_size = avframe->linesize[0] * avframe->height;
++    int y_size = real_linesize * avframe->height;
+     int uv_size = y_size / 2;
+     int src_stride = s->out_stride;
+     uint8_t *y_src = NULL;
+@@ -1173,7 +1176,7 @@ static int copyNV12toDst(AVCodecContext *avctx, AVFrame *avframe, OMX_BUFFERHEAD
+ 
+         s->layer->planes[0].object_index = 0;
+         s->layer->planes[0].offset = 0;
+-        s->layer->planes[0].pitch = avframe->linesize[0];
++        s->layer->planes[0].pitch = real_linesize;
+ 
+         s->layer->planes[1].object_index = 0;
+         s->layer->planes[1].offset = y_size;
+@@ -1536,12 +1539,7 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+     if (avctx->width && avctx->height) {
+         out_port_params.nBufferSize = (OMX_U32) avctx->width * (OMX_U32) avctx->height * 3;
+     }
+-    if (s->drm_prime_mode) {
+-      out_port_params.nBufferAlignment = OMX_OUT_STRIDE;
+-    } else {
+-      out_port_params.format.video.nStride      = (OMX_U32) avctx->width;
+-      out_port_params.format.video.nSliceHeight = (OMX_U32) avctx->height;
+-    }
++    out_port_params.nBufferAlignment = OMX_OUT_STRIDE;
+     out_port_params.format.video.nFrameWidth   = avctx->width;
+     out_port_params.format.video.nFrameHeight  = avctx->height;
+     out_port_params.nBufferCountActual   = kNumPictureBuffers;
+-- 
+2.17.1
+

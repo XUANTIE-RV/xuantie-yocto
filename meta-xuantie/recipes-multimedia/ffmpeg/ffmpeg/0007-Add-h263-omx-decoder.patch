@@ -1,0 +1,107 @@
+From 8216d21b52cdf5f6e3ea548fb3f943732a3019e3 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Tue, 30 Jan 2024 18:32:42 +0800
+Subject: [PATCH 1/2] Add h263 omx decoder
+
+---
+ configure               |  1 +
+ libavcodec/Makefile     |  1 +
+ libavcodec/allcodecs.c  |  1 +
+ libavcodec/omxdecoder.c | 14 ++++++++++++--
+ 4 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/configure b/configure
+index 04de04a..6afeacc 100755
+--- a/configure
++++ b/configure
+@@ -3165,6 +3165,7 @@ ac3_mf_encoder_deps="mediafoundation"
+ av1_cuvid_decoder_deps="cuvid CUVIDAV1PICPARAMS"
+ h263_v4l2m2m_decoder_deps="v4l2_m2m h263_v4l2_m2m"
+ h263_v4l2m2m_encoder_deps="v4l2_m2m h263_v4l2_m2m"
++h263_omx_decoder_deps="omx"
+ h264_amf_encoder_deps="amf"
+ h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
+ h264_cuvid_decoder_deps="cuvid"
+diff --git a/libavcodec/Makefile b/libavcodec/Makefile
+index 12f1412..dc98584 100644
+--- a/libavcodec/Makefile
++++ b/libavcodec/Makefile
+@@ -380,6 +380,7 @@ OBJS-$(CONFIG_H263_ENCODER)            += mpeg4video.o  \
+                                           h263.o ituh263enc.o h263data.o
+ OBJS-$(CONFIG_H263_V4L2M2M_DECODER)    += v4l2_m2m_dec.o
+ OBJS-$(CONFIG_H263_V4L2M2M_ENCODER)    += v4l2_m2m_enc.o
++OBJS-$(CONFIG_H263_OMX_DECODER)        += omxdecoder.o
+ OBJS-$(CONFIG_H264_DECODER)            += h264dec.o h264_cabac.o h264_cavlc.o \
+                                           h264_direct.o h264_loopfilter.o  \
+                                           h264_mb.o h264_picture.o \
+diff --git a/libavcodec/allcodecs.c b/libavcodec/allcodecs.c
+index 5a7db7f..bf36754 100644
+--- a/libavcodec/allcodecs.c
++++ b/libavcodec/allcodecs.c
+@@ -45,6 +45,7 @@ extern const FFCodec ff_jpeg_omx_encoder;
+ extern const FFCodec ff_jpeg_omx_decoder;
+ extern const FFCodec ff_mpeg4_omx_encoder;
+ extern const FFCodec ff_mpeg4_omx_decoder;
++extern const FFCodec ff_h263_omx_decoder;
+ 
+ extern const FFCodec ff_a64multi_encoder;
+ extern const FFCodec ff_a64multi5_encoder;
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index f8dc66d..4e134f3 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1263,11 +1263,14 @@ static int check_buffer_outsize(OMXCodecDecoderContext *s)
+     CHECK(err);
+     if (avctx->width != out_port_params.format.video.nFrameWidth ||
+         avctx->height != out_port_params.format.video.nFrameHeight) {
++        // fix the green screen issue with h263.3gp
++        if  (avctx->width && avctx->height) {
++            s->resolution_changed = 1;
++        }
+         avctx->width = out_port_params.format.video.nFrameWidth;
+         avctx->height = out_port_params.format.video.nFrameHeight;
+         avctx->coded_width = out_port_params.format.video.nFrameWidth;
+         avctx->coded_height = out_port_params.format.video.nFrameHeight;
+-        s->resolution_changed = 1;
+         for (int i = 0; i < s->num_out_buffers; i++) {
+             OMX_BUFFERHEADERTYPE *buffer = s->out_buffer_headers[i];
+             err = omx_try_fillbuffer(s, buffer);
+@@ -1447,13 +1450,16 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+     err = OMX_SetParameter(s->handle, OMX_IndexParamPortDefinition, &in_port_params);
+     CHECK(err);
+ 
++    // h263.3gp width height is 0 when playing with mpv
++    if (avctx->width && avctx->height) {
++        out_port_params.nBufferSize = (OMX_U32) avctx->width * (OMX_U32) avctx->height * 3;
++    }
+     out_port_params.format.video.nFrameWidth   = avctx->width;
+     out_port_params.format.video.nFrameHeight  = avctx->height;
+     out_port_params.format.video.nStride      = (OMX_U32) avctx->width;
+     out_port_params.format.video.nSliceHeight = (OMX_U32) avctx->height;
+     out_port_params.nBufferCountActual   = kNumPictureBuffers;
+     out_port_params.nBufferCountMin      = kNumPictureBuffers;
+-    out_port_params.nBufferSize = (OMX_U32) avctx->width * (OMX_U32) avctx->height * 3;
+     err = OMX_SetParameter(s->handle, OMX_IndexParamPortDefinition, &out_port_params);
+     CHECK(err);
+ 
+@@ -1507,6 +1513,9 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+     case AV_CODEC_ID_VP9:
+         formatIn.eCompressionFormat = OMX_CSI_VIDEO_CodingVP9;
+         break;
++    case AV_CODEC_ID_H263:
++        formatIn.eCompressionFormat = OMX_VIDEO_CodingH263;
++        break;
+     default:
+         formatIn.eCompressionFormat = OMX_VIDEO_CodingAutoDetect;
+         break;
+@@ -2107,6 +2116,7 @@ DECLARE_OMX_VDEC(h264, "H.264", AV_CODEC_ID_H264, "h264_mp4toannexb")
+ DECLARE_OMX_VDEC(hevc, "H.265", AV_CODEC_ID_HEVC, "hevc_mp4toannexb")
+ DECLARE_OMX_VDEC(mpeg4, "MPEG-4 part 2", AV_CODEC_ID_MPEG4, NULL)
+ DECLARE_OMX_VDEC(vp9, "VP9", AV_CODEC_ID_VP9, NULL)
++DECLARE_OMX_VDEC(h263, "H263", AV_CODEC_ID_H263, NULL)
+ 
+ #ifdef MPEG4_OMX
+ DECLARE_OMX_VDEC(mpeg4, "MPEG4", AV_CODEC_ID_MPEG4, NULL)
+-- 
+2.17.1
+

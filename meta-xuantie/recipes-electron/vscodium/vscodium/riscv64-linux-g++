@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# fix riscv64-linux-g++: error: unrecognized command-line option '-m64'
+
+args=("$@")
+
+new_args=()
+
+for arg in "${args[@]}"; do
+    if [ "$arg" != "-m64" ]; then
+        new_args+=("$arg")
+    fi
+done
+
+exec $EXTERNAL_TOOLCHAIN_EXPORT/bin/riscv64-linux-g++ "${new_args[@]}"

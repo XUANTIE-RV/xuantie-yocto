@@ -1,0 +1,22 @@
+--- a/src/electron/patches/v8/cherry-pick-2c8a019f39d2.patch
++++ b/src/electron/patches/v8/cherry-pick-2c8a019f39d2.patch
+@@ -202,7 +202,7 @@
+ +        // Prepare a0 to initialize registers with its value in the next run.
+ +        // Must be immediately before the jump to avoid clobbering.
+ +        __ LoadWord(a0,
+-+                    MemOperand(frame_pointer(), kStringStartMinusOneOffset));
+++                    MemOperand(frame_pointer(), kStringStartMinusOne));
+ +
+          __ Branch(&load_char_start_regexp);
+        } else {
+--- a/src/v8/src/regexp/riscv/regexp-macro-assembler-riscv.cc
++++ b/src/v8/src/regexp/riscv/regexp-macro-assembler-riscv.cc
+@@ -896,7 +896,7 @@
+         // Prepare a0 to initialize registers with its value in the next run.
+         // Must be immediately before the jump to avoid clobbering.
+         __ LoadWord(a0,
+-                    MemOperand(frame_pointer(), kStringStartMinusOneOffset));
++                    MemOperand(frame_pointer(), kStringStartMinusOne));
+ 
+         __ Branch(&load_char_start_regexp);
+       } else {

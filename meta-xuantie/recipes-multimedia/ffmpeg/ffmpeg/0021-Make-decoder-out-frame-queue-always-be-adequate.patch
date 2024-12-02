@@ -1,0 +1,115 @@
+From 7df4d7e77fbc155a82c30e86dc93b1e79d728758 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Wed, 3 Jul 2024 09:46:17 +0000
+Subject: [PATCH] Make decoder out frame queue always be adequate
+
+---
+ libavcodec/omxdecoder.c | 47 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 35 insertions(+), 12 deletions(-)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 305fa9b..4ed5116 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -371,6 +371,7 @@ typedef struct OMXCodecDecoderContext {
+     int outport_disabled;
+     int pkt_full;
+     int now_pts;
++    bool got_frame;
+     int pkt_duration;
+     int resolution_changed;
+     OMX_COLOR_FORMATTYPE outformat;
+@@ -1390,6 +1391,8 @@ static int ff_omx_dec_receive(AVCodecContext *avctx, OMXCodecDecoderContext *s,
+             append_buffer(&s->output_mutex, &s->output_cond, &s->num_done_out_buffers, s->done_out_buffers, buffer);
+             av_log(avctx, AV_LOG_ERROR, "OMX_FillThisBuffer failed: %x\n", err);
+         }
++        if (s->got_eos)
++            return AVERROR_EOF;
+         return AVERROR(EAGAIN);
+     }
+ 
+@@ -2069,20 +2072,43 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     OMXDecoderContext *c = avctx->priv_data;
+     OMXCodecDecoderContext *s = (OMXDecoderContext *)c->decoder_ref->data;
+     int ret;
++    s->got_frame = false;
+     /* feed decoder */
+     while (1) {
+-        if (s->num_done_out_buffers > 0) {
++        /* fetch new packet or eof */
++        if (s->pkt_full == 0 && !s->eos_reach) {
++            ret = ff_decode_get_packet(avctx, &s->buffered_pkt);
++            if (ret == AVERROR_EOF) {
++                s->need_sendeos = 1;
++                s->eos_reach = 1;
++                continue;
++            } else if (ret < 0) {
++                goto end;
++            } else if (s->buffered_pkt.size > 0) {
++                //success
++                s->pkt_full = 1;
++            }
++        }
++        if (s->num_done_out_buffers > 0 && !s->got_frame) {
+             ret = ff_omx_dec_receive(avctx, s, frame, false);
+             if (ret == 0) {
+                 //receive success!
+                 s->flushing = 0;
+                 s->pkt_sent_num--;
+                 s->receive_frame_no_wait = true;
+-                return ret;
++                s->got_frame = true;
++            } else {
++                goto end;
+             }
+-        } else if (s->num_done_out_buffers == 0 && s->got_eos && s->eos_sent) {
+-            ret = AVERROR_EOF;
++        } else if (s->got_frame && s->eos_reach) {
+             goto end;
++        } else if (s->need_sendeos && s->num_done_out_buffers == 0 && s->eos_reach) {
++            AVPacket null_pkt = { 0 };
++            ret = ff_omx_dec_send(avctx, s, &null_pkt, true);
++            if (ret < 0) {
++                goto end;
++            }
++            s->need_sendeos = 0;
+         }
+ 
+         if (s->num_free_in_buffers == 0 && s->num_done_out_buffers == 0 && !s->flushing && !s->eos_sent && !s->receive_frame_no_wait) {
+@@ -2107,6 +2133,8 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+             } else if (ret < 0 && ret != AVERROR(EAGAIN)) {
+                 goto end;
+             }
++            if (s->got_frame)
++                goto end;
+             /* poll for space again */
+             continue;
+         }
+@@ -2115,14 +2143,7 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+         if (s->pkt_full == 0 && !s->eos_reach) {
+             ret = ff_decode_get_packet(avctx, &s->buffered_pkt);
+             if (ret == AVERROR_EOF) {
+-                AVPacket null_pkt = { 0 };
+-                ret = ff_omx_dec_send(avctx, s, &null_pkt, true);
+-                if (ret < 0) {
+-                    s->need_sendeos = 1;
+-                    goto end;
+-                }
+-
+-                s->need_sendeos = 0;
++                s->need_sendeos = 1;
+                 s->eos_reach = 1;
+                 continue;
+ 
+@@ -2136,6 +2157,8 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     }
+     ret = AVERROR(EAGAIN);
+ end:
++    if (s->got_frame)
++        return 0;
+     s->receive_frame_no_wait = false;
+     return ret;
+ }
+-- 
+2.17.1
+

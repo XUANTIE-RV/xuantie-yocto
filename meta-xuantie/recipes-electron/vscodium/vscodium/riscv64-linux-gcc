@@ -1,0 +1,13 @@
+#!/bin/bash
+
+args=("$@")
+
+new_args=()
+
+for arg in "${args[@]}"; do
+    if [ "$arg" != "-m64" ]; then
+        new_args+=("$arg")
+    fi
+done
+
+exec $EXTERNAL_TOOLCHAIN_EXPORT/bin/riscv64-linux-gcc "${new_args[@]}"

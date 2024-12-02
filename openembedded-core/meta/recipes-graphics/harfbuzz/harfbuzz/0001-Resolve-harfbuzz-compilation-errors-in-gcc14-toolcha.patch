@@ -1,0 +1,25 @@
+From 42dc8b8158e65048f83d695ff6677f4ef95e3440 Mon Sep 17 00:00:00 2001
+From: bianhq <bhq01502828@alibaba-inc.com>
+Date: Fri, 27 Sep 2024 12:43:47 +0000
+Subject: [PATCH] Resolve harfbuzz compilation errors in gcc14 toolchain
+Upstream-Status: Backport
+---
+ test/threads/hb-subset-threads.cc | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/test/threads/hb-subset-threads.cc b/test/threads/hb-subset-threads.cc
+index 9d86d8d..4a2d994 100644
+--- a/test/threads/hb-subset-threads.cc
++++ b/test/threads/hb-subset-threads.cc
+@@ -9,6 +9,8 @@
+ #endif
+ 
+ #include "hb-subset.h"
++#include <cstdlib>
++#include <cstdio>
+ 
+ enum operation_t
+ {
+-- 
+2.41.0
+

@@ -1,0 +1,164 @@
+#!/bin/sh
+
+# OE Build Environment Setup Script
+#
+# Copyright (C) 2006-2011 Linux Foundation
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+
+die() {
+    echo Error: "$@" >&2
+    exit 1
+}
+
+[ -n "$BUILDDIR" ] || die "The build directory (BUILDDIR) must be set!"
+
+if [ "$1" = '--help' ] || [ "$1" = '-h' ]; then
+    echo 'Usage: oe-setup-builddir'
+    echo ''
+    echo "OpenEmbedded setup-builddir - setup build directory $BUILDDIR"
+    echo ''
+    exit 2
+fi
+
+mkdir -p "$BUILDDIR/conf"
+
+[ -d "$BUILDDIR" ] || die "The build directory ($BUILDDIR) does not exist!"
+[ -w "$BUILDDIR" ] ||
+    die "Cannot write to $BUILDDIR, perhaps try sourcing with a writable path? i.e. . oe-init-build-env ~/my-build"
+
+# Attempting removal of sticky,setuid bits from BUILDDIR, BUILDDIR/conf
+chmod -st "$BUILDDIR" 2>/dev/null || echo "WARNING: unable to chmod $BUILDDIR"
+chmod -st "$BUILDDIR/conf" 2>/dev/null || echo "WARNING: unable to chmod $BUILDDIR/conf"
+
+cd "$BUILDDIR" || die "Failed to change directory to $BUILDDIR!"
+
+. "$OEROOT/.templateconf"
+
+# Keep the original TEMPLATECONF before possibly prefixing it with $OEROOT below.
+ORG_TEMPLATECONF=$TEMPLATECONF
+
+#
+# $TEMPLATECONF can point to a directory for the template local.conf & bblayers.conf
+#
+if [ -n "$TEMPLATECONF" ]; then
+    if [ ! -d "$TEMPLATECONF" ]; then
+        # Allow TEMPLATECONF=meta-xyz/conf as a shortcut
+        if [ -d "$OEROOT/$TEMPLATECONF" ]; then
+            TEMPLATECONF="$OEROOT/$TEMPLATECONF"
+        fi
+        [ -d "$TEMPLATECONF" ] ||
+            die "TEMPLATECONF value points to nonexistent directory '$TEMPLATECONF'"
+    fi
+    templatesdir=$(python3 -c "import sys; print(sys.argv[1].strip('/').split('/')[-2])" "$TEMPLATECONF")
+    if [ "$templatesdir" != templates ] || [ ! -f "$TEMPLATECONF/../../layer.conf" ]; then
+        die "TEMPLATECONF value (which is $TEMPLATECONF) must point to meta-some-layer/conf/templates/template-name"
+    fi
+    OECORELAYERCONF="$TEMPLATECONF/bblayers.conf.sample"
+    OECORELOCALCONF="$TEMPLATECONF/local.conf.sample"
+    OECORENOTESCONF="$TEMPLATECONF/conf-notes.txt"
+fi
+
+unset SHOWYPDOC
+if [ -z "$OECORELOCALCONF" ]; then
+    OECORELOCALCONF="$OEROOT/meta/conf/templates/default/local.conf.sample"
+fi
+if [ ! -r "$BUILDDIR/conf/local.conf" ]; then
+    cat <<EOM
+You had no conf/local.conf file. This configuration file has therefore been
+created for you from $OECORELOCALCONF
+You may wish to edit it to, for example, select a different MACHINE (target
+hardware).
+
+EOM
+    cp -f "$OECORELOCALCONF" "$BUILDDIR/conf/local.conf"
+    SHOWYPDOC=yes
+fi
+
+if [ -z "$OECORELAYERCONF" ]; then
+    OECORELAYERCONF="$OEROOT/meta/conf/templates/default/bblayers.conf.sample"
+fi
+if [ ! -r "$BUILDDIR/conf/bblayers.conf" ]; then
+    cat <<EOM
+You had no conf/bblayers.conf file. This configuration file has therefore been
+created for you from $OECORELAYERCONF
+To add additional metadata layers into your configuration please add entries
+to conf/bblayers.conf.
+
+EOM
+
+    # Put the absolute path to the layers in bblayers.conf so we can run
+    # bitbake without the init script after the first run.
+    # ##COREBASE## is deprecated as its meaning was inconsistent, but continue
+    # to replace it for compatibility.
+    sed -e "s|##OEROOT##|$OEROOT|g" \
+        -e "s|##COREBASE##|$OEROOT|g" \
+        "$OECORELAYERCONF" > "$BUILDDIR/conf/bblayers.conf"
+    SHOWYPDOC=yes
+fi
+
+# Prevent disturbing a new GIT clone in same console
+unset OECORELOCALCONF
+unset OECORELAYERCONF
+
+# Ending the first-time run message. Show the YP Documentation banner.
+if [ -n "$SHOWYPDOC" ]; then
+    cat <<EOM
+The Yocto Project has extensive documentation about OE including a reference
+manual which can be found at:
+    https://docs.yoctoproject.org
+
+For more information about OpenEmbedded see the website:
+    https://www.openembedded.org/
+
+EOM
+#    unset SHOWYPDOC
+fi
+
+# if [ -z "$OECORENOTESCONF" ]; then
+#     OECORENOTESCONF="$OEROOT/meta/conf/templates/default/conf-notes.txt"
+# fi
+# [ ! -r "$OECORENOTESCONF" ] || cat "$OECORENOTESCONF"
+unset OECORENOTESCONF
+
+if [ ! -f "$BUILDDIR/conf/templateconf.cfg" ]; then
+    echo "$ORG_TEMPLATECONF" >"$BUILDDIR/conf/templateconf.cfg"
+fi
+cat <<EOF
+
+### Shell environment set up for builds. ###
+
+You can now run 'bitbake <target>'
+
+Common targets are:
+EOF
+finddir=`ls -d $OEROOT/../meta-*/ | grep -v $OEROOT/../meta-openembedded | grep -v $OEROOT/../meta-riscv | grep -v $OEROOT/../meta-virtualization`
+targets=`find $finddir -wholename '*/images/xuantie-image-lite.bb' ! -wholename '*/images/*-multimedia.bb' ! -wholename '*/images/*-gnome.bb' | sort`
+for i in $targets;do
+	printf "    %s\n" `basename $i | sed 's,\.bb$,,g'`
+done
+cat <<EOF
+
+DISTROs:
+EOF
+notdisplaydistros="c906 c907 c907-rv32 c908i c910"
+distros=`find $finddir -wholename '*/conf/distro/*.conf' ! -wholename '*/conf/distro/light-*.conf' | sort`
+for i in $distros;do
+    distro=$(basename "$i" | sed 's,\.conf$,,g')
+
+    echo "$notdisplaydistros" | grep -q -w "$distro"
+    if [ $? -ne 0 ]; then
+        printf "    %s\n" "$distro"
+    fi
+done
+
+cat <<EOF
+
+You can also run generated qemu images with a command like 'runqemu qemux86'.
+
+Other commonly useful commands are:
+ - 'devtool' and 'recipetool' handle common recipe tasks
+ - 'bitbake-layers' handles common layer tasks
+ - 'oe-pkgdata-util' handles common target package tasks
+EOF

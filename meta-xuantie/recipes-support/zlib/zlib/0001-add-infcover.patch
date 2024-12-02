@@ -1,0 +1,25 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 59439f1..b300452 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -249,6 +249,9 @@ add_test(example example)
+ add_executable(minigzip test/minigzip.c)
+ target_link_libraries(minigzip zlib)
+ 
++add_executable(infcover test/infcover.c)
++target_link_libraries(infcover zlibstatic)
++
+ if(HAVE_OFF64_T)
+     add_executable(example64 test/example.c)
+     target_link_libraries(example64 zlib)
+@@ -258,6 +261,10 @@ if(HAVE_OFF64_T)
+     add_executable(minigzip64 test/minigzip.c)
+     target_link_libraries(minigzip64 zlib)
+     set_target_properties(minigzip64 PROPERTIES COMPILE_FLAGS "-D_FILE_OFFSET_BITS=64")
++
++    add_executable(infcover64 test/infcover.c)
++    target_link_libraries(infcover64 zlibstatic)
++    set_target_properties(infcover64 PROPERTIES COMPILE_FLAGS "-D_FILE_OFFSET_BITS=64")
+ endif()
+ 
+ add_executable(zlib_bench contrib/bench/zlib_bench.cc)

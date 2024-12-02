@@ -1,0 +1,77 @@
+From 8102447cd87600d95aaff94cbceadcbe48bedf0d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Tue, 15 Oct 2024 11:47:10 +0000
+Subject: [PATCH] Add misa spec to optee os core
+
+---
+ core/arch/riscv/cpu/xuantie-cpu-rv32.mk | 10 +++++-----
+ core/arch/riscv/cpu/xuantie-cpu.mk      |  8 ++++----
+ core/arch/riscv/riscv.mk                |  8 ++++----
+ 3 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/core/arch/riscv/cpu/xuantie-cpu-rv32.mk b/core/arch/riscv/cpu/xuantie-cpu-rv32.mk
+index efdf7ed6..73e7681d 100644
+--- a/core/arch/riscv/cpu/xuantie-cpu-rv32.mk
++++ b/core/arch/riscv/cpu/xuantie-cpu-rv32.mk
+@@ -1,12 +1,12 @@
+ $(call force,CFG_RISCV32_core,y)
+ $(call force,CFG_RISCV64_core,n)
+ ifeq ($(CFG_WITH_VFP),y)
+-riscv32-platform-cpuarch 	:= rv32imafdcxtheadc -mabi=ilp32d
++riscv32-platform-cpuarch 	:= rv32imafdcxtheadc -mabi=ilp32d -misa-spec=2.2
+ else
+-riscv32-platform-cpuarch 	:= rv32imacxtheadc -mabi=ilp32
++riscv32-platform-cpuarch 	:= rv32imacxtheadc -mabi=ilp32 -misa-spec=2.2
+ endif
+-riscv32-platform-cflags 	+= -march=$(riscv32-platform-cpuarch)
+-riscv32-platform-aflags 	+= -march=rv32imacxtheadc -mabi=ilp32
+-riscv32-platform-cxxflags	+= -march=$(riscv32-platform-cpuarch)
++riscv32-platform-cflags 	+= -march=$(riscv32-platform-cpuarch) -misa-spec=2.2
++riscv32-platform-aflags 	+= -march=rv32imacxtheadc -mabi=ilp32 -misa-spec=2.2
++riscv32-platform-cxxflags	+= -march=$(riscv32-platform-cpuarch) -misa-spec=2.2
+ # Program flow prediction may need manual enablement
+ CFG_ENABLE_SCTLR_Z ?= y
+diff --git a/core/arch/riscv/cpu/xuantie-cpu.mk b/core/arch/riscv/cpu/xuantie-cpu.mk
+index 17c2863c..a6f58184 100644
+--- a/core/arch/riscv/cpu/xuantie-cpu.mk
++++ b/core/arch/riscv/cpu/xuantie-cpu.mk
+@@ -1,11 +1,11 @@
+ $(call force,CFG_HWSUPP_MEM_PERM_WXN,y)
+ $(call force,CFG_HWSUPP_MEM_PERM_PXN,y)
+ ifeq ($(CFG_WITH_VFP),y)
+-riscv64-platform-cpuarch 	:= -march=rv64imafdcxtheadc -mabi=lp64d
+-riscv32-platform-cpuarch 	:= -march=rv32imafdcxtheadc -mabi=ilp32d
++riscv64-platform-cpuarch 	:= -misa-spec=2.2 -march=rv64imafdcxtheadc -mabi=lp64d
++riscv32-platform-cpuarch 	:= -misa-spec=2.2 -march=rv32imafdcxtheadc -mabi=ilp32d
+ else
+-riscv64-platform-cpuarch 	:= -march=rv64imacxtheadc -mabi=lp64
+-riscv32-platform-cpuarch 	:= -march=rv32imacxtheadc -mabi=ilp32
++riscv64-platform-cpuarch 	:= -misa-spec=2.2 -march=rv64imafdcxtheadc -mabi=lp64d
++riscv32-platform-cpuarch 	:= -misa-spec=2.2 -march=rv32imacxtheadc -mabi=ilp32
+ endif
+ riscv64-platform-cflags 	+= $(riscv64-platform-cpuarch) -mcmodel=medany
+ riscv64-platform-aflags 	+= $(riscv64-platform-cpuarch) -mcmodel=medany
+diff --git a/core/arch/riscv/riscv.mk b/core/arch/riscv/riscv.mk
+index f61bf159..4a18cac4 100644
+--- a/core/arch/riscv/riscv.mk
++++ b/core/arch/riscv/riscv.mk
+@@ -122,12 +122,12 @@ riscv32-platform-cppflags += -DRISCV32=1 -D__ILP32__=1
+ platform-cflags-generic ?= -ffunction-sections -fdata-sections -pipe
+ platform-aflags-generic ?= -pipe
+ 
+-riscv32-platform-cflags-no-hard-float ?= -march=rv32imacxtheadc -mabi=ilp32
+-riscv32-platform-cflags-hard-float ?= -march=rv32imafdcxtheadc -mabi=lp32d
++riscv32-platform-cflags-no-hard-float ?= -misa-spec=2.2 -march=rv32imacxtheadc -mabi=ilp32
++riscv32-platform-cflags-hard-float ?= -misa-spec=2.2 -march=rv32imafdcxtheadc -mabi=lp32d
+ riscv32-platform-cflags-generic := -mstrict-align $(call cc-option,-mno-outline-atomics,)
+ 
+-riscv64-platform-cflags-no-hard-float ?= -march=rv64imacxtheadc -mabi=lp64
+-riscv64-platform-cflags-hard-float ?= -march=rv64imafdcxtheadc -mabi=lp64d
++riscv64-platform-cflags-no-hard-float ?= -misa-spec=2.2 -march=rv64imafdcxtheadc -mabi=lp64d
++riscv64-platform-cflags-hard-float ?= -misa-spec=2.2 -march=rv64imafdcxtheadc -mabi=lp64d
+ riscv64-platform-cflags-generic := -mstrict-align $(call cc-option,-mno-outline-atomics,)
+ 
+ ifeq ($(DEBUG),1)
+-- 
+2.17.1
+

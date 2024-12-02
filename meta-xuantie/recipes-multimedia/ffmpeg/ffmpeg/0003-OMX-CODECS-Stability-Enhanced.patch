@@ -1,0 +1,231 @@
+From 2d572bcb558504a946c84399d474a9c33084b94a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Sun, 24 Sep 2023 21:45:25 +0000
+Subject: [PATCH] OMX CODECS Stability Enhanced
+
+---
+ libavcodec/omx.c            |  2 +-
+ libavcodec/omxdecoder.c     | 59 ++++++++++++++++++++++++++-----------
+ libavcodec/omxjpegdecoder.c |  2 +-
+ libavcodec/omxjpegencoder.c |  2 +-
+ 4 files changed, 44 insertions(+), 21 deletions(-)
+ mode change 100755 => 100644 libavcodec/omxdecoder.c
+ mode change 100755 => 100644 libavcodec/omxjpegdecoder.c
+
+diff --git a/libavcodec/omx.c b/libavcodec/omx.c
+index ce88de2..e2a7210 100644
+--- a/libavcodec/omx.c
++++ b/libavcodec/omx.c
+@@ -48,7 +48,7 @@
+ 
+ #include <omxil/OMX_CsiExt.h>
+ #include "vsi_vendor_ext.h"
+-static int omx_load_count = 0;
++extern int omx_load_count;
+ 
+ #ifdef OMX_SKIP64BIT
+ static OMX_TICKS to_omx_ticks(int64_t value)
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+old mode 100755
+new mode 100644
+index 74eaed7..2d43d44
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -70,7 +70,7 @@
+ 
+ #include <omxil/OMX_CsiExt.h>
+ #include "vsi_vendor_ext.h"
+-static int omx_load_count = 0;
++int omx_load_count = 0;
+ #define kNumPictureBuffers 2
+ #define MAX_TABLE_SIZE 100
+ 
+@@ -304,10 +304,12 @@ typedef struct OMXCodecDecoderContext {
+     pthread_mutex_t buffer_control_mutex;
+     pthread_cond_t buffer_control_cond;
+ 
++    pthread_mutex_t free_mutex;
++
+     OMX_STATETYPE state;
+     OMX_ERRORTYPE error;
+ 
+-    unsigned mutex_cond_inited_cnt;
++    bool mutex_cond_inited;
+ 
+     int eos_sent, got_eos, draining, need_sendeos, eos_reach;
+ 
+@@ -344,7 +346,7 @@ typedef struct OMXCodecDecoderContext {
+     //AsyncQueue *pic_queue;
+ } OMXCodecDecoderContext;
+ 
+-static uint8_t *find_vir_address(OMXCodecDecoderContext *s, OMX_BUFFERHEADERTYPE *buffer, int size)
++static uint8_t *find_save_vir_address(OMXCodecDecoderContext *s, OMX_BUFFERHEADERTYPE *buffer, int size, bool with_save)
+ {
+     for (int i = 0; i < s->num_out_buffers * 2; i++) {
+         if (s->buffer_table[i].buffer == buffer) {
+@@ -352,6 +354,9 @@ static uint8_t *find_vir_address(OMXCodecDecoderContext *s, OMX_BUFFERHEADERTYPE
+                 return s->buffer_table[i].vir_address;
+         }
+     }
++    if (!with_save) {
++        return NULL;
++    }
+     for (int i = 0; i < s->num_out_buffers * 2; i++) {
+         if (s->buffer_table[i].buffer == NULL) {
+             s->buffer_table[i].buffer = buffer;
+@@ -362,7 +367,6 @@ static uint8_t *find_vir_address(OMXCodecDecoderContext *s, OMX_BUFFERHEADERTYPE
+     return NULL;
+ }
+ 
+-#define NB_MUTEX_CONDS 8
+ #define OFF(field) offsetof(OMXCodecDecoderContext, field)
+ 
+ static void append_buffer(pthread_mutex_t *mutex, pthread_cond_t *cond,
+@@ -995,7 +999,7 @@ static int copyNV12toDst(OMXCodecDecoderContext *s, AVFrame *avframe, OMX_BUFFER
+     int src_stride = s->out_stride;
+     uint8_t *y_src = NULL;
+ 
+-    y_src = find_vir_address(s, buffer, y_size * 3 / 2);
++    y_src = find_save_vir_address(s, buffer, y_size * 3 / 2, true);
+     s->out_buffer_size = y_size * 3 / 2;
+     if (y_src == MAP_FAILED || y_src == NULL) {
+         av_log(s->avctx, AV_LOG_ERROR, "Failed to get fd:%d 's virtual address.\n", buffer->pBuffer);
+@@ -1014,6 +1018,7 @@ static int copyNV12toDst(OMXCodecDecoderContext *s, AVFrame *avframe, OMX_BUFFER
+                                            sizeof(OMX_BUFFERHEADERTYPE),
+                                            omx_try_fillbuffer,
+                                            s, AV_BUFFER_FLAG_READONLY);
++        buffer->pAppPrivate = avframe;
+     } else {
+         for (int i = 0; i < avframe->height; i++) {
+             memcpy(y_dst + i * avframe->linesize[0], y_src + i * src_stride, avframe->linesize[0]);
+@@ -1092,11 +1097,17 @@ static int convertNV12toYUV420(OMXCodecDecoderContext *s, AVFrame *avframe, OMX_
+ static int omx_try_fillbuffer(OMXCodecDecoderContext *s, OMX_BUFFERHEADERTYPE *buffer)
+ {
+     OMX_ERRORTYPE err;
+-    err = OMX_FillThisBuffer(s->handle, buffer);
+-    if (err != OMX_ErrorNone) {
+-        append_buffer(&s->output_mutex, &s->output_cond, &s->num_done_out_buffers, s->done_out_buffers, buffer);
+-        av_log(s->avctx, AV_LOG_ERROR, "OMX_FillThisBuffer failed: %x\n", err);
++    pthread_mutex_lock(&s->free_mutex);
++    if (buffer->pAppPrivate) {
++        err = OMX_FillThisBuffer(s->handle, buffer);
++        if (err != OMX_ErrorNone) {
++            append_buffer(&s->output_mutex, &s->output_cond, &s->num_done_out_buffers, s->done_out_buffers, buffer);
++            av_log(s->avctx, AV_LOG_ERROR, "OMX_FillThisBuffer failed: %x\n", err);
++            return err;
++        }
++        buffer->pAppPrivate = NULL;
+     }
++    pthread_mutex_unlock(&s->free_mutex);
+     pthread_mutex_lock(&s->buffer_control_mutex);
+     pthread_cond_broadcast(&s->buffer_control_cond);
+     pthread_mutex_unlock(&s->buffer_control_mutex);
+@@ -1184,6 +1195,13 @@ static int ff_omx_dec_receive(AVCodecContext *avctx, OMXCodecDecoderContext *s,
+         av_log(avctx, AV_LOG_ERROR, "Format output failed: %x\n", ret);
+         return ret;
+     }
++    if (s->resolution_changed) {
++        ret = omx_try_fillbuffer(s, buffer);
++        if (ret != OMX_ErrorNone) {
++            av_log(avctx, AV_LOG_ERROR, "Reture buffer in resolution changed mode failed: %x\n", ret);
++            return AVERROR_UNKNOWN;
++        }
++    }
+     //OMX_FillThisBuffer finished
+     return 0;
+ }
+@@ -1446,7 +1464,7 @@ static av_cold void omx_cleanup(OMXCodecDecoderContext *s)
+     av_log(s->avctx, AV_LOG_WARNING, "OMX Cleanup\n");
+     /* If the mutexes/condition variables have not been properly initialized,
+      * nothing has been initialized and locking the mutex might be unsafe. */
+-    if (s->mutex_cond_inited_cnt == NB_MUTEX_CONDS) {
++    if (s->mutex_cond_inited) {
+         pthread_mutex_lock(&s->state_mutex);
+         executing = s->state == OMX_StateExecuting;
+         pthread_mutex_unlock(&s->state_mutex);
+@@ -1462,17 +1480,20 @@ static av_cold void omx_cleanup(OMXCodecDecoderContext *s)
+             }
+ 
+             for (int i = 0; i < s->num_out_buffers; i++) {
+-                OMX_BUFFERHEADERTYPE *buffer = get_buffer(&s->output_mutex, &s->output_cond,
+-                                               &s->num_done_out_buffers, &s->done_out_buffers, -1);
+-                munmap(find_vir_address(s, buffer, 0), s->out_buffer_size);
++                OMX_BUFFERHEADERTYPE *buffer = s->out_buffer_headers[i];
++                pthread_mutex_lock(&s->free_mutex);
++                if (buffer->pAppPrivate) {
++                    buffer->pAppPrivate = NULL;
++                }
++                pthread_mutex_unlock(&s->free_mutex);
++                if (find_save_vir_address(s, buffer, 0, false))
++                    munmap(find_save_vir_address(s, buffer, 0, false), s->out_buffer_size);
+                 OMX_FreeBuffer(s->handle, s->out_port, buffer);
+             }
+-
+             pthread_mutex_lock(&s->output_mutex);
+             s->num_out_buffers = 0;
+             s->num_done_out_buffers = 0;
+             pthread_mutex_unlock(&s->output_mutex);
+-
+             wait_for_state(s, OMX_StateLoaded);
+         }
+ 
+@@ -1490,7 +1511,7 @@ static av_cold void omx_cleanup(OMXCodecDecoderContext *s)
+         av_freep(&s->done_out_buffers);
+ 
+     }
+-    if (s->mutex_cond_inited_cnt) {
++    if (s->mutex_cond_inited) {
+         pthread_cond_destroy(&s->state_cond);
+         pthread_mutex_destroy(&s->state_mutex);
+         pthread_cond_destroy(&s->input_cond);
+@@ -1501,7 +1522,8 @@ static av_cold void omx_cleanup(OMXCodecDecoderContext *s)
+         pthread_mutex_destroy(&s->eof_mutex);
+         pthread_cond_destroy(&s->buffer_control_cond);
+         pthread_mutex_destroy(&s->buffer_control_mutex);
+-        s->mutex_cond_inited_cnt = 0;
++        pthread_mutex_destroy(&s->free_mutex);
++        s->mutex_cond_inited = false;
+     }
+ }
+ 
+@@ -1527,7 +1549,8 @@ static av_cold int omx_decode_init(AVCodecContext *avctx)
+     pthread_cond_init(&s->eof_cond, NULL);
+     pthread_mutex_init(&s->buffer_control_mutex, NULL);
+     pthread_cond_init(&s->buffer_control_cond, NULL);
+-    s->mutex_cond_inited_cnt = 1;
++    pthread_mutex_init(&s->free_mutex, NULL);
++    s->mutex_cond_inited = true;
+     s->avctx = avctx;
+     s->state = OMX_StateLoaded;
+     s->error = OMX_ErrorNone;
+diff --git a/libavcodec/omxjpegdecoder.c b/libavcodec/omxjpegdecoder.c
+old mode 100755
+new mode 100644
+index 400d24d..0f2a176
+--- a/libavcodec/omxjpegdecoder.c
++++ b/libavcodec/omxjpegdecoder.c
+@@ -66,7 +66,7 @@
+ #include "hwconfig.h"
+ #include "internal.h"
+ #include <omxil/OMX_CsiExt.h>
+-static int omx_load_count = 0;
++extern int omx_load_count;
+ #define DEBUG_NO_OMX
+ 
+ #define TIMEOUT_MS 1000
+diff --git a/libavcodec/omxjpegencoder.c b/libavcodec/omxjpegencoder.c
+index ed063b9..8f0ba50 100644
+--- a/libavcodec/omxjpegencoder.c
++++ b/libavcodec/omxjpegencoder.c
+@@ -45,7 +45,7 @@
+ 
+ #include <omxil/OMX_CsiExt.h>
+ #include "vsi_vendor_ext.h"
+-static int omx_load_count = 0;
++extern int omx_load_count;
+ #define TIMEOUT_MS 1000
+ #ifdef OMX_SKIP64BIT
+ static OMX_TICKS to_omx_ticks(int64_t value)
+-- 
+2.17.1
+

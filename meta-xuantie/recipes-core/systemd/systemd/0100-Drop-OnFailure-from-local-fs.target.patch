@@ -1,0 +1,24 @@
+From 0d8b504d35ea59d631041b7550080d57e208655a Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@linux.alibaba.com>
+Date: Thu, 11 Aug 2022 17:19:46 +0800
+Subject: [PATCH] Drop OnFailure= from local-fs.target
+
+---
+ units/local-fs.target | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/units/local-fs.target b/units/local-fs.target
+index 6ba4930087..681934e6e0 100644
+--- a/units/local-fs.target
++++ b/units/local-fs.target
+@@ -13,5 +13,5 @@ Documentation=man:systemd.special(7)
+ DefaultDependencies=no
+ Conflicts=shutdown.target
+ After=local-fs-pre.target
+-OnFailure=emergency.target
+-OnFailureJobMode=replace-irreversibly
++#OnFailure=emergency.target
++#OnFailureJobMode=replace-irreversibly
+-- 
+2.17.1
+

@@ -1,0 +1,82 @@
+From 55af6e411b76cbb77cf0502eb9037cc8aaea914a Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Fri, 30 Jun 2023 16:02:01 +0800
+Subject: [PATCH] waylandsink: Double-check the frame callback before dropping
+ frames
+
+---
+ ext/wayland/gstwaylandsink.c | 17 +++++++++++++++--
+ ext/wayland/gstwaylandsink.h |  2 ++
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+ mode change 100644 => 100755 ext/wayland/gstwaylandsink.c
+ mode change 100644 => 100755 ext/wayland/gstwaylandsink.h
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+old mode 100644
+new mode 100755
+index 0761304..730a6b5
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -220,6 +220,7 @@ gst_wayland_sink_init (GstWaylandSink * sink)
+ {
+   g_mutex_init (&sink->display_lock);
+   g_mutex_init (&sink->render_lock);
++  g_cond_init (&sink->pending_cond);
+ }
+ 
+ static void
+@@ -300,6 +301,7 @@ gst_wayland_sink_finalize (GObject * object)
+ 
+   g_mutex_clear (&sink->display_lock);
+   g_mutex_clear (&sink->render_lock);
++  g_cond_clear (&sink->pending_cond);
+ 
+   G_OBJECT_CLASS (parent_class)->finalize (object);
+ }
+@@ -649,6 +651,10 @@ frame_redraw_callback (void *data, struct wl_callback *callback, uint32_t time)
+     wl_callback_destroy (callback);
+     sink->callback = NULL;
+   }
++
++  if (sink->need_send_signal) {
++    g_cond_signal (&sink->pending_cond);
++  }
+   g_mutex_unlock (&sink->render_lock);
+ }
+ 
+@@ -726,8 +732,15 @@ gst_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+ 
+   /* drop buffers until we get a frame callback */
+   if (sink->redraw_pending) {
+-    GST_LOG_OBJECT (sink, "buffer %p dropped (redraw pending)", buffer);
+-    goto done;
++    gint64 wait_time;
++    wait_time = GST_BUFFER_DURATION(buffer) > 16666666 ? 16666666 : GST_BUFFER_DURATION(buffer);
++    sink->need_send_signal = TRUE;
++    g_cond_wait_until (&sink->pending_cond, &sink->render_lock, g_get_monotonic_time () + wait_time / 1000);
++    sink->need_send_signal = FALSE;
++    if (sink->redraw_pending) {
++      GST_LOG_OBJECT (sink, "buffer %p dropped (redraw pending)", buffer);
++      goto done;
++    }
+   }
+ 
+   /* make sure that the application has called set_render_rectangle() */
+diff --git a/ext/wayland/gstwaylandsink.h b/ext/wayland/gstwaylandsink.h
+old mode 100644
+new mode 100755
+index 7aabb6f..6be930d
+--- a/ext/wayland/gstwaylandsink.h
++++ b/ext/wayland/gstwaylandsink.h
+@@ -66,6 +66,8 @@ struct _GstWaylandSink
+ 
+   gboolean redraw_pending;
+   GMutex render_lock;
++  GCond pending_cond;
++  gboolean need_send_signal;
+   GstBuffer *last_buffer;
+ 
+   struct wl_callback *callback;
+-- 
+2.17.1
+

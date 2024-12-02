@@ -1,0 +1,24 @@
+From ba5cc85484085342282b33f7d2058970eb627bcb Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Sun, 20 Oct 2024 12:02:16 +0800
+Subject: [PATCH] Fix issue with acquiring locks on riscv32
+
+---
+ lib/dpkg/file.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lib/dpkg/file.c b/lib/dpkg/file.c
+index 4f7c3aaa2..287c5d897 100644
+--- a/lib/dpkg/file.c
++++ b/lib/dpkg/file.c
+@@ -126,6 +126,7 @@ file_slurp(const char *filename, struct varbuf *vb, struct dpkg_error *err)
+ static void
+ file_lock_setup(struct flock *fl, short type)
+ {
++	memset(fl, 0, sizeof(*fl));
+ 	fl->l_type = type;
+ 	fl->l_whence = SEEK_SET;
+ 	fl->l_start = 0;
+-- 
+2.17.1
+

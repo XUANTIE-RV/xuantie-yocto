@@ -1,0 +1,67 @@
+From f4f2102b38ac4d1141f5acd269ca191943ed699c Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Tue, 5 Dec 2023 19:05:09 +0800
+Subject: [PATCH] remove strip to avoid invalid hosttool strip
+
+---
+ Makefile.in             | 2 +-
+ ncat/Makefile.in        | 2 +-
+ nmap-update/Makefile.in | 2 +-
+ nping/Makefile.in       | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index 32f86ba..b1dc7dc 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -322,7 +322,7 @@ install-nmap: $(TARGET)
+ 	$(INSTALL) -c -m 755 nmap $(DESTDIR)$(bindir)/nmap
+ # Use strip -x to avoid stripping dynamically loaded NSE functions. See
+ # http://seclists.org/nmap-dev/2007/q4/0272.html.
+-	$(STRIP) -x $(DESTDIR)$(bindir)/nmap
++	# $(STRIP) -x $(DESTDIR)$(bindir)/nmap
+ 	$(INSTALL) -c -m 644 docs/$(TARGET).1 $(DESTDIR)$(mandir)/man1/
+ 	if [ "$(USE_NLS)" = "yes" ]; then \
+ 	  for ll in $(filter $(ALL_LINGUAS),$(LINGUAS)); do \
+diff --git a/ncat/Makefile.in b/ncat/Makefile.in
+index 11a5e7c..38ea339 100644
+--- a/ncat/Makefile.in
++++ b/ncat/Makefile.in
+@@ -168,7 +168,7 @@ install: $(TARGET)
+ 	@echo Installing Ncat;
+ 	mkdir -p -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)/man1
+ 	$(INSTALL) -c -m 755 ncat $(DESTDIR)$(bindir)/ncat
+-	$(STRIP) -x $(DESTDIR)$(bindir)/ncat
++	# $(STRIP) -x $(DESTDIR)$(bindir)/ncat
+ 	if [ -n "$(DATAFILES)" ]; then \
+ 		mkdir -p -m 755 $(DESTDIR)$(pkgdatadir); \
+ 		$(INSTALL) -c -m 644 $(DATAFILES) $(DESTDIR)$(pkgdatadir)/; \
+diff --git a/nmap-update/Makefile.in b/nmap-update/Makefile.in
+index c6baee5..d91c8b5 100644
+--- a/nmap-update/Makefile.in
++++ b/nmap-update/Makefile.in
+@@ -42,7 +42,7 @@ $(NBASELIB):
+ install: nmap-update
+ 	mkdir -p -m 755 $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)/man1
+ 	$(INSTALL) -c -m 755 nmap-update $(DESTDIR)$(bindir)
+-	$(STRIP) -x $(DESTDIR)$(bindir)/nmap-update
++	# $(STRIP) -x $(DESTDIR)$(bindir)/nmap-update
+ 	$(INSTALL) -c -m 644 ../docs/nmap-update.1 $(DESTDIR)$(mandir)/man1/
+ 
+ uninstall:
+diff --git a/nping/Makefile.in b/nping/Makefile.in
+index ad5db78..66c232e 100644
+--- a/nping/Makefile.in
++++ b/nping/Makefile.in
+@@ -128,7 +128,7 @@ install-nping: $(TARGET)
+ 	$(INSTALL) -c -m 755 nping $(DESTDIR)$(bindir)/nping
+ # Use strip -x to avoid stripping dynamically loaded NSE functions. See
+ # http://seclists.org/nmap-dev/2007/q4/0272.html.
+-	$(STRIP) -x $(DESTDIR)$(bindir)/nping
++	# $(STRIP) -x $(DESTDIR)$(bindir)/nping
+ 	$(INSTALL) -c -m 644 docs/$(TARGET).1 $(DESTDIR)$(mandir)/man1/
+ 
+ 
+-- 
+2.17.1
+

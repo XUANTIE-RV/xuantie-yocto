@@ -1,0 +1,59 @@
+From f4c23d2a8c2171851c0457bf9b84250e6dc2bd5f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Mon, 20 May 2024 09:01:29 +0000
+Subject: [PATCH] change_resolution
+
+---
+ libavcodec/omxdecoder.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 5df7b4c..170b7a2 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -82,6 +82,7 @@
+ extern int omx_load_count;
+ #define kNumPictureBuffers 6
+ #define MAX_TABLE_SIZE 100
++#define OMX_OUT_STRIDE 64
+ 
+ #ifdef c920v
+ #define __riscv
+@@ -1163,7 +1164,7 @@ static int copyNV12toDst(AVCodecContext *avctx, AVFrame *avframe, OMX_BUFFERHEAD
+         }
+         s->desc->nb_objects = 1;
+         s->desc->objects[0].fd = buffer->pBuffer;
+-        s->desc->objects[0].size = buffer->nSize;
++        s->desc->objects[0].size = avctx->height * avctx->width * 3 / 2;
+ 
+         s->desc->nb_layers = 1;
+         s->layer = &s->desc->layers[0];
+@@ -1179,7 +1180,7 @@ static int copyNV12toDst(AVCodecContext *avctx, AVFrame *avframe, OMX_BUFFERHEAD
+         s->layer->planes[1].pitch = s->layer->planes[0].pitch;
+     }
+ #endif
+-    if (!s->resolution_changed) {
++    if (!s->resolution_changed || s->drm_prime_mode) {
+ #ifdef DRM_PRIME
+         if (s->drm_prime_mode) {
+             av_freep(&avframe->data);
+@@ -1535,10 +1536,14 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+     if (avctx->width && avctx->height) {
+         out_port_params.nBufferSize = (OMX_U32) avctx->width * (OMX_U32) avctx->height * 3;
+     }
++    if (s->drm_prime_mode) {
++      out_port_params.nBufferAlignment = OMX_OUT_STRIDE;
++    } else {
++      out_port_params.format.video.nStride      = (OMX_U32) avctx->width;
++      out_port_params.format.video.nSliceHeight = (OMX_U32) avctx->height;
++    }
+     out_port_params.format.video.nFrameWidth   = avctx->width;
+     out_port_params.format.video.nFrameHeight  = avctx->height;
+-    out_port_params.format.video.nStride      = (OMX_U32) avctx->width;
+-    out_port_params.format.video.nSliceHeight = (OMX_U32) avctx->height;
+     out_port_params.nBufferCountActual   = kNumPictureBuffers;
+     out_port_params.nBufferCountMin      = kNumPictureBuffers;
+     err = OMX_SetParameter(s->handle, OMX_IndexParamPortDefinition, &out_port_params);
+-- 
+2.17.1
+

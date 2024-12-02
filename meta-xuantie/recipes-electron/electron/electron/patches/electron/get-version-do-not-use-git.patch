@@ -1,0 +1,28 @@
+--- a/src/electron/script/lib/get-version.js
++++ b/src/electron/script/lib/get-version.js
+@@ -2,6 +2,7 @@
+ const path = require('path');
+ 
+ module.exports.getElectronVersion = () => {
++  return '23.3.11';
+   // Find the nearest tag to the current HEAD
+   // This is equivilant to our old logic of "use a value in package.json" for the following reasons
+   //
+--- a/src/electron/BUILD.gn
++++ b/src/electron/BUILD.gn
+@@ -107,14 +107,7 @@
+ electron_project_name = branding.project_name
+ electron_product_name = branding.product_name
+ electron_mac_bundle_id = branding.mac_bundle_id
+-electron_version = exec_script("script/print-version.py",
+-                               [],
+-                               "trim string",
+-                               [
+-                                 ".git/packed-refs",
+-                                 ".git/HEAD",
+-                                 "script/lib/get-version.js",
+-                               ])
++electron_version = "23.3.11"
+ 
+ if (is_mas_build) {
+   assert(is_mac,

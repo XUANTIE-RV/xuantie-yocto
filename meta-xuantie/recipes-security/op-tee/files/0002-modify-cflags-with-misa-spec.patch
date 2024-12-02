@@ -1,0 +1,30 @@
+From 460db19d80ed8e6be48541dda1223defc6e5ec5c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Sun, 29 Sep 2024 09:31:42 +0000
+Subject: [PATCH] modify cflags with misa spec
+
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index eb973be69..6e1fd9f0f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -201,11 +201,11 @@ endif
+ endif
+ 
+ ifeq (${ARCH},riscv64)
+-mriscv64-directive	= 	-march=rv64imacxtheadc -mabi=lp64 -mcmodel=medany
++mriscv64-directive	= 	-misa-spec=2.2 -march=rv64imacxtheadc -mabi=lp64 -mcmodel=medany
+ endif
+ 
+ ifeq (${ARCH},riscv32)
+-mriscv32-directive	= 	-march=rv32imacxtheadc -mabi=ilp32
++mriscv32-directive	= 	-misa-spec=2.2 -march=rv32imacxtheadc -mabi=ilp32
+ endif
+ 
+ # Memory tagging is supported in architecture Armv8.5-A AArch64 and onwards
+-- 
+2.17.1
+

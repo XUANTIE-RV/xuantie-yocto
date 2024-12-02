@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ -z "$1" ];
+then
+    echo error:$0 >&2
+    exit -1
+fi
+echo 0 > /sys/block/mmcblk0boot0/force_ro
+dd if=$1 of=/dev/mmcblk0boot0
+RET=$?
+echo 1 > /sys/block/mmcblk0boot0/force_ro
+exit $RET

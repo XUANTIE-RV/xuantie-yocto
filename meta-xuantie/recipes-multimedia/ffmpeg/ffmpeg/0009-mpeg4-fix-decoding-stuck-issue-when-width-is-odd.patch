@@ -1,0 +1,25 @@
+From 00543807f87e8ecd4f1e252cd4c70e2fe86405ca Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Thu, 7 Mar 2024 16:17:40 +0800
+Subject: [PATCH] mpeg4: fix decoding stuck issue when width is odd
+
+---
+ libavcodec/omxdecoder.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 81804ca..005339e 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1427,6 +1427,8 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+     if (s->output_height)
+         avctx->height = s->output_height;
+ 
++    if (avctx->width & 1)
++        avctx->width++;
+ 
+ 
+     INIT_STRUCT(in_port_params);
+-- 
+2.17.1
+

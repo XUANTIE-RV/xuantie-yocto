@@ -1,0 +1,24 @@
+From de40e7b94a685c42443f4ec8129eba562cf28fec Mon Sep 17 00:00:00 2001
+From: zhujf <zhufeng.zjf@alibaba-inc.com>
+Date: Tue, 16 Jul 2024 01:22:45 +0000
+Subject: [PATCH] Add server Download Url Template
+
+---
+ prepare_vscode.sh | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/prepare_vscode.sh b/prepare_vscode.sh
+index 3da0242..f7f7cdd 100755
+--- a/prepare_vscode.sh
++++ b/prepare_vscode.sh
+@@ -179,6 +179,7 @@ else
+   setpath "product" "urlProtocol" "vscodium"
+   setpath "product" "serverApplicationName" "codium-server"
+   setpath "product" "serverDataFolderName" ".vscodium-server"
++  setpath "product" "serverDownloadUrlTemplate" 'https://gitee.com/xuantie-linux/VSCodium/releases/download/${version}.${release}/vscodium-reh-${os}-${arch}-${version}.${release}.tar.gz'
+   setpath "product" "darwinBundleIdentifier" "com.vscodium"
+   setpath "product" "win32AppUserModelId" "VSCodium.VSCodium"
+   setpath "product" "win32DirName" "VSCodium"
+-- 
+2.17.1
+

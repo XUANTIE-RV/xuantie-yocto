@@ -1,0 +1,26 @@
+From 60c2abaeb23676023875c77cb7f272f8104432d2 Mon Sep 17 00:00:00 2001
+From: Chen Pei <cp0613@linux.alibaba.com>
+Date: Wed, 27 Dec 2023 17:48:45 +0800
+Subject: [PATCH] FW_TEXT_START=0
+
+Signed-off-by: Chen Pei <cp0613@linux.alibaba.com>
+---
+ platform/generic/objects.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/platform/generic/objects.mk b/platform/generic/objects.mk
+index 136853e..a18424b 100644
+--- a/platform/generic/objects.mk
++++ b/platform/generic/objects.mk
+@@ -22,7 +22,7 @@ platform-objs-y += platform.o
+ platform-objs-y += platform_override_modules.o
+ 
+ # Blobs to build
+-FW_TEXT_START=0x80000000
++FW_TEXT_START=0x60000000
+ FW_DYNAMIC=y
+ FW_JUMP=y
+ ifeq ($(PLATFORM_RISCV_XLEN), 32)
+-- 
+2.25.1
+

@@ -1,0 +1,27 @@
+From 35257a9e911cc925e0fc6fcab5484cd0d00eeaf7 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Fri, 18 Oct 2024 15:24:48 +0800
+Subject: [PATCH] Fix issue with acquiring locks on riscv32
+
+E: Could not get lock /var/lib/apt/lists/lock - open (22: Invalid argument)
+N: Be aware that removing the lock file is not a solution and may break your system.
+E: Unable to lock directory /var/lib/apt/lists/
+---
+ apt-pkg/contrib/fileutl.cc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/apt-pkg/contrib/fileutl.cc b/apt-pkg/contrib/fileutl.cc
+index eb5dc85..fa5bd1a 100644
+--- a/apt-pkg/contrib/fileutl.cc
++++ b/apt-pkg/contrib/fileutl.cc
+@@ -265,6 +265,7 @@ int GetLock(string File,bool Errors)
+       
+    // Acquire a write lock
+    struct flock fl;
++   memset(&fl, 0, sizeof(fl));
+    fl.l_type = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+-- 
+2.17.1
+

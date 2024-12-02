@@ -1,0 +1,16 @@
+--- a/libfdt/meson.build 2022-11-23 21:48:18.629188101 +0800
++++ b/libfdt/meson.build 2022-11-23 21:48:12.872966928 +0800
+@@ -24,6 +24,13 @@
+   install: true,
+ )
+ 
++static_library(
++  'fdt', sources,
++  link_args: ['-Wl,--no-undefined', version_script],
++  link_depends: 'version.lds',
++  install: true,
++)
++
+ libfdt_inc = include_directories('.')
+ 
+ libfdt_dep = declare_dependency(

@@ -1,0 +1,67 @@
+From cc84ba7d71280ccab2199ee4ad1261412682b43a Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Tue, 24 Apr 2018 15:30:12 -0400
+Subject: [PATCH] WIP: kmssink: Skip sync when atomic driver is detected
+
+DON'T MERGE, this causes regressions on Intel
+
+Atomic driver emulates the mode setting in a way that it blocks until
+the frame buffer is rendered. As a side effect, waiting for a vblank, or
+page flips halves the frame rate.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=793339
+---
+ sys/kms/gstkmssink.c | 14 ++++++++++++--
+ sys/kms/gstkmssink.h |  1 +
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/sys/kms/gstkmssink.c b/sys/kms/gstkmssink.c
+index 788cefc..4d499d4 100644
+--- a/sys/kms/gstkmssink.c
++++ b/sys/kms/gstkmssink.c
+@@ -408,11 +408,16 @@ get_drm_caps (GstKMSSink * self)
+   else
+     self->has_async_page_flip = (gboolean) has_async_page_flip;
+ 
++  ret = drmSetClientCap (self->fd, DRM_CLIENT_CAP_ATOMIC, 1);
++  if (ret == 0)
++    self->has_atomic_modesetting = TRUE;
++
+   GST_INFO_OBJECT (self,
+-      "prime import (%s) / prime export (%s) / async page flip (%s)",
++      "prime import (%s) / prime export (%s) / async page flip (%s) / atomic modesetting (%s)",
+       self->has_prime_import ? "✓" : "✗",
+       self->has_prime_export ? "✓" : "✗",
+-      self->has_async_page_flip ? "✓" : "✗");
++      self->has_async_page_flip ? "✓" : "✗",
++      self->has_atomic_modesetting ? "✓" : "✗");
+ 
+   return TRUE;
+ }
+@@ -1283,6 +1288,11 @@ gst_kms_sink_sync (GstKMSSink * self)
+         },
+   };
+ 
++  if (self->has_atomic_modesetting) {
++    GST_DEBUG_OBJECT (self, "Skipping page flip on DRM Atomic driver");
++    return TRUE;
++  }
++
+   if (self->pipe == 1)
+     vbl.request.type |= DRM_VBLANK_SECONDARY;
+   else if (self->pipe > 1)
+diff --git a/sys/kms/gstkmssink.h b/sys/kms/gstkmssink.h
+index 428c057..49787bc 100644
+--- a/sys/kms/gstkmssink.h
++++ b/sys/kms/gstkmssink.h
+@@ -63,6 +63,7 @@ struct _GstKMSSink {
+   gboolean has_prime_export;
+   gboolean has_async_page_flip;
+   gboolean can_scale;
++  gboolean has_atomic_modesetting;
+ 
+   gboolean modesetting_enabled;
+   gboolean restore_crtc;
+-- 
+2.17.1
+

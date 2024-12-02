@@ -1,0 +1,13 @@
+diff --git a/patches/linux/reh-node16.patch b/patches/linux/reh-node16.patch
+index 151c2cd..4b7a833 100644
+--- a/patches/linux/reh-node16.patch
++++ b/patches/linux/reh-node16.patch
+@@ -26,7 +26,7 @@ index 4c99388..71a7164 100644
+ @@ -1,3 +1,3 @@
+  disturl "https://nodejs.org/dist"
+ -target "20.11.1"
+-+target "16.20.2"
+++target "18.18.2"
+  ms_build_id "275039"
+ diff --git a/remote/package.json b/remote/package.json
+ index b84f513..42d8e41 100644

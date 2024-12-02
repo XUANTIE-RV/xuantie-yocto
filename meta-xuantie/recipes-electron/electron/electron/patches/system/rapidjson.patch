@@ -1,0 +1,22 @@
+description: build against debian's rapidjson-dev package
+author: Andres Salomon <dilinger@debian.org>
+
+Due to some questionable licensing (the JSON "do not use this for evil" license),
+debian deletes all of third_party/angle/third_party/rapidjson even though a small
+portion of it falls under that license. The library is tiny and doesn't change
+much, so this lets chromium build against the system's rapidjson-dev header files.
+
+--- /dev/null
++++ b/src/third_party/angle/third_party/rapidjson/BUILD.gn
+@@ -0,0 +1,11 @@
++config("rapidjson_config") {
++  include_dirs = [ "/usr/include/rapidjson" ]
++
++  # Enable std::string functionality.
++  defines = [ "RAPIDJSON_HAS_STDSTRING" ]
++}
++
++source_set("rapidjson") {
++  sources = [ "/usr/include/rapidjson/*.h" ]
++  public_configs = [ ":rapidjson_config" ]
++}

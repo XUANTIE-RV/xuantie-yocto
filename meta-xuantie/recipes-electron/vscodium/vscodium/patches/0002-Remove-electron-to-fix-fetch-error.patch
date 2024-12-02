@@ -1,0 +1,21 @@
+diff --git a/patches/ppc64le-and-riscv64-support.patch b/patches/ppc64le-and-riscv64-support.patch
+index bed9726..41c7372 100644
+--- a/patches/ppc64le-and-riscv64-support.patch
++++ b/patches/ppc64le-and-riscv64-support.patch
+@@ -100,7 +100,7 @@ diff --git a/build/gulpfile.vscode.js b/build/gulpfile.vscode.js
+ index 3b1aeafd080..8363dae382c 100644
+ --- a/build/gulpfile.vscode.js
+ +++ b/build/gulpfile.vscode.js
+-@@ -339,11 +339,21 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
++@@ -339,11 +340,20 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
+  			all = es.merge(all, shortcut);
+  		}
+  
+@@ -119,7 +119,6 @@ index 3b1aeafd080..8363dae382c 100644
+  			.pipe(util.fixWin32DirectoryPermissions())
+  			.pipe(filter(['**', '!**/.github/**'], { dot: true })) // https://github.com/microsoft/vscode/issues/116523
+ -			.pipe(electron({ ...config, platform, arch: arch === 'armhf' ? 'arm' : arch, ffmpegChromium: false }))
+-+			.pipe(electron({ ...config, ...electronOverride, platform, arch: arch === 'armhf' ? 'arm' : arch, ffmpegChromium: false }))
+  			.pipe(filter(['**', '!LICENSE', '!version'], { dot: true }));
+  
+  		if (platform === 'linux') {

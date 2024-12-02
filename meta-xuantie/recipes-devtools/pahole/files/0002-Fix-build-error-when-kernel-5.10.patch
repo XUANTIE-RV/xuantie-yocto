@@ -1,0 +1,17 @@
+diff --git a/btf_loader.c b/btf_loader.c
+index e0d029a..19a21e4 100644
+--- a/btf_loader.c
++++ b/btf_loader.c
+@@ -333,6 +333,12 @@ static struct enumerator *enumerator__new64(const char *name, uint64_t value)
+ 	return en;
+ }
+ 
++const struct btf_enum64 {
++	__u32 name_off;
++	__u32 val_lo32;
++	__u32 val_hi32;
++};
++
+ static int create_new_enumeration64(struct cu *cu, const struct btf_type *tp, uint32_t id)
+ {
+ 	struct btf_enum64 *ep = btf_enum64(tp);

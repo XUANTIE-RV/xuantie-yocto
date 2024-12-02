@@ -1,0 +1,50 @@
+--- a/src/third_party/maldoca/src/maldoca/ole/header.h
++++ b/src/third_party/maldoca/src/maldoca/ole/header.h
+@@ -43,6 +43,7 @@
+ #ifndef MALDOCA_OLE_HEADER_H_
+ #define MALDOCA_OLE_HEADER_H_
+ 
++#include <cstdint>
+ #include "absl/strings/string_view.h"
+ 
+ namespace maldoca {
+--- a/src/third_party/ruy/src/ruy/profiler/instrumentation.h
++++ b/src/third_party/ruy/src/ruy/profiler/instrumentation.h
+@@ -19,6 +19,7 @@
+ #ifdef RUY_PROFILER
+ #include <cstdio>
+ #include <mutex>
++#include <string>
+ #include <vector>
+ #endif
+ 
+--- a/src/third_party/tflite/src/tensorflow/lite/kernels/internal/spectrogram.cc
++++ b/src/third_party/tflite/src/tensorflow/lite/kernels/internal/spectrogram.cc
+@@ -17,6 +17,7 @@
+ 
+ #include <assert.h>
+ #include <math.h>
++#include <stdint.h>
+ 
+ #include "third_party/fft2d/fft.h"
+ 
+--- a/src/third_party/vulkan_memory_allocator/include/vk_mem_alloc.h
++++ b/src/third_party/vulkan_memory_allocator/include/vk_mem_alloc.h
+@@ -2389,6 +2389,7 @@
+ #undef VMA_IMPLEMENTATION
+ 
+ #include <cstdint>
++#include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
+ #include <utility>
+--- a/src/third_party/vulkan-deps/vulkan-validation-layers/src/layers/vk_mem_alloc.h
++++ b/src/third_party/vulkan-deps/vulkan-validation-layers/src/layers/vk_mem_alloc.h
+@@ -2578,6 +2578,7 @@
+ #undef VMA_IMPLEMENTATION
+ 
+ #include <cstdint>
++#include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
+ #include <utility>

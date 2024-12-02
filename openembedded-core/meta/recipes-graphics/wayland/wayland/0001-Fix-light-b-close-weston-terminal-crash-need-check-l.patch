@@ -1,0 +1,26 @@
+From 479ed219d12c61f914f2c4da4ece945f5ab16f76 Mon Sep 17 00:00:00 2001
+From: "haocheng.zy" <haocheng.zy@alibaba-inc.com>
+Date: Wed, 8 Feb 2023 19:27:18 +0800
+Subject: [PATCH] Fix light-b close weston-terminal crash, need check list
+ value
+
+---
+ src/wayland-util.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/wayland-util.c b/src/wayland-util.c
+index bb2a183..0c69fcf 100644
+--- a/src/wayland-util.c
++++ b/src/wayland-util.c
+@@ -53,6 +53,8 @@ wl_list_insert(struct wl_list *list, struct wl_list *elm)
+ WL_EXPORT void
+ wl_list_remove(struct wl_list *elm)
+ {
++	if (NULL == elm->next || NULL == elm->prev)
++		return;
+ 	elm->prev->next = elm->next;
+ 	elm->next->prev = elm->prev;
+ 	elm->next = NULL;
+-- 
+2.32.0 (Apple Git-132)
+

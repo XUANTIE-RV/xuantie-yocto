@@ -1,0 +1,80 @@
+From 4f23a2a05a2cd0cff436680bd0ab2089b7386d0e Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Wed, 3 Apr 2024 20:30:13 +0800
+Subject: [PATCH] Add mjpeg omx decoder
+
+---
+ configure               | 1 +
+ libavcodec/Makefile     | 1 +
+ libavcodec/allcodecs.c  | 1 +
+ libavcodec/omxdecoder.c | 7 +++++++
+ 4 files changed, 10 insertions(+)
+
+diff --git a/configure b/configure
+index 6f0b635..9a089d5 100755
+--- a/configure
++++ b/configure
+@@ -3207,6 +3207,7 @@ hevc_v4l2m2m_decoder_select="hevc_mp4toannexb_bsf"
+ hevc_v4l2m2m_encoder_deps="v4l2_m2m hevc_v4l2_m2m"
+ jpeg_omx_encoder_deps="omx"
+ jpeg_omx_decoder_deps="omx"
++mjpeg_omx_decoder_deps="omx"
+ mjpeg_cuvid_decoder_deps="cuvid"
+ mjpeg_qsv_decoder_select="qsvdec"
+ mjpeg_qsv_encoder_deps="libmfx"
+diff --git a/libavcodec/Makefile b/libavcodec/Makefile
+index b402175..53bb10d 100644
+--- a/libavcodec/Makefile
++++ b/libavcodec/Makefile
+@@ -455,6 +455,7 @@ OBJS-$(CONFIG_JPEGLS_DECODER)          += jpeglsdec.o jpegls.o
+ OBJS-$(CONFIG_JPEGLS_ENCODER)          += jpeglsenc.o jpegls.o
+ OBJS-$(CONFIG_JPEG_OMX_DECODER)        += omxjpegdecoder.o
+ OBJS-$(CONFIG_JPEG_OMX_ENCODER)        += omxjpegencoder.o
++OBJS-$(CONFIG_MJPEG_OMX_DECODER)        += omxdecoder.o
+ OBJS-$(CONFIG_JV_DECODER)              += jvdec.o
+ OBJS-$(CONFIG_KGV1_DECODER)            += kgv1dec.o
+ OBJS-$(CONFIG_KMVC_DECODER)            += kmvc.o
+diff --git a/libavcodec/allcodecs.c b/libavcodec/allcodecs.c
+index b6197cf..5ada87d 100644
+--- a/libavcodec/allcodecs.c
++++ b/libavcodec/allcodecs.c
+@@ -43,6 +43,7 @@ extern const FFCodec ff_h264_omx_decoder;
+ extern const FFCodec ff_h264_omx_encoder;
+ extern const FFCodec ff_jpeg_omx_encoder;
+ extern const FFCodec ff_jpeg_omx_decoder;
++extern const FFCodec ff_mjpeg_omx_decoder;
+ extern const FFCodec ff_mpeg4_omx_encoder;
+ extern const FFCodec ff_mpeg4_omx_decoder;
+ extern const FFCodec ff_h263_omx_decoder;
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index e4eefdb..cc36da9 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -1526,6 +1526,9 @@ static av_cold int omx_component_init_decoder(AVCodecContext *avctx, const char
+     case AV_CODEC_ID_VC1:
+         formatIn.eCompressionFormat = OMX_VIDEO_CodingWMV;
+         break;
++    case AV_CODEC_ID_MJPEG:
++        formatIn.eCompressionFormat = OMX_VIDEO_CodingMJPEG;
++        break;
+     default:
+         formatIn.eCompressionFormat = OMX_VIDEO_CodingAutoDetect;
+         break;
+@@ -1787,6 +1790,9 @@ static av_cold int omx_decode_init(AVCodecContext *avctx)
+     case AV_CODEC_ID_VP9:
+         role = "video_decoder.vp9";
+         break;
++    case AV_CODEC_ID_MJPEG:
++        role = "video_decoder.jpeg";
++        break;
+     default:
+         return AVERROR(ENOSYS);
+     }
+@@ -2155,3 +2161,4 @@ DECLARE_OMX_VDEC(vp9, "VP9", AV_CODEC_ID_VP9, NULL)
+ DECLARE_OMX_VDEC(h263, "H263", AV_CODEC_ID_H263, NULL)
+ DECLARE_OMX_VDEC(vc1, "VC1", AV_CODEC_ID_VC1, NULL)
+ DECLARE_OMX_VDEC(vp8, "VP8", AV_CODEC_ID_VP8, NULL)
++DECLARE_OMX_VDEC(mjpeg, "MJPEG", AV_CODEC_ID_MJPEG, NULL)
+-- 
+2.17.1
+

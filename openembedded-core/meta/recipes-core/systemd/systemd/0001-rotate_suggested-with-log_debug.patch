@@ -1,0 +1,28 @@
+From 58ac36bfd69a3e93357eecdc15b40ceb922dc592 Mon Sep 17 00:00:00 2001
+From: "Chen Pei" <cp0613@linux.alibaba.com>
+Date: Fri, 10 Feb 2023 13:33:02 +0800
+Subject: [PATCH] rotate_suggested with log_debug
+
+Upstream-Status: Pending
+
+Signed-off-by: Chen Pei <cp0613@linux.alibaba.com>
+---
+ src/journal/journald-server.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/journal/journald-server.c b/src/journal/journald-server.c
+index dc9433701d..8b869f0809 100644
+--- a/src/journal/journald-server.c
++++ b/src/journal/journald-server.c
+@@ -851,7 +851,7 @@ static void write_to_journal(Server *s, uid_t uid, struct iovec *iovec, size_t n
+                         return;
+ 
+                 if (journal_file_rotate_suggested(f->file, s->max_file_usec, LOG_INFO)) {
+-                        log_info("%s: Journal header limits reached or header out-of-date, rotating.", f->file->path);
++                        log_debug("%s: Journal header limits reached or header out-of-date, rotating.", f->file->path);
+                         rotate = true;
+                 }
+         }
+-- 
+2.17.1
+

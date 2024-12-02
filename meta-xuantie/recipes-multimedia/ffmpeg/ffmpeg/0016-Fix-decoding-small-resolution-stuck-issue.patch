@@ -1,0 +1,90 @@
+From b8036e8edbd062d4020f6b8627c5ced7e5eac197 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Wed, 17 Apr 2024 20:04:00 +0800
+Subject: [PATCH] Fix decoding small resolution stuck issue
+
+---
+ libavcodec/omxdecoder.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 54ed6f3..082eff2 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -384,6 +384,7 @@ typedef struct OMXCodecDecoderContext {
+     AVBufferRef *device_ref;
+     bool drm_prime_mode;
+ #endif
++    bool receive_frame_no_wait;
+ } OMXCodecDecoderContext;
+ 
+ typedef struct {
+@@ -2062,13 +2063,15 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+                 //receive success!
+                 s->flushing = 0;
+                 s->pkt_sent_num--;
++                s->receive_frame_no_wait = true;
+                 return ret;
+             }
+         } else if (s->num_done_out_buffers == 0 && s->got_eos && s->eos_sent) {
+-            return AVERROR_EOF;
++            ret = AVERROR_EOF;
++            goto end;
+         }
+ 
+-        if (s->num_free_in_buffers == 0 && s->num_done_out_buffers == 0 && !s->flushing && !s->eos_sent) {
++        if (s->num_free_in_buffers == 0 && s->num_done_out_buffers == 0 && !s->flushing && !s->eos_sent && !s->receive_frame_no_wait) {
+             pthread_mutex_lock(&s->buffer_control_mutex);
+             pthread_cond_wait(&s->buffer_control_cond, &s->buffer_control_mutex);
+             pthread_mutex_unlock(&s->buffer_control_mutex);
+@@ -2076,7 +2079,8 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+ 
+         ret = check_buffer_outsize(avctx);
+         if (ret < 0) {
+-            return AVERROR_UNKNOWN;
++            ret = AVERROR_UNKNOWN;
++            goto end;
+         }
+         /* try to flush any buffered packet data */
+         if (s->buffered_pkt.size > 0 && !s->outport_disabled && s->pkt_sent_num < s->pkt_upper_bound) {
+@@ -2087,7 +2091,7 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+                 s->pkt_sent_num++;
+                 av_packet_unref(&s->buffered_pkt);
+             } else if (ret < 0 && ret != AVERROR(EAGAIN)) {
+-                return ret;
++                goto end;
+             }
+             /* poll for space again */
+             continue;
+@@ -2101,7 +2105,7 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+                 ret = ff_omx_dec_send(avctx, s, &null_pkt, true);
+                 if (ret < 0) {
+                     s->need_sendeos = 1;
+-                    return ret;
++                    goto end;
+                 }
+ 
+                 s->need_sendeos = 0;
+@@ -2109,14 +2113,17 @@ static int omx_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+                 continue;
+ 
+             } else if (ret < 0) {
+-                return ret;
++                goto end;
+             } else if (s->buffered_pkt.size > 0) {
+                 //success
+                 s->pkt_full = 1;
+             }
+         }
+     }
+-    return AVERROR(EAGAIN);
++    ret = AVERROR(EAGAIN);
++end:
++    s->receive_frame_no_wait = false;
++    return ret;
+ }
+ 
+ 
+-- 
+2.17.1
+

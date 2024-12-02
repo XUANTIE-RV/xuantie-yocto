@@ -1,0 +1,121 @@
+From 7a8d598f89659c8f5bef3d98659419e11a0b9a68 Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Sun, 10 Sep 2023 23:46:42 +0800
+Subject: [PATCH] add djpeg benchmark test
+
+---
+ CMakeLists.txt    |  8 +++++
+ djpeg-benchmark.c | 75 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 83 insertions(+)
+ create mode 100644 djpeg-benchmark.c
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c9e062d..f42bc95 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -675,6 +675,11 @@ if(ENABLE_STATIC)
+   set_property(TARGET djpeg-static PROPERTY COMPILE_FLAGS ${COMPILE_FLAGS})
+   target_link_libraries(djpeg-static jpeg-static)
+ 
++  add_executable(djpeg-benchmark-static djpeg-benchmark.c cdjpeg.c rdcolmap.c rdswitch.c wrgif.c
++    wrppm.c ${DJPEG_BMP_SOURCES})
++  set_property(TARGET djpeg-benchmark-static PROPERTY COMPILE_FLAGS ${COMPILE_FLAGS})
++  target_link_libraries(djpeg-benchmark-static jpeg-static)
++
+   add_executable(oal_cjpeg-static oal_cjpeg.c cdjpeg.c rdgif.c rdppm.c rdswitch.c
+     ${CJPEG_BMP_SOURCES})
+   set_property(TARGET oal_cjpeg-static PROPERTY COMPILE_FLAGS ${COMPILE_FLAGS})
+@@ -693,6 +698,9 @@ if(ENABLE_STATIC)
+   add_executable(jpegtran-static jpegtran.c cdjpeg.c rdswitch.c transupp.c)
+   target_link_libraries(jpegtran-static jpeg-static)
+   set_property(TARGET jpegtran-static PROPERTY COMPILE_FLAGS "${USE_SETMODE}")
++elseif (ENABLE_SHARED)
++  add_executable(djpeg-benchmark djpeg-benchmark.c)
++  target_link_libraries(djpeg-benchmark jpeg)
+ endif()
+ 
+ add_executable(rdjpgcom rdjpgcom.c)
+diff --git a/djpeg-benchmark.c b/djpeg-benchmark.c
+new file mode 100644
+index 0000000..23fa251
+--- /dev/null
++++ b/djpeg-benchmark.c
+@@ -0,0 +1,75 @@
++#include <stdint.h>
++#include <stdio.h>
++#include "cdjpeg.h"
++#include "jversion.h"
++#include "jconfigint.h"
++#include <errno.h>
++
++#include <ctype.h>
++
++#ifndef ARRAY_LENGTH
++#define ARRAY_LENGTH(a) (sizeof (a) / sizeof (a)[0])
++#endif
++static JSAMPLE *decode_jpeg(FILE *fp)
++{
++    struct jpeg_decompress_struct cinfo;
++    struct jpeg_error_mgr jerr;
++    unsigned int i;
++    int stride, first;
++    JSAMPLE *data, *rows[3];
++
++    cinfo.err = jpeg_std_error(&jerr);
++
++    jpeg_create_decompress(&cinfo);
++    jpeg_stdio_src(&cinfo, fp);
++    jpeg_read_header(&cinfo, TRUE);
++
++    cinfo.out_color_space = JCS_RGB;
++    cinfo.num_components = 3;
++    jpeg_start_decompress(&cinfo);
++
++    stride = cinfo.output_width * 3;
++    data = malloc(stride * cinfo.output_height);
++    if (data == NULL) {
++        fprintf(stderr, "couldn't allocate image data\n");
++        return NULL;
++    }
++    while (cinfo.output_scanline < cinfo.output_height) {
++        first = cinfo.output_scanline;
++        for (i = 0; i < ARRAY_LENGTH(rows); i++)
++            rows[i] = data + (first + i) * stride;
++
++        jpeg_read_scanlines(&cinfo, rows, ARRAY_LENGTH(rows));
++    }
++
++    jpeg_finish_decompress(&cinfo);
++    jpeg_destroy_decompress(&cinfo);
++
++    return data;
++}
++
++int main(int argc, char **argv)
++{
++    FILE *fp;
++    JSAMPLE *p;
++    const char *filename;
++
++    if (argc < 2) {
++        fprintf(stderr, "Usage: %s [input.jpg] \n", argv[0]);
++        return -1;
++    }
++    filename = argv[1];
++    if (!filename || !*filename)
++        return -1;
++
++    fp = fopen(filename, "rb");
++    if (!fp) {
++        fprintf(stderr, "%s: %s\n", filename, strerror(errno));
++        return -1;
++    }
++    rewind(fp);
++    p = decode_jpeg(fp);
++    fclose(fp);
++    free(p);
++    return 0;
++}
+-- 
+2.17.1
+

@@ -1,0 +1,38 @@
+From b93f67cdf0c8eb62200ea7f5e72e784ec15346c3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Wed, 27 Sep 2023 21:34:17 +0000
+Subject: [PATCH] Improve the OMX encoders for lower CPU usage
+
+---
+ libavcodec/omx.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/libavcodec/omx.c b/libavcodec/omx.c
+index e2a7210..bdf0a41 100644
+--- a/libavcodec/omx.c
++++ b/libavcodec/omx.c
+@@ -1177,6 +1177,7 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+     OMX_BUFFERHEADERTYPE *buffer;
+     OMX_ERRORTYPE err;
+     int had_partial = 0;
++    struct timespec abs_time;
+ 
+     if (frame) {
+         uint8_t *dst[4];
+@@ -1257,6 +1258,13 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+         // If not flushing, just poll the queue if there's finished packets.
+         // If flushing, do a blocking wait until we either get a completed
+         // packet, or get EOS.
++        if (s->num_done_out_buffers == 0) {
++            pthread_mutex_lock(&s->output_mutex);
++            clock_gettime(CLOCK_REALTIME, &abs_time);
++            abs_time.tv_sec += 3; // 3s
++            pthread_cond_timedwait(&s->output_cond, &s->output_mutex, &abs_time);
++            pthread_mutex_unlock(&s->output_mutex);
++        }
+         buffer = get_buffer(&s->output_mutex, &s->output_cond,
+                             &s->num_done_out_buffers, s->done_out_buffers,
+                             !frame || had_partial);
+-- 
+2.17.1
+

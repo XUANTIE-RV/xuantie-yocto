@@ -1,0 +1,43 @@
+From cca9d3facc10e9786d41c2c668024947be2f435d Mon Sep 17 00:00:00 2001
+From: "yangtianyu.lu" <luyangtianyu.lyty@alibaba-inc.com>
+Date: Mon, 14 Oct 2024 12:32:14 +0000
+Subject: [PATCH] Add xuantie_qemu-riscv32_spl_defconfig
+
+---
+ configs/xuantie_qemu-riscv32_spl_defconfig | 24 ++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+ create mode 100644 configs/xuantie_qemu-riscv32_spl_defconfig
+
+diff --git a/configs/xuantie_qemu-riscv32_spl_defconfig b/configs/xuantie_qemu-riscv32_spl_defconfig
+new file mode 100644
+index 0000000000..88e08f5276
+--- /dev/null
++++ b/configs/xuantie_qemu-riscv32_spl_defconfig
+@@ -0,0 +1,24 @@
++CONFIG_RISCV=y
++CONFIG_NR_DRAM_BANKS=1
++CONFIG_ENV_SIZE=0x20000
++CONFIG_SPL=y
++CONFIG_TARGET_QEMU_VIRT=y
++CONFIG_RISCV_SMODE=y
++CONFIG_DISTRO_DEFAULTS=y
++CONFIG_FIT=y
++CONFIG_SPL_LOAD_FIT_ADDRESS=0x80400000
++CONFIG_DISPLAY_CPUINFO=y
++CONFIG_DISPLAY_BOARDINFO=y
++# CONFIG_CMD_MII is not set
++CONFIG_OF_PRIOR_STAGE=y
++CONFIG_SYS_RELOC_GD_ENV_ADDR=y
++CONFIG_DM_MTD=y
++
++CONFIG_BOOTCOMMAND="setenv kernel_addr_r 0x81000000; setenv bootargs 'root=/dev/vda rw console=ttyS0 earlycon=sbi'; cp.l \$fdtcontroladdr \$fdt_addr_r 0x10000; booti \$kernel_addr_r - \$fdt_addr_r"
++
++#
++# The starting address(0x80000000) can only run u-boot_spl.
++# Therefore, opensbi is loaded at 0x40000 offset.
++#
++CONFIG_SYS_TEXT_BASE=0x800A0000
++CONFIG_SPL_OPENSBI_LOAD_ADDR=0x80040000
+-- 
+2.25.1
+

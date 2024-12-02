@@ -1,0 +1,37 @@
+From 258d72247010607da89610d002f449ea15fb7e0a Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Tue, 13 Aug 2024 21:15:22 +0800
+Subject: [PATCH] Fix null ptr function call in _IceTransWrite
+
+---
+ src/misc.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/misc.c b/src/misc.c
+index befa2c5..82d2960 100644
+--- a/src/misc.c
++++ b/src/misc.c
+@@ -35,6 +35,7 @@ Author: Ralph Mor, X Consortium
+ #include <X11/ICE/ICElib.h>
+ #include "ICElibint.h"
+ #include <X11/Xtrans/Xtrans.h>
++#include <X11/Xtrans/Xtransint.h>
+ #include <stdio.h>
+ #ifdef WIN32
+ #include <X11/Xwinsock.h>
+@@ -344,7 +345,11 @@ _IceWrite (
+     {
+ 	int nwritten;
+ 
+-	if (iceConn->io_ok)
++	if (iceConn->io_ok &&
++	    iceConn->trans_conn != NULL &&
++	    iceConn->trans_conn->transptr != NULL &&
++	    iceConn->trans_conn->transptr->Write != NULL &&
++	    ptr != NULL)
+ 	    nwritten = _IceTransWrite (iceConn->trans_conn, ptr, (int) nleft);
+ 	else
+ 	    return;
+-- 
+2.17.1
+

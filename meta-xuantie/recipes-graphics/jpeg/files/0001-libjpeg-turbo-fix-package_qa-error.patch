@@ -1,0 +1,29 @@
+From f2cd646c788429b0ccfefd051642aad11a4b1c95 Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Sun, 10 Sep 2023 23:40:28 +0800
+Subject: [PATCH] libjpeg-turbo fix package_qa-error
+
+---
+ CMakeLists.txt | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d9fd1ec..ceffd5f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -197,9 +197,9 @@ endif()
+ report_option(ENABLE_SHARED "Shared libraries")
+ report_option(ENABLE_STATIC "Static libraries")
+ 
+-if(ENABLE_SHARED)
+-  set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
+-endif()
++#if(ENABLE_SHARED)
++#  set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
++#endif()
+ 
+ if(WITH_12BIT)
+   set(WITH_ARITH_DEC 0)
+-- 
+2.17.1
+

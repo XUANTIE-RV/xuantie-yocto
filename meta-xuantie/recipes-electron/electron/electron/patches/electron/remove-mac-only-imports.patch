@@ -1,0 +1,10 @@
+--- a/src/electron/shell/app/electron_main_delegate.cc
++++ b/src/electron/shell/app/electron_main_delegate.cc
+@@ -15,7 +15,6 @@
+ #include "base/environment.h"
+ #include "base/files/file_util.h"
+ #include "base/logging.h"
+-#include "base/mac/bundle_locations.h"
+ #include "base/path_service.h"
+ #include "base/strings/string_split.h"
+ #include "chrome/common/chrome_paths.h"

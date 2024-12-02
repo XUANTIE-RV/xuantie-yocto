@@ -1,0 +1,52 @@
+From 95d1bd3d91d3f3d23d0111cd2830dcc89a97f19f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Wed, 14 Aug 2024 06:33:50 +0000
+Subject: [PATCH] Avoid the number of outport buffers for vp9 more than
+ VP9DEC_MAX_PIC_BUFFERS.
+
+---
+ libavcodec/omxdecoder.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index d223812..c5e1698 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -376,6 +376,7 @@ typedef struct OMXCodecDecoderContext {
+     int resolution_changed;
+     OMX_COLOR_FORMATTYPE outformat;
+     outport_buffer_table buffer_table[MAX_TABLE_SIZE];
++    int codec_id;
+     //AsyncQueue *pic_queue;
+ #ifdef DRM_PRIME
+     AVDRMFrameDescriptor *desc;
+@@ -723,6 +724,10 @@ static int OnOutputPortDisabled(OMXCodecDecoderContext *s)
+         pthread_mutex_lock(&s->output_mutex);
+         s->num_out_buffers = out_port_params.nBufferCountMin + 5;
+         out_port_params.nBufferCountActual = out_port_params.nBufferCountMin + 5;
++        if (s->codec_id == AV_CODEC_ID_VP9) { //VP9DEC_MAX_PIC_BUFFERS is 16 defined in vpu-vc8000d.
++          s->num_out_buffers = s->num_out_buffers > 16 ? 16 : s->num_out_buffers;
++          out_port_params.nBufferCountActual = s->num_out_buffers;
++        }
+ 
+         err = OMX_SetParameter(s->handle, OMX_IndexParamPortDefinition, &out_port_params);
+         CHECK(err);
+@@ -1871,6 +1876,7 @@ static av_cold int omx_decode_init(AVCodecContext *avctx)
+     s->state = OMX_StateLoaded;
+     s->error = OMX_ErrorNone;
+     s->first_pkt = 1;
++    s->codec_id = -1;
+ 
+     switch (avctx->codec->id) {
+     case AV_CODEC_ID_MPEG4:
+@@ -1899,6 +1905,7 @@ static av_cold int omx_decode_init(AVCodecContext *avctx)
+         break;
+     case AV_CODEC_ID_VP9:
+         role = "video_decoder.vp9";
++        s->codec_id = AV_CODEC_ID_VP9;
+         break;
+     case AV_CODEC_ID_MJPEG:
+         role = "video_decoder.jpeg";
+-- 
+2.17.1
+

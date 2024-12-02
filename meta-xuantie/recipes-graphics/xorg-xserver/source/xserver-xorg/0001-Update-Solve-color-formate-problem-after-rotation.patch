@@ -1,0 +1,25 @@
+From 8a2e156b789b0c891d7b0746bcff9e5dbb9cd80e Mon Sep 17 00:00:00 2001
+From: yunfei zhu <yunfeizhu@U-ML4K4JFD-2250.local>
+Date: Fri, 9 Aug 2024 14:46:12 +0800
+Subject: [PATCH] [Update]Solve color formate problem after rotation
+
+---
+ hw/xfree86/drivers/modesetting/drmmode_display.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xfree86/drivers/modesetting/drmmode_display.c b/hw/xfree86/drivers/modesetting/drmmode_display.c
+index 02587d8..b61daee 100644
+--- a/hw/xfree86/drivers/modesetting/drmmode_display.c
++++ b/hw/xfree86/drivers/modesetting/drmmode_display.c
+@@ -78,7 +78,7 @@ get_opaque_format(uint32_t format)
+ {
+     switch (format) {
+     case DRM_FORMAT_ARGB8888:
+-        return DRM_FORMAT_XRGB8888;
++        return DRM_FORMAT_ARGB8888;
+     case DRM_FORMAT_ARGB2101010:
+         return DRM_FORMAT_XRGB2101010;
+     default:
+-- 
+2.39.3 (Apple Git-146)
+

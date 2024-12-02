@@ -1,0 +1,27 @@
+diff --git a/src/greeter.c b/src/greeter.c
+index 3878691..c68d94d 100644
+--- a/src/greeter.c
++++ b/src/greeter.c
+@@ -900,10 +900,21 @@ static gboolean on_timeout(GtkLabel* label)
+     char buf[128];
+     time_t t;
+     struct tm* tmbuf;
++	gchar *utf8_text;
+     time(&t);
+     tmbuf = localtime(&t);
+     strftime(buf, 128, datetime_fmt, tmbuf);
+-    gtk_label_set_text(label, buf);
++	utf8_text = g_locale_to_utf8(buf, -1, NULL, NULL, NULL);
++	if (utf8_text)
++	{
++		gtk_label_set_text(label, utf8_text);
++		g_free (utf8_text);
++	}
++	else
++	{
++		gtk_label_set_text(label, buf);
++	}
++
+     return TRUE;
+ }
+ 

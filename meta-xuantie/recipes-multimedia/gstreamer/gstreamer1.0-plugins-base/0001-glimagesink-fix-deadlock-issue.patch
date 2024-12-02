@@ -1,0 +1,43 @@
+From cb0c362af3930c10bfec87c8e8154aeeb1de6592 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Thu, 14 Mar 2024 14:00:34 +0800
+Subject: [PATCH] glimagesink: fix deadlock issue
+
+between gst_gl_window_default_send_message and _run_message_sync
+---
+ ext/gl/gstglimagesink.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/ext/gl/gstglimagesink.c b/ext/gl/gstglimagesink.c
+index c057b43..5f292f0 100755
+--- a/ext/gl/gstglimagesink.c
++++ b/ext/gl/gstglimagesink.c
+@@ -1226,6 +1226,7 @@ gst_glimage_sink_change_state (GstElement * element, GstStateChange transition)
+   GstGLImageSink *glimage_sink;
+   GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+   GstGLContext *context;
++  GstBuffer *stored_sync;
+ 
+   GST_DEBUG ("changing state: %s => %s",
+       gst_element_state_get_name (GST_STATE_TRANSITION_CURRENT (transition)),
+@@ -1273,13 +1274,13 @@ gst_glimage_sink_change_state (GstElement * element, GstStateChange transition)
+       buf[1] = glimage_sink->stored_buffer[1];
+       glimage_sink->stored_buffer[0] = glimage_sink->stored_buffer[1] = NULL;
+       glimage_sink->stored_sync_meta = glimage_sink->next_sync_meta = NULL;
+-
+-      if (glimage_sink->stored_sync)
+-        gst_buffer_unref (glimage_sink->stored_sync);
++      stored_sync = glimage_sink->stored_sync;
+       glimage_sink->stored_sync = NULL;
+-
+       GST_GLIMAGE_SINK_UNLOCK (glimage_sink);
+ 
++      if (stored_sync)
++        gst_buffer_unref (stored_sync);
++
+       gst_buffer_replace (buf, NULL);
+       gst_buffer_replace (buf + 1, NULL);
+ 
+-- 
+2.17.1
+

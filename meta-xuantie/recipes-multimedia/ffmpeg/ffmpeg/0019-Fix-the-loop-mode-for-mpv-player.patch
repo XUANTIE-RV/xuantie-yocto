@@ -1,0 +1,28 @@
+From 19c7d5d62fa66a4533480c9923e74c41c59f82f0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Wed, 22 May 2024 03:36:57 +0000
+Subject: [PATCH] [FFmpeg]: Fix the loop mode for mpv player
+
+---
+ libavcodec/omxdecoder.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/libavcodec/omxdecoder.c b/libavcodec/omxdecoder.c
+index 170b7a2..3c5a1c3 100644
+--- a/libavcodec/omxdecoder.c
++++ b/libavcodec/omxdecoder.c
+@@ -2010,6 +2010,11 @@ static int ff_omx_dec_flush(AVCodecContext *avctx, OMXCodecDecoderContext *s)
+     s->draining = 0;
+     if (!s->flushing) {
+         s->flushing = 1;
++        if (s->got_eos) {
++          s->eos_sent = 0;
++          s->got_eos = 0;
++          s->eos_reach = 0;
++        }
+         if (avctx->codec->id == AV_CODEC_ID_VC1) {
+             s->pkt_sent_num = -20;
+         } else {
+-- 
+2.17.1
+

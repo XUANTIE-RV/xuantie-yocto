@@ -1,0 +1,26 @@
+From 8742e58e2014c6c82fc61fdad297d496abc20eea Mon Sep 17 00:00:00 2001
+From: "hanyu.cp" <hanyu.cp@alibaba-inc.com>
+Date: Thu, 27 Apr 2023 16:03:19 +0800
+Subject: [PATCH] coremark:ignore RUN
+
+Signed-off-by: hanyu.cp <hanyu.cp@alibaba-inc.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index c2db7cc..16d2a8d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -110,7 +110,7 @@ run3.log-PARAM=$(PARAM3) 7 1 1200
+ 
+ run1.log run2.log run3.log: load
+ 	$(MAKE) port_prerun
+-	$(RUN) $(OUTFILE) $($(@)-PARAM) > $(OPATH)$@
++	#$(RUN) $(OUTFILE) $($(@)-PARAM) > $(OPATH)$@
+ 	$(MAKE) port_postrun
+ 	
+ .PHONY: gen_pgo_data
+-- 
+2.17.1
+

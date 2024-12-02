@@ -1,0 +1,3119 @@
+From 28c6c90e5a19ce729f6d8be8e11d24cb3346bc01 Mon Sep 17 00:00:00 2001
+From: hengchang <dongkaiyuan.dky@alibaba-inc.com>
+Date: Thu, 17 Aug 2023 15:46:43 +0000
+Subject: [PATCH] Add vsv h264 decoder
+
+---
+ configure                                 |   30 +-
+ fftools/Makefile                          |    2 +
+ fftools/ffplay.c                          |    1 -
+ libavcodec/Makefile                       |    3 +
+ libavcodec/allcodecs.c                    |    2 +
+ libavcodec/vsv_decode.c                   | 1006 +++++++++++++++++++++
+ libavcodec/vsv_decode.h                   |  253 ++++++
+ libavcodec/vsv_h264dec.c                  |  761 ++++++++++++++++
+ libavutil/Makefile                        |    5 +-
+ libavutil/hwcontext.c                     |    6 +
+ libavutil/hwcontext.h                     |    1 +
+ libavutil/hwcontext_internal.h            |    1 +
+ libavutil/hwcontext_vsv.c                 |  486 ++++++++++
+ libavutil/hwcontext_vsv.h                 |   95 ++
+ libavutil/pixdesc.c                       |    4 +
+ libavutil/pixfmt.h                        |    3 +-
+ tests/api/Makefile                        |    9 +-
+ tests/api/api-vsv-h264dec-test.c          |  157 ++++
+ tests/api/compile-api-vsv-h264dec-test.sh |    4 +
+ 19 files changed, 2822 insertions(+), 7 deletions(-)
+ create mode 100644 libavcodec/vsv_decode.c
+ create mode 100644 libavcodec/vsv_decode.h
+ create mode 100644 libavcodec/vsv_h264dec.c
+ create mode 100644 libavutil/hwcontext_vsv.c
+ create mode 100644 libavutil/hwcontext_vsv.h
+ create mode 100644 tests/api/api-vsv-h264dec-test.c
+ create mode 100644 tests/api/compile-api-vsv-h264dec-test.sh
+
+diff --git a/configure b/configure
+index 3c1b7d4..cf9c10d 100755
+--- a/configure
++++ b/configure
+@@ -322,6 +322,7 @@ External library support:
+   --enable-vulkan          enable Vulkan code [no]
+   --disable-xlib           disable xlib [autodetect]
+   --disable-zlib           disable zlib [autodetect]
++  --enable-vsv             enable vsv codec [no]
+ 
+   The following libraries provide various hardware acceleration features:
+   --disable-amf            disable AMF video encoding code [autodetect]
+@@ -345,7 +346,7 @@ External library support:
+   --disable-vaapi          disable Video Acceleration API (mainly Unix/Intel) code [autodetect]
+   --disable-vdpau          disable Nvidia Video Decode and Presentation API for Unix code [autodetect]
+   --disable-videotoolbox   disable VideoToolbox code [autodetect]
+-
++  
+ Toolchain options:
+   --arch=ARCH              select architecture [$arch]
+   --cpu=CPU                select the minimum required CPU (affects
+@@ -1733,6 +1734,7 @@ EXTERNAL_LIBRARY_NONFREE_LIST="
+     libfdk_aac
+     openssl
+     libtls
++    vsv
+ "
+ 
+ EXTERNAL_LIBRARY_VERSION3_LIST="
+@@ -2425,6 +2427,7 @@ CONFIG_EXTRA="
+     vp8dsp
+     wma_freqs
+     wmv2dsp
++    vsv_decode
+ "
+ 
+ CMDLINE_SELECT="
+@@ -3128,6 +3131,10 @@ vp9_qsv_encoder_deps="libmfx MFX_CODEC_VP9"
+ vp9_qsv_encoder_select="qsvenc"
+ vp9_v4l2m2m_decoder_deps="v4l2_m2m vp9_v4l2_m2m"
+ wmv3_crystalhd_decoder_select="crystalhd"
++vsv_decode_deps="vsv"
++h264_vsv_decoder_deps="vsv"
++h264_vsv_decoder_select="vsv_decode"
++
+ 
+ # parsers
+ aac_parser_select="adts_header"
+@@ -3634,6 +3641,8 @@ vpp_qsv_filter_select="qsvvpp"
+ xfade_opencl_filter_deps="opencl"
+ yadif_cuda_filter_deps="ffnvcodec"
+ yadif_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
++split_vsv_filter_deps="vsv"
++lookahead_vsv_filter_deps="vsv"
+ 
+ # examples
+ avio_list_dir_deps="avformat avutil"
+@@ -6475,6 +6484,22 @@ enabled rkmpp             && { require_pkg_config rkmpp rockchip_mpp  rockchip/r
+ enabled vapoursynth       && require_pkg_config vapoursynth "vapoursynth-script >= 42" VSScript.h vsscript_init
+ 
+ 
++enabled vsv && {
++	VSV_VC8000D_LIB_PATH=../recipe-sysroot/usr/lib/vc8000d/
++	VSV_VC8000D_INC_PATH=../recipe-sysroot/usr/include/vc8000d/lib/inc/
++	VSV_VC8000D_COMMON_PATH=../recipe-sysroot/usr/include/vc8000d/lib/common/
++	VSV_VC8000D_LIBS="-ldech10p -ldwl -lcache -lcommon -ltbcommon"
++	add_ldflags -L${VSV_VC8000D_LIB_PATH} ${VSV_VC8000D_LIBS}
++	add_ldexeflags -L${VSV_VC8000D_LIB_PATH} ${VSV_VC8000D_LIBS}
++	add_cflags -I${VSV_VC8000D_INC_PATH} -I${VSV_VC8000D_COMMON_PATH} -gdwarf-2 -g3 -ggdb -DSUPPORT_MMU -DSUPPORT_DEC400
++	add_cxxflags -I${VSV_VC8000D_INC_PATH} -I${VSV_VC8000D_COMMON_PATH} -gdwarf-2 -g3 -ggdb -DSUPPORT_MMU -DSUPPORT_DEC400
++	add_cppflags -I${VSV_VC8000D_INC_PATH} -I${VSV_VC8000D_COMMON_PATH} -gdwarf-2 -g3 -ggdb -DSUPPORT_MMU -DSUPPORT_DEC400
++	add_objcflags -I${VSV_VC8000D_INC_PATH} -I${VSV_VC8000D_COMMON_PATH} -gdwarf-2 -g3 -ggdb -DSUPPORT_MMU -DSUPPORT_DEC400
++	add_extralibs ${VSV_VC8000D_LIBS}
++	log check_pkg_config h264_vsv_decoder
++}
++
++
+ if enabled gcrypt; then
+     GCRYPT_CONFIG="${cross_prefix}libgcrypt-config"
+     if "${GCRYPT_CONFIG}" --version > /dev/null 2>&1; then
+@@ -7648,3 +7673,6 @@ for lib in $LIBRARY_LIST; do
+ done
+ 
+ cp_if_changed $TMPH ffbuild/config.sh
++
++#echo ${EXTRALIBS}
++#echo ${CFLAGS}
+diff --git a/fftools/Makefile b/fftools/Makefile
+index 5affaa3..013b482 100644
+--- a/fftools/Makefile
++++ b/fftools/Makefile
+@@ -43,11 +43,13 @@ install-progs-$(CONFIG_SHARED): install-libs
+ install-progs: install-progs-yes $(AVPROGS)
+ 	$(Q)mkdir -p "$(BINDIR)"
+ 	$(INSTALL) -c -m 755 $(AVPROGS) "$(BINDIR)"
++	#$(INSTALL) -c -m 755 $(APITESTPROGS) "$(BINDIR)"
+ 
+ uninstall: uninstall-progs
+ 
+ uninstall-progs:
+ 	$(RM) $(addprefix "$(BINDIR)/", $(ALLAVPROGS))
++	#$(RM) $(addprefix "$(BINDIR)/", $(APITESTPROGS))
+ 
+ clean::
+ 	$(RM) $(ALLAVPROGS) $(ALLAVPROGS_G) $(CLEANSUFFIXES:%=fftools/%)
+diff --git a/fftools/ffplay.c b/fftools/ffplay.c
+index d673b80..fed56be 100644
+--- a/fftools/ffplay.c
++++ b/fftools/ffplay.c
+@@ -22,7 +22,6 @@
+  * @file
+  * simple media player based on the FFmpeg libraries
+  */
+-
+ #include "config.h"
+ #include <inttypes.h>
+ #include <math.h>
+diff --git a/libavcodec/Makefile b/libavcodec/Makefile
+index 5a6ea59..9bac5dd 100644
+--- a/libavcodec/Makefile
++++ b/libavcodec/Makefile
+@@ -1045,6 +1045,9 @@ OBJS-$(CONFIG_LIBXAVS2_ENCODER)           += libxavs2.o
+ OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvid.o
+ OBJS-$(CONFIG_LIBZVBI_TELETEXT_DECODER)   += libzvbi-teletextdec.o ass.o
+ 
++OBJS-$(CONFIG_VSV_DECODE)                 += vsv_decode.o
++OBJS-$(CONFIG_H264_VSV_DECODER)           += vsv_h264dec.o
++
+ # parsers
+ OBJS-$(CONFIG_AAC_LATM_PARSER)         += latm_parser.o
+ OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
+diff --git a/libavcodec/allcodecs.c b/libavcodec/allcodecs.c
+index 80f128c..8a88347 100644
+--- a/libavcodec/allcodecs.c
++++ b/libavcodec/allcodecs.c
+@@ -809,6 +809,8 @@ extern AVCodec ff_vp9_qsv_decoder;
+ extern AVCodec ff_vp9_vaapi_encoder;
+ extern AVCodec ff_vp9_qsv_encoder;
+ 
++extern AVCodec ff_h264_vsv_decoder;
++
+ // The iterate API is not usable with ossfuzz due to the excessive size of binaries created
+ #if CONFIG_OSSFUZZ
+ AVCodec * codec_list[] = {
+diff --git a/libavcodec/vsv_decode.c b/libavcodec/vsv_decode.c
+new file mode 100644
+index 0000000..2df6bfa
+--- /dev/null
++++ b/libavcodec/vsv_decode.c
+@@ -0,0 +1,1006 @@
++/*
++ * Copyright (C) 2019  VeriSilicon
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include "vsv_decode.h"
++#include "libavutil/hwcontext_vsv.h"
++#include <vc8000d/test/common/swhw/tb_cfg.h>
++struct TBCfg tb_cfg;
++
++static uint32_t find_dec_pic_wait_consume_index(VSVDECContext *dec_ctx,
++                                                uint8_t *data)
++{
++    uint32_t i;
++
++    pthread_mutex_lock(&dec_ctx->consume_mutex);
++    for (i = 0; i < MAX_WAIT_FOR_CONSUME_BUFFERS; i++) {
++        if (dec_ctx->wait_for_consume_list[i].pic
++            == (struct DecPicturePpu *)data)
++            break;
++    }
++
++    assert(i < dec_ctx->wait_consume_num);
++    pthread_mutex_unlock(&dec_ctx->consume_mutex);
++    return i;
++}
++
++static int split_string(char **tgt, int max, char *src, const char *split)
++{
++    char *currp;
++    char *p;
++    char c;
++    int i = 0;
++    int last = 0;
++    int count = 0;
++
++    currp = src;
++    while ((c = *currp++) != '\0') {
++        if ((p = strchr(split, c)) == NULL) {
++            if (count < max) {
++                tgt[count][i++] = c;
++            } else {
++                av_log(NULL, AV_LOG_DEBUG,
++                        "The split count exceeds max num!\n");
++                return -1;
++            }
++            last = 1; // 1 means non split char, 0 means split char
++        } else {
++            if (last == 1) {
++                tgt[count][i] = '\0';
++                count++;
++                i = 0;
++            }
++            last = 0; // 1 means non split char, 0 means split char
++        }
++    }
++    if (last == 1) {
++        tgt[count][i] = '\0';
++        count++;
++    }
++    return count;
++}
++
++static uint32_t find_dec_pic_wait_consume_empty_index(VSVDECContext *dec_ctx)
++{
++    uint32_t i;
++
++    pthread_mutex_lock(&dec_ctx->consume_mutex);
++    for (i = 0; i < MAX_WAIT_FOR_CONSUME_BUFFERS; i++) {
++        if (dec_ctx->wait_for_consume_list[i].wait_for_consume == 0)
++        break;
++    }
++
++    assert(i < MAX_WAIT_FOR_CONSUME_BUFFERS);
++    pthread_mutex_unlock(&dec_ctx->consume_mutex);
++
++    return i;
++}
++
++uint32_t ff_vsv_dec_del_pic_wait_consume_list(VSVDECContext *dec_ctx,
++                                              uint8_t *data)
++{
++    uint32_t id;
++    id = find_dec_pic_wait_consume_index(dec_ctx,data);
++
++    pthread_mutex_lock(&dec_ctx->consume_mutex);
++    if(id < MAX_WAIT_FOR_CONSUME_BUFFERS) {
++        dec_ctx->wait_for_consume_list[id].pic = NULL;
++        dec_ctx->wait_for_consume_list[id].wait_for_consume = 0;
++        if(dec_ctx->wait_consume_num > 0)
++            dec_ctx->wait_consume_num--;
++        av_log(NULL, AV_LOG_DEBUG,
++               "ff_vsv_dec_del_pic_wait_consume_list pic(@ %p) @ %d \n",
++               data, id);
++    }
++    pthread_mutex_unlock(&dec_ctx->consume_mutex);
++    return id;
++}
++
++static uint32_t add_dec_pic_wait_consume_list(VSVDECContext *dec_ctx, void *data)
++{
++    uint32_t id;
++
++    id = find_dec_pic_wait_consume_empty_index(dec_ctx);
++    av_log(NULL, AV_LOG_DEBUG, "add_dec_pic_wait_consume_list pic(@ %p) @ %d \n",
++           data, id);
++
++    pthread_mutex_lock(&dec_ctx->consume_mutex);
++    dec_ctx->wait_for_consume_list[id].pic = (struct DecPicturePpu *)data;
++    dec_ctx->wait_for_consume_list[id].wait_for_consume = 1;
++    if(dec_ctx->wait_consume_num < MAX_WAIT_FOR_CONSUME_BUFFERS)
++        dec_ctx->wait_consume_num++;
++    assert(id < MAX_WAIT_FOR_CONSUME_BUFFERS);
++    pthread_mutex_unlock(&dec_ctx->consume_mutex);
++    return id;
++}
++
++static void report_dec_pic_info(AVCodecContext *avctx, struct DecPicturePpu *picture)
++{
++    VSVDECContext *dec_ctx  = avctx->priv_data;
++    char info_string[2048];
++    static const char* pic_types[] = {"        IDR", "Non-IDR (P)", "Non-IDR (B)"};
++
++    sprintf(&info_string[0], "PIC %2d/%2d, type %s, ", dec_ctx->pic_display_number,
++           picture->pictures[0].picture_info.pic_id,
++           pic_types[picture->pictures[0].picture_info.pic_coding_type]);
++    if (picture->pictures[0].picture_info.cycles_per_mb) {
++    sprintf(&info_string[strlen(info_string)],
++            " %4d cycles / mb,", picture->pictures[0].picture_info.cycles_per_mb);
++    }
++
++    sprintf(&info_string[strlen(info_string)],
++            " %d x %d, Crop: (%d, %d), %d x %d %s",
++            picture->pictures[0].sequence_info.pic_width,
++            picture->pictures[0].sequence_info.pic_height,
++            picture->pictures[0].sequence_info.crop_params.crop_left_offset,
++            picture->pictures[0].sequence_info.crop_params.crop_top_offset,
++            picture->pictures[0].sequence_info.crop_params.crop_out_width,
++            picture->pictures[0].sequence_info.crop_params.crop_out_height,
++            picture->pictures[0].picture_info.is_corrupted ? "CORRUPT" : "");
++
++    av_log(avctx, AV_LOG_DEBUG, "%s\n", info_string);
++#ifdef FB_SYSLOG_ENABLE
++    VSV_DEC_INFO_PRINT("%s\n", (char *)info_string);
++#endif
++}
++
++uint32_t ff_vsv_dec_find_empty_index(AVCodecContext *avctx)
++{
++    uint32_t i;
++    VSVDECContext *dec_ctx = avctx->priv_data;
++    for (i = 0; i < MAX_BUFFERS; i++) {
++        if (dec_ctx->ext_buffers[i].bus_address == 0)
++            break;
++    }
++
++    assert(i < MAX_BUFFERS);
++    return i;
++}
++
++uint32_t ff_vsv_dec_find_ext_buffer_index(AVCodecContext *avctx, uint32_t *addr)
++{
++    uint32_t i;
++    VSVDECContext *dec_ctx = avctx->priv_data;
++    for (i = 0; i < dec_ctx->num_buffers; i++) {
++        if (dec_ctx->ext_buffers[i].bus_address == (uint32_t)addr)
++            break;
++    }
++
++    assert(i < dec_ctx->num_buffers);
++    return i;
++}
++
++void ff_vsv_dec_release_ext_buffers(AVCodecContext *avctx)
++{
++
++    VSVDECContext *dec_ctx = avctx->priv_data;
++    int i;
++
++    pthread_mutex_lock(&dec_ctx->ext_buffer_contro);
++    for(i=0; i<dec_ctx->num_buffers; i++) {
++        av_log(avctx, AV_LOG_DEBUG, "Freeing buffer %p\n",
++               (void *)dec_ctx->ext_buffers[i].virtual_address);
++        if (dec_ctx->pp_enabled)
++            DWLFreeLinear(dec_ctx->dwl_inst, &dec_ctx->ext_buffers[i]);
++        else
++            DWLFreeRefFrm(dec_ctx->dwl_inst, &dec_ctx->ext_buffers[i]);
++
++        DWLmemset(&dec_ctx->ext_buffers[i], 0, sizeof(dec_ctx->ext_buffers[i]));
++    }
++    pthread_mutex_unlock(&dec_ctx->ext_buffer_contro);
++}
++
++int ff_vsv_dec_init_hwctx(AVCodecContext *avctx)
++{
++    int ret=0;
++    AVHWFramesContext *hw_frames_ctx;
++    VSVDECContext *dec_ctx = avctx->priv_data;
++
++    if (avctx->hw_frames_ctx) {
++        dec_ctx->hwframe = av_buffer_ref(avctx->hw_frames_ctx);
++        if (!dec_ctx->hwframe) {
++            ret = AVERROR(ENOMEM);
++            goto error;
++        }
++
++        hw_frames_ctx = (AVHWFramesContext*)dec_ctx->hwframe->data;
++
++        dec_ctx->hwdevice = av_buffer_ref(hw_frames_ctx->device_ref);
++        if (!dec_ctx->hwdevice) {
++            ret = AVERROR(ENOMEM);
++            goto error;
++        }
++    } else {
++        av_log(avctx, AV_LOG_TRACE, "%s(%d) avctx->hw_device_ctx = %p\n",
++               __FUNCTION__, __LINE__, avctx->hw_device_ctx);
++        if (avctx->hw_device_ctx) {
++            dec_ctx->hwdevice = av_buffer_ref(avctx->hw_device_ctx);
++            av_log(avctx, AV_LOG_TRACE, "%s(%d) dec_ctx->hwdevice = %p\n",
++                   __FUNCTION__, __LINE__, dec_ctx->hwdevice);
++            if (!dec_ctx->hwdevice) {
++                ret = AVERROR(ENOMEM);
++                goto error;
++            }
++        } else {
++            ret = av_hwdevice_ctx_create(&dec_ctx->hwdevice,
++                                         AV_HWDEVICE_TYPE_VSV,
++                                         dec_ctx->dev_name, NULL, 0);
++            if (ret < 0)
++                return ret;
++        }
++
++        dec_ctx->hwframe = av_hwframe_ctx_alloc(dec_ctx->hwdevice);
++        if (!dec_ctx->hwframe) {
++            av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_alloc failed\n");
++            ret = AVERROR(ENOMEM);
++            goto error;
++        }
++
++        hw_frames_ctx = (AVHWFramesContext*)dec_ctx->hwframe->data;
++    }
++
++    if (!hw_frames_ctx->pool) {
++        if((avctx->width == 0) || (avctx->height == 0)) {
++            avctx->sw_pix_fmt = -1;
++            avctx->width = 3840;
++            avctx->height = 2160;
++        }
++        hw_frames_ctx->format = AV_PIX_FMT_VSV;
++        hw_frames_ctx->sw_format = avctx->sw_pix_fmt;
++        hw_frames_ctx->width = avctx->width;
++        hw_frames_ctx->height = avctx->height;
++
++        if ((ret = av_hwframe_ctx_init(dec_ctx->hwframe)) < 0) {
++            av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_init failed\n");
++            goto error;
++        }
++    }
++    return 0;
++error:
++    av_log(avctx, AV_LOG_ERROR, "av_hwframe_ctx_init failed\n");
++    return ret;
++}
++
++
++void tile2raster(uint8_t *in, uint8_t *out, uint32_t pic_width, uint32_t pic_height, uint32_t tile_stride)
++{
++    uint32_t i, j;
++    uint32_t k, l;
++    uint32_t s, t;
++
++    const uint32_t tile_width = 4, tile_height = 4;
++    for (i = 0; i < pic_height; i += tile_height) {
++        t = 0;
++        s = 0;
++        for (j = 0; j < pic_width; j += tile_width) {
++            /* copy this tile */
++            for (k = 0; k < tile_height; ++k) {
++                for (l = 0; l < tile_width; ++l)
++                    out[k * pic_width + l + s] = in[t++];
++            }
++            /* move to next horizontal tile */
++            s += tile_width;
++        }
++        out += pic_width * tile_height;
++        in += tile_stride;
++    }
++}
++
++
++int ff_vsv_dec_output_frame(AVCodecContext *avctx, AVFrame *out,
++                            struct DecPicturePpu *decoded_pic)
++{
++    int ret = -1;
++    int i;
++    VSVDECContext *dec_ctx  = avctx->priv_data;
++    AVVSVFramesContext *frame_hwctx;
++    AVHWFramesContext *hwframe_ctx;
++    struct DecPicturePpu *pic = av_mallocz(sizeof(*pic));
++    AVHWDeviceContext *dev_ctx = (AVHWDeviceContext *)dec_ctx->hwdevice->data;
++    AVVSVDeviceContext *vdev_ctx = (AVVSVDeviceContext *)dev_ctx->hwctx;
++
++    if(!pic)
++        return AVERROR(ENOMEM);
++    memcpy(pic,decoded_pic,sizeof(struct DecPicturePpu));
++
++    av_log(avctx, AV_LOG_DEBUG, "dec output pic @: %p\n",pic);
++    report_dec_pic_info(avctx,pic);
++
++    dec_ctx->cycle_count += pic->pictures[0].picture_info.cycles_per_mb;
++
++    ret = ff_decode_frame_props(avctx, out);
++    if (ret < 0) {
++        av_log(avctx, AV_LOG_ERROR, "ff_decode_frame_props failed\n");
++        return ret;
++    }
++    out->format = AV_PIX_FMT_NV12;
++    out->width = pic->pictures[0].sequence_info.crop_params.crop_out_width;
++    out->height = pic->pictures[0].sequence_info.crop_params.crop_out_height;
++    out->linesize[0] = pic->pictures[0].pic_width;
++    out->linesize[1] = pic->pictures[0].pic_width;
++    out->key_frame = (pic->pictures[0].picture_info.pic_coding_type == DEC_PIC_TYPE_I);
++    out->opaque_ref = av_buffer_allocz(sizeof(VSVFramePriv));
++    if (out->opaque_ref == NULL)
++        goto err_exit;
++    out->opaque = out->opaque_ref->data;
++
++    for (i = 0; i < 4; i++) {
++        PpUnitConfig * pp = &dec_ctx->vsv_dec_config.ppu_cfg[i];
++        if (pp->enabled == 1) {
++            pic->pictures[i].pp_enabled = 1;
++            av_log(avctx, AV_LOG_DEBUG,
++                   "pic.pictures[%d].pp_enabled = %d,comperss_status=%d\n",
++                   i,pic->pictures[i].pp_enabled,pic->pictures[i].pic_compressed_status);
++        } else {
++            pic->pictures[i].pp_enabled = 0;
++        }
++    }
++
++    for (i = 0; i < 4; i++) {
++        av_log(avctx, AV_LOG_DEBUG,
++               "pic.pictures[%d].pp_enabled = %d,comperss_status=%d,bit_depth_luma=%d\n",
++               i,pic->pictures[i].pp_enabled,pic->pictures[i].pic_compressed_status,
++               pic->pictures[i].sequence_info.bit_depth_luma);
++    }
++
++    av_log(avctx, AV_LOG_DEBUG, "dec_ctx->hwframe = %p\n", dec_ctx->hwframe);
++    hwframe_ctx = (AVHWFramesContext *)dec_ctx->hwframe->data;
++    av_log(avctx, AV_LOG_DEBUG, "hwframe_ctx = %p\n", hwframe_ctx);
++    frame_hwctx = hwframe_ctx->hwctx;
++    av_log(avctx, AV_LOG_DEBUG, "frame_hwctx = %p\n", frame_hwctx);
++
++    av_log(avctx, AV_LOG_DEBUG, "dec_ctx->picRdy = 1\n");
++
++    for (i = 0; i < 4; i++) {
++        PpUnitConfig * pp = &dec_ctx->vsv_dec_config.ppu_cfg[i];
++        frame_hwctx->pic_info[i].enabled = pic->pictures[i].pp_enabled;
++        frame_hwctx->pic_info[i].width = pp->scale.enabled ? pp->scale.width
++            : (pp->crop.enabled ? pp->crop.width : avctx->width);
++        frame_hwctx->pic_info[i].height = pp->scale.enabled ? pp->scale.height
++            : (pp->crop.enabled ? pp->crop.height : avctx->height);
++    }
++
++    av_log(avctx, AV_LOG_DEBUG, "[%d(%dx%d)][%d(%dx%d)][%d(%dx%d)][%d(%dx%d)]\n",
++           frame_hwctx->pic_info[0].enabled, frame_hwctx->pic_info[0].width,
++           frame_hwctx->pic_info[0].height,
++           frame_hwctx->pic_info[1].enabled, frame_hwctx->pic_info[1].width,
++           frame_hwctx->pic_info[1].height,
++           frame_hwctx->pic_info[2].enabled, frame_hwctx->pic_info[2].width,
++           frame_hwctx->pic_info[2].height,
++           frame_hwctx->pic_info[3].enabled, frame_hwctx->pic_info[3].width,
++           frame_hwctx->pic_info[3].height);
++
++    if (!dec_ctx->hw_ppu_initialized) {
++        vdev_ctx->pic_ppu = *pic;
++        dec_ctx->hw_ppu_initialized = 1;
++    }
++    
++    int stride_luma = pic->pictures[0].pic_stride;
++    int stride_chroma = pic->pictures[0].pic_stride_ch;
++    const u32* luma_addr = pic->pictures[0].luma.virtual_address;
++    const u32* chroma_addr = pic->pictures[0].chroma.virtual_address;
++
++    if(!out->data[0]){
++        out->data[0] = (uint8_t*)malloc(sizeof(uint8_t)*out->width*out->height);
++    }
++    if(!out->data[1]){
++        out->data[1] = (uint8_t*)malloc(sizeof(uint8_t)*out->width*out->height / 2);
++    }
++       
++
++    memcpy(out->data[0], luma_addr, out->width*out->height);
++    memcpy(out->data[1], chroma_addr, out->width*out->height/2);
++    //tile2raster((uint8_t *)luma_addr, out->data[0], out->width, out->height, stride_luma);
++    //tile2raster((uint8_t *)chroma_addr, out->data[1], out->width, out->height/2, stride_chroma);
++ 
++    out->buf[0] = av_buffer_create(out->data[0],
++                                   sizeof(uint8_t)*out->width*out->height,
++                                   dec_ctx->vsv_decode_picture_consume,
++                                   dec_ctx, AV_BUFFER_FLAG_READONLY);
++    out->buf[1] = av_buffer_create(out->data[1],
++                                   sizeof(uint8_t)*out->width*out->height / 2,
++                                   dec_ctx->vsv_decode_picture_consume,
++                                   dec_ctx, AV_BUFFER_FLAG_READONLY);
++    if (out->buf[0] == NULL || out->buf[1] == NULL) {
++        goto err_exit;
++    }
++    av_log(avctx, AV_LOG_DEBUG, "frame ref count %d for %p\n",
++           av_buffer_get_ref_count(out->buf[0]), out->buf[0]->data);
++    out->hw_frames_ctx = av_buffer_ref(dec_ctx->hwframe);
++    if (out->hw_frames_ctx == NULL) {
++        goto err_exit;
++    }
++
++    add_dec_pic_wait_consume_list(dec_ctx,pic);
++
++    return 0;
++err_exit:
++
++    return -1;
++}
++
++int ff_vsv_dec_parse_scale(AVCodecContext *avctx)
++{
++    int i;
++    char strs[MAX_SEG_NUM][256];
++    char *pstrs[MAX_SEG_NUM];
++    int seg_num = 0;
++    char *p, *cp;
++    VSVDECContext *dec_ctx = avctx->priv_data;
++
++    for (i = 0; i < MAX_SEG_NUM; i++)
++        pstrs[i] = &strs[i][0];
++
++    if (dec_ctx->pp_setting) {
++        seg_num = split_string((char **) &pstrs, (int) MAX_SEG_NUM,
++                dec_ctx->pp_setting, "()");
++        if (seg_num <= 0) {
++            av_log(NULL, AV_LOG_DEBUG, "Can't find scale info!\n");
++            return -1;
++        }
++    }
++
++    dec_ctx->scales_num = 0;
++    while (dec_ctx->scales_num < seg_num) {
++        cp = strs[dec_ctx->scales_num];
++        if ((p = strchr(cp, ',')) != NULL) {
++            dec_ctx->scales[dec_ctx->scales_num].x = atoi(cp);
++            cp = p + 1;
++            if ((p = strchr(cp, ',')) != NULL) {
++                dec_ctx->scales[dec_ctx->scales_num].y = atoi(cp);
++                cp = p + 1;
++                if ((p = strchr(cp, ',')) != NULL) {
++                    dec_ctx->scales[dec_ctx->scales_num].cw = atoi(cp);
++                    dec_ctx->scales[dec_ctx->scales_num].ch = atoi(p + 1);
++                    cp = p + 1;
++                    if ((p = strchr(cp, ',')) != NULL) {
++                        cp = p + 1;
++                    } else if (dec_ctx->scales_num != 0) {
++                        return -1;
++                    }
++                } else {
++                    return -1;
++                }
++            } else {
++                return -1;
++            }
++        }
++        if ((p = strchr(cp, 'x')) == NULL) {
++            if (cp[0] == 'd') {
++                int n = atoi(cp + 1);
++                if (n != 2 && n != 4 && n != 8)
++                    return -1;
++                dec_ctx->scales[dec_ctx->scales_num].sw = -n;
++                dec_ctx->scales[dec_ctx->scales_num].sh = -n;
++            } else if (dec_ctx->scales_num != 0) {
++                return -1;
++            }
++        } else {
++            dec_ctx->scales[dec_ctx->scales_num].sw = atoi(cp);
++            dec_ctx->scales[dec_ctx->scales_num].sh = atoi(p + 1);
++        }
++        if (dec_ctx->scales[dec_ctx->scales_num].sw == -1
++                && dec_ctx->scales[dec_ctx->scales_num].sh == -1) {
++            av_log(avctx, AV_LOG_DEBUG, "Resize -1x-1 error!\n");
++            return -1;
++        }
++        av_log(avctx, AV_LOG_DEBUG, "Get scale %d %d,%d,%d,%d,%d x %d\n",
++                dec_ctx->scales_num, dec_ctx->scales[dec_ctx->scales_num].x,
++                dec_ctx->scales[dec_ctx->scales_num].y,
++                dec_ctx->scales[dec_ctx->scales_num].cw,
++                dec_ctx->scales[dec_ctx->scales_num].ch,
++                dec_ctx->scales[dec_ctx->scales_num].sw,
++                dec_ctx->scales[dec_ctx->scales_num].sh);
++        dec_ctx->scales_num++;
++    }
++
++    return 0;
++}
++
++int ff_vsv_dec_send_avpkt_to_decode_buffer(AVCodecContext *avctx, AVPacket *avpkt,
++                                           struct DWLLinearMem stream_buffer)
++{
++    VSVDECContext *dec_ctx  = avctx->priv_data;
++    int ret = 0;
++
++    if (avpkt->data && avpkt->size)
++        memcpy((uint8_t*)stream_buffer.virtual_address, avpkt->data, avpkt->size);
++
++#ifdef  NEW_MEM_ALLOC
++    if( stream_buffer.bus_address_rc != 0) {
++        ret = dwl_edma_rc2ep_nolink(dec_ctx->dwl_inst, stream_buffer.bus_address_rc,
++                                    stream_buffer.bus_address, stream_buffer.size);
++    }
++#endif
++
++    return ret;
++}
++
++int ff_vsv_dec_set_buffer_number_for_trans(AVCodecContext *avctx)
++{
++    VSVDECContext *dec_ctx  = avctx->priv_data;
++
++    if(dec_ctx->buffer_depth > 40) {
++        av_log(avctx, AV_LOG_ERROR,
++               "%s %d SHOULED set buffer-depth for transcode [0,40]\n",
++               __func__,__LINE__);
++        return -1;
++    }
++
++    if(strcmp(dec_ctx->enc_format, "") != 0) {
++        if ((strcmp(dec_ctx->enc_format, "vp9") == 0) && (dec_ctx->buffer_depth > 25)) {
++            av_log(avctx, AV_LOG_ERROR,
++                   "when transoode to vp9 buffer_depth(%d) should <= 25 !\n",
++                   dec_ctx->buffer_depth);
++            return -1;
++        } else if (strcmp(dec_ctx->enc_format, "h264") == 0) {
++            if(dec_ctx->buffer_depth > 20) {//live
++                av_log(avctx, AV_LOG_ERROR,
++                       "Max lookaheadDepth is %d, and it's not suitable for \"LIVE\"!\n",
++                       dec_ctx->buffer_depth);
++                return -1;
++            }
++        }
++
++        if(strcmp(dec_ctx->enc_format, "vp9") == 0) {
++            if(dec_ctx->buffer_depth < 2) {
++                dec_ctx->use_extra_buffers_num = 10+4;
++            } else {
++                dec_ctx->use_extra_buffers_num = 12 + dec_ctx->buffer_depth;
++            }
++        } else {
++            if(dec_ctx->buffer_depth == 0)
++                dec_ctx->use_extra_buffers_num = 8+2;
++            else
++                dec_ctx->use_extra_buffers_num = 17 + dec_ctx->buffer_depth;
++        }
++
++    } else
++        dec_ctx->use_extra_buffers_num = 52;
++    av_log(avctx, AV_LOG_DEBUG,
++           "%s %d dec_ctx->buffer_depth=%d, dec_ctx->use_extra_buffers_num=%d \n",
++           __func__,__LINE__,
++           dec_ctx->buffer_depth,dec_ctx->use_extra_buffers_num);
++
++    return 0;
++}
++
++int ff_vsv_dec_modify_config_by_sequence_info(AVCodecContext *avctx)
++{
++    VSVDECContext *dec_ctx  = avctx->priv_data;
++    enum DecRet rv_info;
++
++    /* process pp size -1/-2/-4/-8. */
++    struct DecConfig *config = &dec_ctx->vsv_dec_config;
++    int i;
++    uint32_t alignh = dec_ctx->sequence_info.is_interlaced ? 4 : 2;
++    uint32_t alignw = 2;
++
++    double sr[4],sr_sum=0;
++    double sr_p[4],sr_p_sum=0;
++    int max_input_pic_h = 1080; // for FB, this is 1080.
++    int max_output_pic_h[4] = {0, 1080, 720, 360}; // for FB, it is {0, 1080, 720, 360}
++    int ppmax_output_pic_h[4] = {0, 0, 1280, 640}; // for FB, it is {0, 1080, 720, 360}
++    int shaper_en_num=0;
++
++    for (i = 1; i < 4; i++) {
++        if (config->ppu_cfg[i].scale.width == -1
++            || config->ppu_cfg[i].scale.width == -2
++            || config->ppu_cfg[i].scale.width == -4
++            || config->ppu_cfg[i].scale.width == -8
++            || config->ppu_cfg[i].scale.height == -1
++            || config->ppu_cfg[i].scale.height == -2
++            || config->ppu_cfg[i].scale.height == -4
++            || config->ppu_cfg[i].scale.height == -8) {
++
++            uint32_t original_width = dec_ctx->sequence_info.pic_width;
++            uint32_t original_height = dec_ctx->sequence_info.pic_height;
++            if (config->ppu_cfg[i].scale.width == -1
++                && config->ppu_cfg[i].scale.height == -1) {
++                rv_info = DEC_INFOPARAM_ERROR;
++                break;
++            }
++            if (dec_ctx->sequence_info.crop_params.crop_out_width != original_width)
++                original_width = dec_ctx->sequence_info.crop_params.crop_out_width;
++            if (dec_ctx->sequence_info.crop_params.crop_out_height != original_height)
++                original_height = dec_ctx->sequence_info.crop_params.crop_out_height;
++            if (config->ppu_cfg[i].crop.enabled) {
++                if (config->ppu_cfg[i].crop.width != original_width) {
++                    original_width = config->ppu_cfg[i].crop.width;
++                }
++                if (config->ppu_cfg[i].crop.height != original_height) {
++                    original_height = config->ppu_cfg[i].crop.height;
++                }
++            }
++            av_log(avctx,AV_LOG_DEBUG,"original_width = %d, original_height = %d\n",
++                   original_width, original_height);
++            if (config->ppu_cfg[i].scale.width == -1) {
++                config->ppu_cfg[i].scale.width =
++                    NEXT_MULTIPLE((original_width
++                                   * config->ppu_cfg[i].scale.height)/original_height, alignw);
++                config->ppu_cfg[i].scale.height =
++                    NEXT_MULTIPLE(config->ppu_cfg[i].scale.height, alignh);
++            } else if (config->ppu_cfg[i].scale.height == -1) {
++                config->ppu_cfg[i].scale.width =
++                    NEXT_MULTIPLE(config->ppu_cfg[i].scale.width, alignw);
++                config->ppu_cfg[i].scale.height =
++                    NEXT_MULTIPLE((original_height
++                                   * config->ppu_cfg[i].scale.width)/original_width, alignh);
++            } else if (config->ppu_cfg[i].scale.width == -2
++                       && config->ppu_cfg[i].scale.height == -2) {
++                config->ppu_cfg[i].scale.width =
++                    NEXT_MULTIPLE(original_width / 2, alignw);
++                config->ppu_cfg[i].scale.height =
++                    NEXT_MULTIPLE(original_height / 2, alignh);
++            } else if (config->ppu_cfg[i].scale.width == -4
++                       && config->ppu_cfg[i].scale.height == -4) {
++                config->ppu_cfg[i].scale.width =
++                    NEXT_MULTIPLE(original_width / 4, alignw);
++                config->ppu_cfg[i].scale.height =
++                    NEXT_MULTIPLE(original_height / 4, alignh);
++            } else if (config->ppu_cfg[i].scale.width == -8
++                       && config->ppu_cfg[i].scale.height == -8) {
++                config->ppu_cfg[i].scale.width =
++                    NEXT_MULTIPLE(original_width / 8, alignw);
++                config->ppu_cfg[i].scale.height =
++                    NEXT_MULTIPLE(original_height / 8, alignh);
++            } else {
++                rv_info = DEC_INFOPARAM_ERROR;
++                break;
++            }
++        }
++    }
++
++    /* Ajust user cropping params based on cropping params from sequence info. */
++    if (dec_ctx->sequence_info.crop_params.crop_left_offset != 0
++        || dec_ctx->sequence_info.crop_params.crop_top_offset != 0
++        || dec_ctx->sequence_info.crop_params.crop_out_width != dec_ctx->sequence_info.pic_width
++        || dec_ctx->sequence_info.crop_params.crop_out_height != dec_ctx->sequence_info.pic_height) {
++            for (i = 1; i < 4; i++) {
++                if (!config->ppu_cfg[i].enabled)
++                    continue;
++
++            if (!config->ppu_cfg[i].crop.enabled) {
++                config->ppu_cfg[i].crop.x = dec_ctx->sequence_info.crop_params.crop_left_offset;
++                config->ppu_cfg[i].crop.y = dec_ctx->sequence_info.crop_params.crop_top_offset;
++                config->ppu_cfg[i].crop.width =
++                    NEXT_MULTIPLE(dec_ctx->sequence_info.crop_params.crop_out_width, 2);
++                config->ppu_cfg[i].crop.height =
++                    NEXT_MULTIPLE(dec_ctx->sequence_info.crop_params.crop_out_height, 2);
++            } else {
++                config->ppu_cfg[i].crop.x += dec_ctx->sequence_info.crop_params.crop_left_offset;
++                config->ppu_cfg[i].crop.y += dec_ctx->sequence_info.crop_params.crop_top_offset;
++                if(!config->ppu_cfg[i].crop.width)
++                    config->ppu_cfg[i].crop.width =
++                        dec_ctx->sequence_info.crop_params.crop_out_width;
++                if(!config->ppu_cfg[i].crop.height)
++                    config->ppu_cfg[i].crop.height =
++                        dec_ctx->sequence_info.crop_params.crop_out_height;
++            }
++            config->ppu_cfg[i].enabled = 1;
++            config->ppu_cfg[i].crop.enabled = 1;
++        }
++    }
++    {
++        // for bypass mode or 10bit case use pp0 datapath for performance
++        if (config->ppu_cfg[0].enabled == 2) {
++            av_log(avctx,AV_LOG_DEBUG,
++                   "dec_ctx->sequence_info.bit_depth_luma = %d, dec_ctx->sequence_info.bit_depth_chroma = %d\n",
++                    dec_ctx->sequence_info.bit_depth_luma, dec_ctx->sequence_info.bit_depth_chroma);
++            if (dec_ctx->sequence_info.bit_depth_luma > 8
++                || dec_ctx->sequence_info.bit_depth_chroma > 8) {
++                av_log(avctx,AV_LOG_DEBUG,"adaptive to enable pp0\n");
++                config->ppu_cfg[0].enabled = 1;
++            } else {
++                av_log(avctx,AV_LOG_DEBUG,"adaptive to disable pp0\n");
++                config->ppu_cfg[0].enabled = 0;
++            }
++        }
++    }
++
++    //check PP setting legal
++    rv_info = DEC_OK;
++    for(i=0; i<4; i++) {
++        if(config->ppu_cfg[i].enabled == 1) {
++            if(ppmax_output_pic_h[i] == 0 ) {
++                if((config->ppu_cfg[i].scale.height > dec_ctx->sequence_info.pic_height)
++                    ||(config->ppu_cfg[i].scale.width > dec_ctx->sequence_info.pic_width)) {
++                    av_log(avctx,AV_LOG_DEBUG,
++                           "PP[%d] Height setting is illegal: %d > MAX (%d)\n",i,
++                           config->ppu_cfg[i].scale.height,ppmax_output_pic_h[i]==0
++                           ? dec_ctx->sequence_info.pic_height : ppmax_output_pic_h[i]);
++                    rv_info = DEC_INFOPARAM_ERROR;
++                    break;
++                }
++            } else {
++                if((config->ppu_cfg[i].scale.height > ppmax_output_pic_h[i])
++                    ||(config->ppu_cfg[i].scale.width > ppmax_output_pic_h[i])) {
++                    av_log(avctx,AV_LOG_DEBUG,
++                           "PP[%d] Height setting is illegal: %d > MAX (%d)\n",i,
++                           config->ppu_cfg[i].scale.height,ppmax_output_pic_h[i]==0
++                           ? dec_ctx->sequence_info.pic_height : ppmax_output_pic_h[i]);
++                    rv_info = DEC_INFOPARAM_ERROR;
++                    break;
++                }
++            }
++        }
++    }
++    if(rv_info == DEC_INFOPARAM_ERROR) {
++        return -1;
++    }
++
++    if(dec_ctx->disable_dec400) {
++        //disable all shaper for pp
++        ff_vsv_dec_disable_all_pp_shaper(&dec_ctx->vsv_dec_config);
++    } else {
++        //check SR ratio capability
++        if(dec_ctx->sequence_info.pic_height > 1088)
++            shaper_en_num = 3;
++        else
++            shaper_en_num = 2;
++
++        for(i=0; i<4; i++) {
++            sr[i] = (double)max_output_pic_h[i]/max_input_pic_h;
++            sr_sum += sr[i];
++        }
++
++        for(i=0; i<4; i++) {
++            if(config->ppu_cfg[i].enabled == 1) {
++                //10bit stream disable shaper when shaper_enabled = 2
++                if((i == 0)&&(config->ppu_cfg[i].shaper_enabled == 2)) {
++                    if((dec_ctx->sequence_info.bit_depth_luma > 8)
++                        ||(dec_ctx->sequence_info.bit_depth_chroma > 8)) {
++                        config->ppu_cfg[i].shaper_enabled = 0;//disable when 10bit
++                        continue;
++                    } else {
++                        config->ppu_cfg[i].shaper_enabled = 1;//enable when 8bit
++                    }
++                }
++
++                if (config->ppu_cfg[i].scale.enabled == 0) {
++                    sr_p[i] = 1;
++                } else if (config->ppu_cfg[i].crop.enabled) {
++                    sr_p[i] = (double)config->ppu_cfg[i].scale.height/config->ppu_cfg[i].crop.height;
++                } else {
++                    sr_p[i] = (double)config->ppu_cfg[i].scale.height/dec_ctx->sequence_info.pic_height;
++                }
++                sr_p_sum += sr_p[i];
++            }
++            av_log(avctx,AV_LOG_DEBUG,"PP%d enabled=%d,SR_sum=%f,SR_P_sum=%f\n",
++                   i,config->ppu_cfg[i].enabled,sr_sum,sr_p_sum);
++            if((shaper_en_num > 0)
++               &&(sr_p_sum < sr_sum)
++               &&(config->ppu_cfg[i].enabled == 1)) {
++                config->ppu_cfg[i].shaper_enabled = 1;
++                shaper_en_num --;
++            } else
++              config->ppu_cfg[i].shaper_enabled = 0;
++        }
++
++    }
++    av_log(avctx,AV_LOG_DEBUG,"in %s : %d ppu cfg :\n",__func__,__LINE__);
++
++    if(dec_ctx->sequence_info.is_interlaced) {
++        config->ppu_cfg[0].enabled = 1;
++        for(int i=0;i<4;i++) {
++            if(config->ppu_cfg[i].enabled == 1) {
++                config->ppu_cfg[i].tiled_e = 0;
++                config->ppu_cfg[i].shaper_enabled = 0;
++                config->ppu_cfg[i].align = DEC_ALIGN_1024B;
++            }
++        }
++    }
++
++    for(i=0;i<4;i++) {
++        av_log(avctx,AV_LOG_DEBUG,"ppu_cfg[%d].enabled = %d\n",i,
++               config->ppu_cfg[i].enabled);
++        av_log(avctx,AV_LOG_DEBUG,"ppu_cfg[%d].tiled_e = %d\n",i,
++               config->ppu_cfg[i].tiled_e);
++        av_log(avctx,AV_LOG_DEBUG,"ppu_cfg[%d].scale.enabled = %d\n"
++               ,i,config->ppu_cfg[i].scale.enabled);
++        av_log(avctx,AV_LOG_DEBUG,"ppu_cfg[%d].scale.width = %d\n",
++               i,config->ppu_cfg[i].scale.width);
++        av_log(avctx,AV_LOG_DEBUG,"ppu_cfg[%d].scale.height = %d\n",
++               i,config->ppu_cfg[i].scale.height);
++        av_log(avctx,AV_LOG_DEBUG,"ppu_cfg[%d].out_p010 = %d\n",
++               i,config->ppu_cfg[i].out_p010);
++        av_log(avctx,AV_LOG_DEBUG,"ppu_cfg[%d].align = %d\n",i,
++               config->ppu_cfg[i].align);
++        av_log(avctx,AV_LOG_DEBUG,"ppu_cfg[%d].shaper_enabled = %d\n",
++               i,config->ppu_cfg[i].shaper_enabled);
++        av_log(avctx,AV_LOG_DEBUG,"\n");
++    }
++    return 0;
++}
++
++void ff_vsv_dec_performance_report(AVCodecContext *avctx)
++{
++    VSVDECContext *dec_ctx  = avctx->priv_data;
++    int i;
++    char info_string[2048];
++
++    if (dec_ctx) {
++
++#ifndef BUILD_CMODEL
++        struct statistic dec_statistic = {0};
++        dec_statistic.frame_count = dec_ctx->pic_display_number;
++        if (dec_ctx->pic_display_number) {
++            dec_statistic.cycle_mb_avg =
++                dec_ctx->cycle_count/dec_ctx->pic_display_number;
++            //DWLGetCoreStatistic(dec_ctx->dwl_inst, &dec_statistic.total_usage,
++            //        (int32_t *) &dec_statistic.core_usage_counts);
++#ifdef FB_PERFORMANCE_STATIC
++            dec_statistic.hw_real_time_avg =
++                DWLGetHwPerformance(dec_ctx->dwl_inst) / dec_statistic.frame_count;
++            dec_statistic.hw_real_time_avg_remove_overlap =
++                DWLGetHwPerformanceRemoveOverlap(dec_ctx->dwl_inst) / dec_statistic.frame_count;
++#endif
++        }
++#endif
++
++        sprintf(&info_string[0], ":::DEC    : %d frames, %d Cycles/MB, %d us/frame, %.2f fps",
++                dec_statistic.frame_count,
++                dec_statistic.cycle_mb_avg,
++                dec_statistic.hw_real_time_avg,
++                (dec_statistic.hw_real_time_avg == 0)
++                    ? 0.0 : 1000000.0/((double)dec_statistic.hw_real_time_avg));
++
++        if (dec_statistic.hw_real_time_avg - dec_statistic.hw_real_time_avg_remove_overlap > 10) {
++            sprintf(&info_string[strlen(info_string)], ", remove overlap : %d us/frame, %.2f fps",
++                    dec_statistic.hw_real_time_avg_remove_overlap,
++                    (dec_statistic.hw_real_time_avg_remove_overlap == 0)
++                        ? 0.0 : 1000000.0/((double)dec_statistic.hw_real_time_avg_remove_overlap));
++        }
++
++        av_log(avctx, AV_LOG_INFO, "%s\n", info_string);
++
++        av_log(avctx, AV_LOG_INFO, ":::DEC Multi-core usage statistics:\n");
++
++        if (dec_statistic.total_usage == 0)
++            dec_statistic.total_usage = 1;
++        for (i = 0; i < 4; i++) {
++            av_log(avctx, AV_LOG_INFO, "\tSlice[%d] Core[%d] used %6d times (%2d%%)\n",
++                   i/2, i%2, dec_statistic.core_usage_counts[i],
++                   (dec_statistic.core_usage_counts[i] * 100) / dec_statistic.total_usage);
++        }
++
++#ifdef FB_SYSLOG_ENABLE
++        VSV_DEC_INFO_PRINT("%s\n", info_string);
++        VSV_DEC_INFO_PRINT(":::DEC Multi-core usage statistics:\n");
++        for (i = 0; i < 4; i++) {
++            VSV_DEC_INFO_PRINT("\tSlice[%d] Core[%d] used %6d times (%2d%%)\n", 
++                                  i/2, i%2, dec_statistic.core_usage_counts[i],
++                                  (dec_statistic.core_usage_counts[i] * 100) / dec_statistic.total_usage);
++        }
++#endif
++
++    }
++}
++
++void ff_vsv_dec_disable_all_pp_shaper(struct DecConfig *config)
++{
++    int i;
++    if(!config)
++        return;
++    for(i=0;i<4;i++)
++        config->ppu_cfg[i].shaper_enabled = 0;
++}
++
++void ff_vsv_dec_print_return(AVCodecContext *avctx,int32_t retval)
++{
++    static int32_t prev_retval = 0xFFFFFF;
++    if (prev_retval != retval ||
++    (prev_retval != DEC_NO_DECODING_BUFFER &&
++    prev_retval != DEC_PENDING_FLUSH))
++        av_log(avctx, AV_LOG_DEBUG, "TB: DecDecode returned: ");
++    switch (retval) {
++        case DEC_OK:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_OK\n");
++            break;
++        case DEC_NONREF_PIC_SKIPPED:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_NONREF_PIC_SKIPPED\n");
++            break;
++        case DEC_STRM_PROCESSED:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_STRM_PROCESSED\n");
++            break;
++        case DEC_BUF_EMPTY:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_BUF_EMPTY\n");
++            break;
++        case DEC_NO_DECODING_BUFFER:
++            /* There may be too much DEC_NO_DECODING_BUFFER.
++            Only print for the 1st time. */
++            if (prev_retval != DEC_NO_DECODING_BUFFER)
++                av_log(avctx, AV_LOG_DEBUG, "DEC_NO_DECODING_BUFFER\n");
++            break;
++        case DEC_PIC_RDY:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_PIC_RDY\n");
++            break;
++        case DEC_PIC_DECODED:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_PIC_DECODED\n");
++            break;
++        case DEC_ADVANCED_TOOLS:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_ADVANCED_TOOLS\n");
++            break;
++        case DEC_HDRS_RDY:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_HDRS_RDY\n");
++            break;
++        case DEC_STREAM_NOT_SUPPORTED:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_STREAM_NOT_SUPPORTED\n");
++            break;
++        case DEC_DWL_ERROR:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_DWL_ERROR\n");
++            break;
++        case DEC_STRM_ERROR:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_STRM_ERROR\n");
++            break;
++        case DEC_HW_TIMEOUT:
++            av_log(avctx, AV_LOG_DEBUG, "DEC_HW_TIMEOUT\n");
++            break;
++        case DEC_PENDING_FLUSH:
++            if (prev_retval != DEC_PENDING_FLUSH)
++                av_log(avctx, AV_LOG_DEBUG, "DEC_PENDING_FLUSH\n");
++            break;
++        default:
++            av_log(avctx, AV_LOG_DEBUG, "Other %d\n", retval);
++            break;
++    }
++    prev_retval = retval;
++}
++
++void ff_vsv_dec_init_log_header(AVCodecContext *avctx)
++{
++    VSVDECContext *dec_ctx = avctx->priv_data;
++
++#ifdef FB_SYSLOG_ENABLE
++    static char module_name[] = "DEC";
++    if(strlen(dec_ctx->module_name))
++        dec_ctx->log_header.module_name = dec_ctx->module_name;
++    else
++        dec_ctx->log_header.module_name = module_name;
++    dec_ctx->log_header.device_id = get_deviceId(dec_ctx->dev_name);
++#endif
++}
++
++int ff_vsv_dec_init_ppu_cfg(AVCodecContext *avctx,PpUnitConfig *ppu_cfg)
++{
++    VSVDECContext *dec_ctx  = avctx->priv_data;
++    int pp_enabled;
++
++    memset(ppu_cfg,0,sizeof(PpUnitConfig)*DEC_MAX_OUT_COUNT);
++    
++    pp_enabled = 1;
++    
++    if (ppu_cfg[0].crop.enabled == 0 &&
++        avctx->width > 0 && avctx->height > 0)
++    {
++        ppu_cfg[0].enabled = 1;
++        ppu_cfg[0].crop.enabled = 1;
++        ppu_cfg[0].crop.x = 0;
++        ppu_cfg[0].crop.y = 0;
++        ppu_cfg[0].crop.width = avctx->width;
++        ppu_cfg[0].crop.height = avctx->height;
++    }
++
++
++    dec_ctx->pp_enabled = pp_enabled;
++    return 0;
++}
++
++
++
+diff --git a/libavcodec/vsv_decode.h b/libavcodec/vsv_decode.h
+new file mode 100644
+index 0000000..0ab1100
+--- /dev/null
++++ b/libavcodec/vsv_decode.h
+@@ -0,0 +1,253 @@
++/*
++ * Copyright (C) 2019  VeriSilicon
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#ifndef AVCODEC_VSV_DECODE_H
++#define AVCODEC_VSV_DECODE_H
++
++//#include<deccfg.h>
++#include "vc8000d/lib/inc/dectypes.h"
++#include "avcodec.h"
++//#include "hwaccel.h"
++#include "internal.h"
++#include "decode.h"
++#include "libavutil/opt.h"
++#include "vc8000d/lib/inc/dwl.h"
++#include "vc8000d/lib/common/ppu.h"
++
++typedef struct SEI_buffer SEI_buffer;
++#define EXTRA_BUFFERS_BASE 17
++
++#define MAX_BUFFERS 78
++#define MAX_WAIT_FOR_CONSUME_BUFFERS 100
++#define MAX_SEG_NUM 4
++
++#ifndef NEXT_MULTIPLE
++#define NEXT_MULTIPLE(value, n) (((value) + (n) - 1) & ~((n) - 1))
++#endif
++
++#ifdef SW_PERFORMANCE
++#define INIT_SW_PERFORMANCE   \
++  double dec_cpu_time = 0;    \
++  clock_t dec_start_time = 0; \
++  clock_t dec_end_time = 0;
++#else
++#define INIT_SW_PERFORMANCE
++#endif
++
++#ifdef SW_PERFORMANCE
++#define START_SW_PERFORMANCE dec_start_time = clock();
++#else
++#define START_SW_PERFORMANCE
++#endif
++
++#ifdef SW_PERFORMANCE
++#define END_SW_PERFORMANCE \
++  dec_end_time = clock();  \
++  dec_cpu_time += ((double)(dec_end_time - dec_start_time)) / CLOCKS_PER_SEC;
++#else
++#define END_SW_PERFORMANCE
++#endif
++
++#ifdef SW_PERFORMANCE
++#define FINALIZE_SW_PERFORMANCE printf("SW_PERFORMANCE %0.5f\n", dec_cpu_time);
++#else
++#define FINALIZE_SW_PERFORMANCE
++#endif
++
++#ifdef SW_PERFORMANCE
++#define FINALIZE_SW_PERFORMANCE_PP \
++  printf("SW_PERFORMANCE_PP %0.5f\n", dec_cpu_time);
++#else
++#define FINALIZE_SW_PERFORMANCE_PP
++#endif
++
++#ifdef FB_SYSLOG_ENABLE
++#include "syslog_sink.h"
++#define VSV_DEC_INFO_PRINT(fmt, ...) FB_SYSLOG((const void *)&dec_ctx->log_header, SYSLOG_SINK_LEV_INFO, (char *)fmt, ## __VA_ARGS__)
++#endif
++
++typedef struct {
++    int x;
++    int y;
++    int cw;
++    int ch;
++    int sw;
++    int sh;
++} Scale;
++
++struct statistic {
++    uint32_t frame_count;
++    uint32_t cycle_mb_avg;
++    double ssim_avg;
++    uint32_t bitrate_avg;
++    uint32_t hw_real_time_avg;
++    uint32_t hw_real_time_avg_remove_overlap;
++    int32_t total_usage;
++    int32_t core_usage_counts[4];
++};
++
++#ifndef BUILD_CMODEL
++//int DWLGetCoreStatistic(const void *instance, int32_t *total_usage,
++//                        int32_t *core_usage);
++#endif
++
++typedef const void *VSVDecInst;
++
++typedef struct {
++    struct DecPicturePpu *pic;
++    uint8_t wait_for_consume;
++}VSVDecPicWaitForConsume;
++
++struct DecOutput {
++    uint8_t* strm_curr_pos;
++    addr_t strm_curr_bus_address;
++    uint32_t data_left;
++    uint8_t* strm_buff;
++    addr_t strm_buff_bus_address;
++    uint32_t buff_size;
++};
++
++typedef struct {
++    const AVClass *class;
++
++    char *pp_setting;
++    char *dev_name;
++    char *enc_format;
++    int disable_dec400;
++    int buffer_depth;
++
++    AVCodecContext *avctx;
++    AVBufferRef *hwdevice;
++    AVBufferRef *hwframe;
++
++#ifdef FB_SYSLOG_ENABLE
++    LOG_INFO_HEADER log_header;
++    char module_name[16];
++#endif
++
++    uint32_t disable_dtrc;
++    uint8_t pp_units_params_from_cmd_valid;
++    uint8_t *stream_stop ;
++
++    uint32_t enable_mc;
++    uint32_t hdrs_rdy;
++    DecPicAlignment align ;  /* default: 128 bytes alignment */
++    uint32_t prev_width;
++    uint32_t prev_height;
++    uint32_t got_package_number;
++
++    uint32_t retry ;
++
++    uint32_t clock_gating ;
++    uint32_t data_discard ;
++    uint32_t latency_comp ;
++    uint32_t output_picture_endian ;
++    uint32_t bus_burst_length ;
++    uint32_t asic_service_priority ;
++    uint32_t output_format ;
++    uint32_t service_merge_disable ;
++
++    uint32_t tiled_output ;
++    uint32_t dpb_mode ;
++    uint32_t pp_enabled ;
++
++    VSVDecInst dec_inst;
++    void *dwl_inst ;
++
++    uint32_t use_extra_buffers_num ;
++    uint32_t buffer_size;
++    uint32_t num_buffers;    /* external buffers allocated yet. */
++    uint32_t min_buffer_num;
++    uint32_t add_buffer_thread_run ;
++    pthread_mutex_t ext_buffer_contro;
++    struct DWLLinearMem ext_buffers[MAX_BUFFERS];
++    uint32_t buffer_consumed[MAX_BUFFERS];
++    uint32_t buffer_release_flag;
++
++    uint32_t pic_display_number;
++    uint32_t pic_decode_number;
++    uint32_t last_pic_flag;
++    uint32_t add_extra_flag;
++    uint32_t pic_size;
++
++    struct DWLInitParam dwl_init;
++
++    enum DecRet rv;
++    /* one extra stream buffer so that we can decode ahead,
++     * and be ready when core has finished
++     */
++    #define MAX_STRM_BUFFERS    (MAX_ASIC_CORES + 1)
++
++    struct DWLLinearMem stream_mem[MAX_STRM_BUFFERS];
++    long int max_strm_len;
++    uint32_t allocated_buffers;
++    uint32_t stream_mem_index;
++
++    struct DecPicturePpu pic;
++    uint32_t hw_ppu_initialized;
++    uint32_t cycle_count; /* Sum of average cycles/mb counts */
++    uint32_t initialized;
++    uint32_t closed;
++    VSVDecPicWaitForConsume wait_for_consume_list[MAX_WAIT_FOR_CONSUME_BUFFERS];
++    uint32_t wait_consume_num;
++    pthread_mutex_t consume_mutex;
++    void (*vsv_decode_picture_consume)(void *opaque, uint8_t *data);
++
++    struct DecConfig vsv_dec_config;
++    struct DecSequenceInfo  sequence_info;
++    Scale scales[4];
++    int scales_num;
++    uint32_t extra_buffer_num; //record extra buffer count
++}VSVDECContext;
++
++uint32_t ff_vsv_dec_del_pic_wait_consume_list(VSVDECContext *dec_ctx, uint8_t *data);
++
++int ff_vsv_dec_init_hwctx(AVCodecContext *avctx);
++
++int ff_vsv_dec_parse_scale(AVCodecContext *avctx);
++
++int ff_vsv_dec_output_frame(AVCodecContext *avctx, AVFrame *out, struct DecPicturePpu *decoded_pic);
++
++int ff_vsv_dec_send_avpkt_to_decode_buffer(AVCodecContext *avctx, AVPacket *avpkt, struct DWLLinearMem stream_buffer);
++
++void ff_vsv_dec_print_return(AVCodecContext *avctx,int32_t retval);
++
++void ff_vsv_dec_disable_all_pp_shaper(struct DecConfig *config);
++
++void ff_vsv_dec_release_ext_buffers(AVCodecContext *avctx);
++
++uint32_t ff_vsv_dec_find_ext_buffer_index(AVCodecContext *avctx, uint32_t *addr);
++
++uint32_t ff_vsv_dec_find_empty_index(AVCodecContext *avctx);
++
++void ff_vsv_dec_performance_report(AVCodecContext *avctx);
++
++int ff_vsv_dec_set_buffer_number_for_trans(AVCodecContext *avctx);
++
++int ff_vsv_dec_modify_config_by_sequence_info(AVCodecContext *avctx);
++
++void ff_vsv_dec_init_log_header(AVCodecContext *avctx);
++
++int ff_vsv_dec_init_ppu_cfg(AVCodecContext *avctx,PpUnitConfig *ppu_cfg);
++void tile2raster(uint8_t *in, uint8_t *out, uint32_t pic_width, uint32_t pic_height, uint32_t tile_stride);
++
++#endif
++
++
+diff --git a/libavcodec/vsv_h264dec.c b/libavcodec/vsv_h264dec.c
+new file mode 100644
+index 0000000..bbf9f48
+--- /dev/null
++++ b/libavcodec/vsv_h264dec.c
+@@ -0,0 +1,761 @@
++/*
++ * Copyright (C) 2019  VeriSilicon
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include "vsv_decode.h"
++#include "vc8000d/lib/inc/h264decapi.h"
++#include "libavutil/hwcontext_vsv.h"
++#include<stdio.h>
++#include<string.h>
++static void set_default_config(AVCodecContext *avctx, enum DecCodec codec)
++{
++    VSVDECContext *dec_ctx = avctx->priv_data;
++
++    if (codec == DEC_H264_H10P) {
++        dec_ctx->vsv_dec_config.mc_cfg.mc_enable = 1;
++        dec_ctx->vsv_dec_config.mc_cfg.stream_consumed_callback = NULL;
++        dec_ctx->vsv_dec_config.use_ringbuffer = 0;
++    } else {
++        dec_ctx->vsv_dec_config.mc_cfg.mc_enable = 0;
++        dec_ctx->vsv_dec_config.mc_cfg.stream_consumed_callback = NULL;
++        dec_ctx->vsv_dec_config.use_ringbuffer = 1;
++    }
++    dec_ctx->vsv_dec_config.disable_picture_reordering = 0;
++    dec_ctx->vsv_dec_config.concealment_mode = DEC_EC_FAST_FREEZE;
++    dec_ctx->vsv_dec_config.align = DEC_ALIGN_1024B;
++    dec_ctx->vsv_dec_config.decoder_mode = DEC_NORMAL;
++    dec_ctx->vsv_dec_config.tile_by_tile = 0;
++    dec_ctx->vsv_dec_config.fscale_cfg.fixed_scale_enabled = 0;
++    dec_ctx->vsv_dec_config.use_video_compressor = 1;
++    dec_ctx->vsv_dec_config.max_num_pics_to_decode = 0;
++    dec_ctx->vsv_dec_config.output_format = DEC_OUT_FRM_TILED_4X4;
++    dec_ctx->vsv_dec_config.use_8bits_output = 0;
++    dec_ctx->vsv_dec_config.use_bige_output = 0;
++    dec_ctx->vsv_dec_config.use_p010_output = 0;
++}
++
++static void free_ext_buffers(AVCodecContext *avctx)
++{
++    VSVDECContext *dec_ctx = avctx->priv_data;
++    int i;
++
++    for (i = 0; i < dec_ctx->num_buffers; i++) {
++        if (dec_ctx->pp_enabled)
++            DWLFreeLinear(dec_ctx->dwl_inst, &dec_ctx->ext_buffers[i]);
++        else
++            DWLFreeRefFrm(dec_ctx->dwl_inst, &dec_ctx->ext_buffers[i]);
++        DWLmemset(&dec_ctx->ext_buffers[i], 0, sizeof(dec_ctx->ext_buffers[i]));
++    }
++}
++
++static enum DecRet h264_picture_consumed_no_dwl(const void *inst, struct DecPicturePpu pic)
++{
++    H264DecPicture hpic;
++    int i;
++
++    memset(&hpic, 0, sizeof(H264DecPicture));
++    /* TODO update chroma luma/chroma base */
++    for (i = 0; i < DEC_MAX_OUT_COUNT; i++){
++        hpic.pictures[i].output_picture = pic.pictures[i].luma.virtual_address;
++        hpic.pictures[i].output_picture_bus_address = pic.pictures[i].luma.bus_address;
++    }
++
++    hpic.is_idr_picture[0] = pic.pictures[0].picture_info.pic_coding_type == DEC_PIC_TYPE_I;
++    return H264DecPictureConsumed(inst, &hpic);
++}
++
++static void h264_picture_consume(void *opaque, uint8_t *data)
++{
++    VSVDECContext *dec_ctx = opaque;
++
++    h264_picture_consumed_no_dwl(dec_ctx->dec_inst, *((struct DecPicturePpu *) data));
++    av_free(data);
++}
++
++static enum DecRet h264_dec_set_info(const void *inst, struct DecConfig cfg, struct DecSequenceInfo* info)
++{
++    struct H264DecConfig h264_cfg;
++    memset(&h264_cfg, 0, sizeof(struct H264DecConfig));
++    h264_cfg.no_output_reordering = cfg.disable_picture_reordering;
++    h264_cfg.decoder_mode = cfg.decoder_mode;
++    memcpy(h264_cfg.ppu_config, cfg.ppu_cfg, sizeof(cfg.ppu_cfg));
++
++    if (cfg.fscale_cfg.fixed_scale_enabled) {
++        /* Convert fixed ratio scale to ppu_config[0] */
++        h264_cfg.ppu_config[0].enabled = 1;
++        if (!cfg.ppu_cfg[0].crop.enabled) {
++            h264_cfg.ppu_config[0].crop.enabled = 1;
++            h264_cfg.ppu_config[0].crop.x = info->crop_params.crop_left_offset;
++            h264_cfg.ppu_config[0].crop.y = info->crop_params.crop_top_offset;
++            h264_cfg.ppu_config[0].crop.width =
++                    info->crop_params.crop_out_width;
++            h264_cfg.ppu_config[0].crop.height =
++                    info->crop_params.crop_out_height;
++        }
++        if (!cfg.ppu_cfg[0].scale.enabled) {
++            h264_cfg.ppu_config[0].scale.enabled = 1;
++            h264_cfg.ppu_config[0].scale.width = h264_cfg.ppu_config[0].crop.width
++                    / cfg.fscale_cfg.down_scale_x;
++            h264_cfg.ppu_config[0].scale.height = h264_cfg.ppu_config[0].crop.height
++                    / cfg.fscale_cfg.down_scale_y;
++        }
++    }
++    h264_cfg.align = cfg.align;
++    h264_cfg.error_conceal = 0;
++    /* TODO(min): assume 1-byte aligned is only applied for pp output */
++    if (h264_cfg.align == DEC_ALIGN_1B)
++        h264_cfg.align = DEC_ALIGN_64B;
++
++    return H264DecSetInfo(inst, &h264_cfg);
++}
++
++static enum DecRet h264_next_picture(const void *inst, struct DecPicturePpu *pic, int64_t *pts)
++{
++    enum DecRet rv;
++    u32 stride, stride_ch, i;
++    H264DecPicture hpic;
++
++#ifdef SUPPORT_DEC400
++    /*add for dec400 tables*/
++    u32 *tile_status_virtual_address = NULL;
++    addr_t tile_status_bus_address=0;
++    u32 tile_status_address_offset = 0;
++#endif
++
++    rv = H264DecNextPicture(inst, &hpic, 0);
++
++    memset(pic, 0, sizeof(struct DecPicturePpu));
++    if (rv != DEC_PIC_RDY)
++        return rv;
++
++    *pts = hpic.pic_id;
++    for (i = 0; i < DEC_MAX_OUT_COUNT; i++) {
++        stride = hpic.pictures[i].pic_stride;
++        stride_ch = hpic.pictures[i].pic_stride_ch;
++        pic->pictures[i].luma.virtual_address = hpic.pictures[i].output_picture;
++        if (hpic.pictures[i].output_format == DEC_OUT_FRM_TILED_4X4) {
++            pic->pictures[i].luma.size = stride * hpic.pictures[i].pic_height / 4;
++            /*sunny correct*/
++            if ((hpic.pictures[i].pic_height / 4) & 1 == 1)
++                pic->pictures[i].chroma.size = stride_ch * (hpic.pictures[i].pic_height / 4 + 1) / 2;
++            else
++                pic->pictures[i].chroma.size = stride_ch * hpic.pictures[i].pic_height / 8;
++
++        } else {
++            pic->pictures[i].luma.size = stride * hpic.pictures[i].pic_height;
++            pic->pictures[i].chroma.size = stride_ch * hpic.pictures[i].pic_height / 2;
++        }
++        /* TODO temporal solution to set chroma base here */
++        pic->pictures[i].chroma.virtual_address = hpic.pictures[i].output_picture_chroma;
++        
++#ifdef SUPPORT_DEC400
++        if (pic->pictures[i].luma.size)    
++        {
++            if(tile_status_bus_address == 0)    
++            {
++                tile_status_virtual_address = pic->pictures[i].luma.virtual_address;
++                tile_status_bus_address = pic->pictures[i].luma.bus_address;
++            }
++            tile_status_address_offset += pic->pictures[i].luma.size;
++            if (pic->pictures[i].chroma.virtual_address)
++                tile_status_address_offset += pic->pictures[i].chroma.size;
++        }
++#endif
++
++        /* TODO(vmr): find out for real also if it is B frame */
++        pic->pictures[i].picture_info.pic_coding_type = hpic.is_idr_picture[0] ? DEC_PIC_TYPE_I : DEC_PIC_TYPE_P;
++        pic->pictures[i].picture_info.format = hpic.pictures[i].output_format;
++        //pic->pictures[i].picture_info.format = DEC_OUT_PIXEL_DEFAULT;
++        pic->pictures[i].picture_info.pic_id = hpic.pic_id;
++        pic->pictures[i].picture_info.decode_id = hpic.decode_id[0];
++        pic->pictures[i].picture_info.cycles_per_mb = hpic.cycles_per_mb;
++        pic->pictures[i].sequence_info.pic_width = hpic.pictures[i].pic_width;
++        pic->pictures[i].sequence_info.pic_height = hpic.pictures[i].pic_height;
++        pic->pictures[i].sequence_info.crop_params.crop_left_offset =
++                hpic.crop_params.crop_left_offset;
++        pic->pictures[i].sequence_info.crop_params.crop_top_offset =
++                hpic.crop_params.crop_top_offset;
++        if (hpic.interlaced) {
++            if (hpic.crop_params.crop_out_width <= hpic.pictures[i].pic_width)
++                pic->pictures[i].sequence_info.crop_params.crop_out_width = hpic.crop_params.crop_out_width;
++            else
++                pic->pictures[i].sequence_info.crop_params.crop_out_width = hpic.pictures[i].pic_width;
++
++            if (hpic.crop_params.crop_out_height <= hpic.pictures[i].pic_height)
++                pic->pictures[i].sequence_info.crop_params.crop_out_height = hpic.crop_params.crop_out_height;
++            else
++                pic->pictures[i].sequence_info.crop_params.crop_out_height = hpic.pictures[i].pic_height;
++
++        } else {
++            pic->pictures[i].sequence_info.crop_params.crop_out_width = hpic.crop_params.crop_out_width;
++            pic->pictures[i].sequence_info.crop_params.crop_out_height = hpic.crop_params.crop_out_height;
++        }
++
++        pic->pictures[i].sequence_info.sar_width = hpic.sar_width;
++        pic->pictures[i].sequence_info.sar_height = hpic.sar_height;
++        pic->pictures[i].sequence_info.video_range = 0;
++        pic->pictures[i].sequence_info.matrix_coefficients = 0;
++        pic->pictures[i].sequence_info.is_mono_chrome = 0;
++        pic->pictures[i].sequence_info.is_interlaced = hpic.interlaced;
++        pic->pictures[i].sequence_info.num_of_ref_frames = 0;
++        pic->pictures[i].sequence_info.bit_depth_luma = hpic.bit_depth_luma;
++        pic->pictures[i].sequence_info.bit_depth_chroma = hpic.bit_depth_chroma;
++        pic->pictures[i].pic_width = hpic.pictures[i].pic_width;
++        pic->pictures[i].pic_height = hpic.pictures[i].pic_height;
++        pic->pictures[i].pp_enabled = 1;
++        pic->pictures[i].sequence_info.pic_stride = hpic.pictures[i].pic_stride;
++        pic->pictures[i].sequence_info.pic_stride_ch = hpic.pictures[i].pic_stride_ch;
++        pic->pictures[i].pic_stride = hpic.pictures[i].pic_stride;
++        pic->pictures[i].pic_stride_ch = hpic.pictures[i].pic_stride_ch;
++    }
++
++    for (i = 0; i < DEC_MAX_OUT_COUNT; i++)    
++    {
++        if (pic->pictures[i].luma.size)    
++        {
++#ifdef SUPPORT_DEC400
++            pic->pictures[i].luma_table.virtual_address = (u32*)((addr_t)tile_status_virtual_address + tile_status_address_offset + DEC400_PPn_Y_TABLE_OFFSET(i));
++            pic->pictures[i].luma_table.bus_address= tile_status_bus_address + tile_status_address_offset+ DEC400_PPn_Y_TABLE_OFFSET(i);
++            pic->pictures[i].luma_table.size = NEXT_MULTIPLE((pic->pictures[i].luma.size / 256 * 4 + 7) / 8, 16);
++            if (pic->pictures[i].chroma.virtual_address)    
++            {
++                pic->pictures[i].chroma_table.virtual_address = (u32*)((addr_t)tile_status_virtual_address + tile_status_address_offset + DEC400_PPn_UV_TABLE_OFFSET(i));
++                pic->pictures[i].chroma_table.bus_address= tile_status_bus_address + tile_status_address_offset+ DEC400_PPn_UV_TABLE_OFFSET(i);
++                pic->pictures[i].chroma_table.size = NEXT_MULTIPLE((pic->pictures[i].chroma.size / 256 * 4 + 7) / 8, 16);
++            }
++            if(IS_PIC_DEC400(hpic.pictures[i].output_format))    
++            {
++                pic->pictures[i].pic_compressed_status = 2;
++            }
++            else    
++            {
++                pic->pictures[i].pic_compressed_status = 0;
++            }
++#else
++            pic->pictures[i].pic_compressed_status = 0;
++#endif
++        }
++    }
++    return rv;
++}
++
++static av_cold int vsv_h264_decode_close(AVCodecContext *avctx);
++
++static av_cold int vsv_h264_decode_init(AVCodecContext *avctx)
++{
++    int ret = 0;
++    VSVDECContext *dec_ctx = avctx->priv_data;
++    H264DecApiVersion dec_api;
++    uint32_t n_cores;
++
++    AVVSVDeviceContext *vsv_device_ctx;
++    AVHWDeviceContext *hw_device_ctx;
++    AVHWFramesContext *hw_frames_ctx;
++    int size, i;
++    H264DecMCConfig mc_init_cfg = { 0 };
++    struct H264DecConfig dec_cfg;
++    memset(&dec_cfg, 0, sizeof(struct H264DecConfig));
++    dec_api = H264DecGetAPIVersion();
++    av_log(avctx, AV_LOG_DEBUG, "X170 H.264 Decoder API v%d.%d\n", dec_api.major, dec_api.minor);
++
++    ret = ff_vsv_dec_init_hwctx(avctx);
++    if (ret < 0)
++        return ret;
++
++    hw_frames_ctx = (AVHWFramesContext *) dec_ctx->hwframe->data;
++    hw_device_ctx = hw_frames_ctx->device_ctx;
++    vsv_device_ctx = hw_device_ctx->hwctx;
++
++    set_default_config(avctx, DEC_H264_H10P);
++    if (vsv_device_ctx->device)
++        dec_ctx->dev_name = vsv_device_ctx->device;
++
++
++#ifdef FB_SYSLOG_ENABLE
++    sprintf(dec_ctx->module_name, "H264DEC");
++#endif
++
++    ff_vsv_dec_init_log_header(avctx);
++    dec_ctx->vsv_decode_picture_consume = h264_picture_consume;
++
++    dec_ctx->dwl_init.client_type = DWL_CLIENT_TYPE_H264_DEC;
++    memset(dec_ctx->ext_buffers, 0, sizeof(dec_ctx->ext_buffers));
++    dec_ctx->cycle_count = 0;
++
++    if (dec_ctx->pp_setting && strlen(dec_ctx->pp_setting) > 0) {
++        if (ff_vsv_dec_parse_scale(avctx))
++            goto error;
++    }
++    ret = ff_vsv_dec_set_buffer_number_for_trans(avctx);
++    if(ret)
++        goto error;
++    ff_vsv_dec_init_ppu_cfg(avctx, dec_ctx->vsv_dec_config.ppu_cfg);
++
++    dec_ctx->enable_mc = 0;
++    dec_ctx->dwl_inst = (void *)DWLInit(&dec_ctx->dwl_init);
++    if (dec_ctx->dwl_inst == NULL) {
++        av_log(avctx, AV_LOG_ERROR, "DWL Init failed\n");
++        goto error;
++    } else {
++        av_log(avctx, AV_LOG_DEBUG, "DWL Init OK\n");
++    }
++
++    vsv_device_ctx->dwl_inst = dec_ctx->dwl_inst;
++
++    n_cores = H264DecMCGetCoreCount();
++
++    // number of stream buffers to allocate 
++    dec_ctx->allocated_buffers = n_cores + 1;
++    if (dec_ctx->enable_mc)
++        mc_init_cfg.mc_enable = 1;
++    else{
++        mc_init_cfg.mc_enable = 0;
++    }
++    dec_cfg.mcinit_cfg = mc_init_cfg;
++    dec_cfg.no_output_reordering = 0;
++    dec_cfg.dpb_flags = DEC_REF_FRM_TILED_DEFAULT;
++    dec_cfg.decoder_mode = DEC_NORMAL;
++    dec_cfg.use_adaptive_buffers = 1;
++    dec_cfg.guard_size = 0;
++    dec_cfg.align = DEC_ALIGN_16B;
++    dec_cfg.rlc_mode = 0;
++    dec_cfg.use_ringbuffer = 0;
++    dec_cfg.use_display_smoothing = 0;
++    ret = H264DecInit(&dec_ctx->dec_inst, dec_ctx->dwl_inst, &dec_cfg);
++    if (ret != DEC_OK) {
++        av_log(avctx, AV_LOG_ERROR, "Decoder initialization failed!\n");
++        goto error;
++    } else {
++        av_log(avctx, AV_LOG_DEBUG, "H264DecInit Init OK!\n");
++    }
++    if (dec_ctx->enable_mc)
++        size = 4096 * 1165;
++    else
++        size = 3 * 1024 * 1024;
++
++    for (i = 0; i < dec_ctx->allocated_buffers; i++) {
++        dec_ctx->stream_mem[i].mem_type = DWL_MEM_TYPE_SLICE;
++        if (DWLMallocLinear(dec_ctx->dwl_inst, size, dec_ctx->stream_mem + i) != DWL_OK) {
++            av_log(avctx, AV_LOG_ERROR, "Unable to allocate stream buffer memory!\n");
++            goto error;
++        } else {
++            av_log(avctx, AV_LOG_DEBUG,
++                    "Alloc memory for %d stream ,addr = 0x%p, size is 0x%x OK\n",
++                    i, dec_ctx->stream_mem[i].virtual_address,
++                    dec_ctx->stream_mem[i].size);
++        }
++    }
++    dec_ctx->hdrs_rdy = 0;
++    dec_ctx->stream_mem_index = 0;
++    dec_ctx->pic_display_number = 0;
++    dec_ctx->got_package_number = 0;
++    dec_ctx->pic_decode_number = 1;
++    dec_ctx->extra_buffer_num = 0;
++
++    return ret;
++error:
++    vsv_h264_decode_close(avctx);
++    return ret;
++}
++
++static enum DecRet h264_dec_get_info(void *inst, struct DecSequenceInfo *info)
++{
++    H264DecInfo h264_info;
++    enum DecRet rv = H264DecGetInfo(inst, &h264_info);
++    info->pic_width = h264_info.pic_width;
++    info->pic_height = h264_info.pic_height;
++    info->sar_width = h264_info.sar_width;
++    info->sar_height = h264_info.sar_height;
++    info->crop_params.crop_left_offset = h264_info.crop_params.crop_left_offset;
++    info->crop_params.crop_out_width = h264_info.crop_params.crop_out_width;
++    info->crop_params.crop_top_offset = h264_info.crop_params.crop_top_offset;
++    info->crop_params.crop_out_height = h264_info.crop_params.crop_out_height;
++    info->video_range = h264_info.video_range;
++    info->matrix_coefficients = h264_info.matrix_coefficients;
++    info->is_mono_chrome = h264_info.mono_chrome;
++    info->is_interlaced = h264_info.interlaced_sequence;
++    info->num_of_ref_frames = h264_info.pic_buff_size;
++    //info->bit_depth_luma = info->bit_depth_chroma = h264_info.bit_depth;
++    return rv;
++}
++
++static enum DecRet h264_decode(void* inst, struct DWLLinearMem input, H264DecOutput* output, uint8_t* stream,
++                               uint32_t strm_len, uint32_t pic_id, int64_t in_pts)
++{
++    enum DecRet rv;
++    H264DecInput h264_input;
++    H264DecOutput h264_output;
++    memset(&h264_input, 0, sizeof(h264_input));
++    memset(&h264_output, 0, sizeof(h264_output));
++    SEI_buffer *channel = malloc(sizeof(SEI_buffer));
++    memset(channel, 0, sizeof(SEI_buffer));
++    void* p_user_data = NULL;
++    h264_input.stream = (uint8_t*)stream;
++    h264_input.stream_bus_address = input.bus_address + ((addr_t)stream - (addr_t)input.virtual_address);
++    h264_input.data_len = strm_len;
++    h264_input.buffer = (uint8_t *)input.virtual_address;
++    h264_input.buffer_bus_address = input.bus_address;
++    h264_input.buff_len = input.size;
++
++    h264_input.pic_id = pic_id;
++    //h264_input.pic_pts = in_pts;
++    h264_input.sei_buffer = channel;
++    h264_input.p_user_data = p_user_data;
++    /* TODO(vmr): hevc must not acquire the resources automatically after
++    *            successful header decoding. */
++    rv = H264DecDecode(inst, &h264_input, &h264_output);
++    output->strm_curr_pos = h264_output.strm_curr_pos;
++    output->strm_curr_bus_address = h264_output.strm_curr_bus_address;
++    output->data_left = h264_output.data_left;
++    if(channel)free(channel);
++    return rv;
++}
++
++static int vsv_h264_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
++{
++    VSVDECContext *dec_ctx = avctx->priv_data;
++    AVPacket avpkt = { 0 };
++    AVFrame *out;
++    enum DecRet ret;
++    int i;
++    int pic_rdy;
++    int got_frame;
++    int rv;
++    H264DecBufferInfo buf_info;
++    struct DWLLinearMem mem, mem_ext;
++    H264DecOutput h264_dec_output;
++    H264DecInput h264_dec_input;
++    int64_t pts;
++    int buffer_flag = 0;
++    int temp_cc = 0;
++
++    pic_rdy = 0;
++    got_frame = 0;
++    out = frame;
++
++    rv = ff_decode_get_packet(avctx, &avpkt);
++    if (rv < 0 && rv != AVERROR_EOF)
++        return rv;
++
++    if (rv == AVERROR_EOF) {
++        H264DecEndOfStream(dec_ctx->dec_inst, 1);
++        ret = h264_next_picture(dec_ctx->dec_inst, &dec_ctx->pic, &pts);
++        if (ret == DEC_PIC_RDY) {
++            for (i = 0; i < DEC_MAX_OUT_COUNT; i++) {
++                av_log(avctx, AV_LOG_DEBUG, "Dec pic rdy, %d -> %d x %d\n",
++                        i, dec_ctx->pic.pictures[i].pic_width,
++                        dec_ctx->pic.pictures[i].pic_height);
++            }
++            pic_rdy = 1;
++            out->pts = pts;
++            ff_vsv_dec_output_frame(avctx, out, &dec_ctx->pic);
++            got_frame = 1;
++
++            dec_ctx->pic_display_number++;
++            return 1;
++        } else if (ret == DEC_END_OF_STREAM) {
++            av_log(avctx, AV_LOG_DEBUG, "End of stream received in output thread\n");
++            return AVERROR_EOF;
++        }
++    }
++    //av_log(avctx, AV_LOG_WARNING, "in pkt pts = %lld, dts=%lld\n", avpkt.pts, avpkt.dts);
++    dec_ctx->got_package_number++;
++
++    ff_vsv_dec_send_avpkt_to_decode_buffer(avctx, &avpkt, dec_ctx->stream_mem[dec_ctx->stream_mem_index]);
++    h264_dec_input.stream = (uint8_t *)dec_ctx->stream_mem[dec_ctx->stream_mem_index].virtual_address;
++    h264_dec_input.stream_bus_address = dec_ctx->stream_mem[dec_ctx->stream_mem_index].bus_address;
++    h264_dec_input.data_len = avpkt.size;
++
++    {//adding extra buffer to decoder dynamically
++        AVHWFramesContext *hwframe_ctx;
++        AVHWDeviceContext *device_ctx;
++        AVVSVDeviceContext *device_hwctx;
++        int nb_frames;
++        hwframe_ctx = (AVHWFramesContext*)dec_ctx->hwframe->data;
++        device_ctx = hwframe_ctx->device_ctx;
++        device_hwctx = device_ctx->hwctx;
++        nb_frames = device_hwctx->nb_frames;
++        if (nb_frames > dec_ctx->extra_buffer_num) {
++            int nb_ext_buf = nb_frames - dec_ctx->extra_buffer_num;
++            int i;
++            for (i = 0; i < nb_ext_buf; i++) {
++                uint32_t id;
++                mem.mem_type = DWL_MEM_TYPE_DPB;
++                ret = DWLMallocLinear(dec_ctx->dwl_inst, dec_ctx->buffer_size, &mem);
++                if(ret) {
++                    goto err_exit;
++                }
++                dec_ctx->rv = H264DecAddBuffer(dec_ctx->dec_inst, &mem);
++                dec_ctx->extra_buffer_num++;
++
++                id = ff_vsv_dec_find_empty_index(avctx);
++                dec_ctx->ext_buffers[id] = mem;
++                dec_ctx->buffer_consumed[id] = 1;
++                if (id >= dec_ctx->num_buffers)
++                    dec_ctx->num_buffers++;
++            }
++        }
++    }
++
++    do {
++        h264_dec_input.pic_id = dec_ctx->pic_decode_number;
++        /* TODO add pts to h264_dec_input */
++        //dec_ctx->h264_dec_input.pic_pts = avpkt.pts;
++        ret = h264_decode((void* )dec_ctx->dec_inst, dec_ctx->stream_mem[dec_ctx->stream_mem_index],
++                &h264_dec_output, (uint8_t* )h264_dec_input.stream, avpkt.size, dec_ctx->pic_decode_number, avpkt.pts);
++        ff_vsv_dec_print_return(avctx, ret);
++        switch (ret) {
++        case DEC_STREAM_NOT_SUPPORTED:
++            av_log(avctx, AV_LOG_ERROR, "Unsupport stream!\n");
++            goto err_exit;
++        case DEC_HDRS_RDY:
++#ifdef DPB_REALLOC_DISABLE
++            if (dec_ctx->hdrs_rdy) {
++                av_log(avctx, AV_LOG_DEBUG, "Decoding ended, flush the DPB\n");
++                /* the err_exit of stream is not reached yet */
++                H264DecEndOfStream(dec_ctx->dec_inst, 0);
++            }
++#endif
++            /* Set a flag to indicate that headers are ready */
++            dec_ctx->hdrs_rdy = 1;
++
++            START_SW_PERFORMANCE;
++            ret = h264_dec_get_info((void*)dec_ctx->dec_inst, &dec_ctx->sequence_info);
++            END_SW_PERFORMANCE;
++
++            if (ret != DEC_OK) {
++                av_log(avctx, AV_LOG_ERROR, "Getting stream info error!\n");
++                goto err_exit;
++            }
++            //H264DecUseExtraFrmBuffers(dec_ctx->dec_inst, 0);
++            dec_ctx->extra_buffer_num = 0;
++
++            ff_vsv_dec_modify_config_by_sequence_info(avctx);
++            //vsv_h264->h264_info.output_format = DEC_OUT_FRM_RASTER_SCAN;
++            h264_dec_set_info((void*)dec_ctx->dec_inst, dec_ctx->vsv_dec_config, &dec_ctx->sequence_info);
++
++            if (ret != DEC_OK) {
++                av_log(avctx, AV_LOG_ERROR, "Invalid pp parameters\n");
++                goto err_exit;
++            }
++            /* No data consumed when returning DEC_HDRS_RDY. */
++            h264_dec_output.data_left = h264_dec_input.data_len;
++            h264_dec_output.strm_curr_pos = (uint8_t* )h264_dec_input.stream;
++            break;
++        case DEC_ADVANCED_TOOLS:
++            if (dec_ctx->enable_mc) {
++                /* ASO/FMO detected and not supported in multicore mode */
++                av_log(avctx, AV_LOG_DEBUG, "ASO/FMO detected in multicore, decoding will stop\n");
++                return -1;
++            }
++            /* ASO/STREAM ERROR was noticed in the stream. The decoder has to
++             * reallocate resources */
++            assert(h264_dec_output.data_left);
++            /* we should have some data left */
++            /* Used to indicate that picture decoding needs to finalized prior to corrupting next picture */
++            break;
++        case DEC_PENDING_FLUSH:
++        case DEC_PIC_DECODED:
++            /* case DEC_FREEZED_PIC_RDY: */
++            /* Picture is now ready */
++            //pic_rdy = 0;
++
++            /*lint -esym(644,tmp_image,pic_size) variable initialized at
++             * DEC_HDRS_RDY_BUFF_NOT_EMPTY case */
++
++            if (ret == DEC_PIC_DECODED) {
++                /* If enough pictures decoded -> force decoding to err_exit
++                 * by setting that no more stream is available */
++
++                av_log(avctx, AV_LOG_DEBUG, "Decoded picture nums = %d!\n", dec_ctx->pic_decode_number);
++                /* Increment decoding number for every decoded picture */
++                dec_ctx->pic_decode_number++;
++            }
++            break;
++        case DEC_STRM_PROCESSED:
++        case DEC_BUF_EMPTY:
++        case DEC_NONREF_PIC_SKIPPED:
++        case DEC_NO_DECODING_BUFFER:
++        case DEC_STRM_ERROR:
++            break;
++        case DEC_WAITING_FOR_BUFFER:
++            av_log(avctx, AV_LOG_DEBUG, "Waiting for frame buffers!\n");
++            ret = H264DecGetBufferInfo(dec_ctx->dec_inst, &buf_info);
++            if (buf_info.next_buf_size) {
++                /* Only add minimum required buffers at first. */
++                dec_ctx->buffer_size = buf_info.next_buf_size;
++                for (i = 0; i < buf_info.buf_num; i++) {
++                    mem.mem_type = DWL_MEM_TYPE_DPB;
++                    if (dec_ctx->pp_enabled)
++                        ret = DWLMallocLinear(dec_ctx->dwl_inst, buf_info.next_buf_size, &mem);
++                    else
++                        ret = DWLMallocRefFrm(dec_ctx->dwl_inst, buf_info.next_buf_size, &mem);
++
++                    if (ret) {
++                        dec_ctx->num_buffers = i;
++                        goto err_exit;
++                    }
++                    mem_ext = mem;
++                    ret = H264DecAddBuffer(dec_ctx->dec_inst, &mem);
++                    if (ret != DEC_OK && ret != DEC_WAITING_FOR_BUFFER) {
++                        if (dec_ctx->pp_enabled)
++                            DWLFreeLinear(dec_ctx->dwl_inst, &mem);
++                        else
++                            DWLFreeRefFrm(dec_ctx->dwl_inst, &mem);
++                    } else {
++                        dec_ctx->ext_buffers[i] = mem_ext;
++                    }
++                }
++                /* Extra buffers are allowed when minimum required buffers have been added.*/
++                dec_ctx->num_buffers = buf_info.buf_num;
++            }
++            /* No data consumed when returning DEC_WAITING_FOR_BUFFER. */
++            h264_dec_output.data_left = h264_dec_input.data_len;
++            h264_dec_output.strm_curr_pos = (uint8_t* )h264_dec_input.stream;
++            break;
++        case DEC_OK:
++            /* nothing to do, just call again */
++            break;
++        case DEC_HW_TIMEOUT:
++            av_log(avctx, AV_LOG_ERROR, "Timeout!\n");
++            goto err_exit;
++        case DEC_ABORTED:
++            av_log(avctx, AV_LOG_ERROR, "H264 decoder is aborted: %d\n", ret);
++            H264DecAbortAfter(dec_ctx->dec_inst);
++            break;
++        case DEC_SYSTEM_ERROR:
++            goto err_exit;
++        default:
++            goto err_exit;
++        }
++    } while (h264_dec_output.data_left);
++
++    ret = h264_next_picture(dec_ctx->dec_inst, &dec_ctx->pic, &pts);
++    av_log(avctx, AV_LOG_DEBUG, "H264NextPicture return: %d\n", ret);
++    if (ret == DEC_PIC_RDY) {
++        pic_rdy = 1;
++
++        ff_vsv_dec_output_frame(avctx, out, &dec_ctx->pic);
++        h264_picture_consumed_no_dwl(dec_ctx->dec_inst, dec_ctx->pic);
++        out->pts = pts;
++    } else if (ret == DEC_END_OF_STREAM) {
++        av_log(avctx, AV_LOG_DEBUG, "End of stream!\n");
++        return 0;
++    }
++
++    got_frame = pic_rdy;
++
++    if (got_frame == 1) {
++        pic_rdy = 0;
++        dec_ctx->pic_display_number++;
++        av_log(avctx, AV_LOG_DEBUG,
++                "%d got frame :data[0]=%p,data[1]=%p buf[0]=%p,buf[1]=%p \n",
++                dec_ctx->pic_display_number, out->data[0], out->data[1],
++                out->buf[0], out->buf[1]);
++    }
++    dec_ctx->stream_mem_index++;
++    if (dec_ctx->stream_mem_index == dec_ctx->allocated_buffers)
++        dec_ctx->stream_mem_index = 0;
++
++    return avpkt.size;
++err_exit:
++    av_log(avctx, AV_LOG_ERROR, "err_exit of h264_decode_frame...\n");
++    return AVERROR_EOF;
++}
++
++static av_cold int vsv_h264_decode_close(AVCodecContext *avctx)
++{
++    VSVDECContext *dec_ctx = avctx->priv_data;
++    int i;
++
++    av_log(avctx, AV_LOG_DEBUG, "Vsv h264 decode close.....\n");
++
++    for (i = 0; i < dec_ctx->allocated_buffers; i++) {
++        if (dec_ctx->stream_mem[i].virtual_address != NULL) {
++            if (dec_ctx->dec_inst)
++                DWLFreeLinear(dec_ctx->dwl_inst, &dec_ctx->stream_mem[i]);
++        }
++    }
++
++    if (dec_ctx->pic_display_number > 0)
++        ff_vsv_dec_performance_report(avctx);
++    if (dec_ctx->dec_inst)
++        H264DecRelease(dec_ctx->dec_inst);
++    free_ext_buffers(avctx);
++    if (dec_ctx->dwl_inst)
++        DWLRelease(dec_ctx->dwl_inst);
++
++    av_buffer_unref(&dec_ctx->hwframe);
++    av_buffer_unref(&dec_ctx->hwdevice);
++    return 0;
++}
++
++static void vsv_h264_decode_flush(AVCodecContext *avctx)
++{
++}
++
++#define OFFSET(x) offsetof(VSVDECContext, x)
++#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
++static const AVOption options[] = {
++    { "pp_set", "set pp configure", OFFSET(pp_setting),
++        AV_OPT_TYPE_STRING, {.str="(d2)"}, 0, 0, VD },
++    { "dev_name", "set device name", OFFSET(dev_name), 
++        AV_OPT_TYPE_STRING, { .str = "/dev/hantrodec" }, 0, 0, VD },
++    { "disable-dec400", "disable DEC400 compress function",
++        OFFSET(disable_dec400), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VD },
++    { "enc-format", "give the target format in encode, h264 hevc or vp9",
++        OFFSET(enc_format), AV_OPT_TYPE_STRING, { .str = "" }, 0, 0, VD },
++    { "buffer-depth", "bufffer depth for transcode",
++        OFFSET(buffer_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 40, VD },
++    { NULL },
++};
++
++static const AVClass vsv_h264_decode_class = {
++    .class_name = "vsv_h264_decoder",
++    .item_name = av_default_item_name,
++    .option = options,
++    .version = LIBAVUTIL_VERSION_INT,
++};
++
++static const AVCodecDefault vsv_h264_decode_defaults[] = {
++    { NULL },
++};
++
++AVCodec ff_h264_vsv_decoder = {
++    .name           = "h264_vsv_decoder",
++    .long_name      = NULL_IF_CONFIG_SMALL("VeriSilicon VSV H.264 Decoder"),
++    .type           = AVMEDIA_TYPE_VIDEO,
++    .id             = AV_CODEC_ID_H264,
++    .priv_data_size = sizeof(VSVDECContext),
++    .init           = &vsv_h264_decode_init,
++    .close          = &vsv_h264_decode_close,
++    .receive_frame  = &vsv_h264_decode_receive_frame,
++    .flush          = &vsv_h264_decode_flush,
++    .priv_class     = &vsv_h264_decode_class,
++    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_AVOID_PROBING,
++    .defaults       = vsv_h264_decode_defaults,
++    .pix_fmts       = (const enum AVPixelFormat[]) {
++                                 AV_PIX_FMT_VSV,
++                                 AV_PIX_FMT_YUV420P,
++                                 AV_PIX_FMT_NONE },
++    .wrapper_name   = "vsv",
++    .bsfs           = "h264_mp4toannexb",
++};
++
++
+diff --git a/libavutil/Makefile b/libavutil/Makefile
+index 9b08372..5f6d225 100644
+--- a/libavutil/Makefile
++++ b/libavutil/Makefile
+@@ -46,7 +46,8 @@ HEADERS = adler32.h                                                     \
+           hwcontext_videotoolbox.h                                      \
+           hwcontext_vdpau.h                                             \
+           hwcontext_vulkan.h                                            \
+-          imgutils.h                                                    \
++	  hwcontext_vsv.h						\
++	  imgutils.h                                                    \
+           intfloat.h                                                    \
+           intreadwrite.h                                                \
+           lfg.h                                                         \
+@@ -184,6 +185,7 @@ OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
+ OBJS-$(CONFIG_VIDEOTOOLBOX)             += hwcontext_videotoolbox.o
+ OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
+ OBJS-$(CONFIG_VULKAN)                   += hwcontext_vulkan.o
++OBJS-$(CONFIG_VSV)                      += hwcontext_vsv.o
+ 
+ OBJS += $(COMPAT_OBJS:%=../compat/%)
+ 
+@@ -201,6 +203,7 @@ SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
+ SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += hwcontext_videotoolbox.h
+ SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
+ SKIPHEADERS-$(CONFIG_VULKAN)           += hwcontext_vulkan.h
++SKIPHEADERS-$(CONFIG_VSV)              += hwcontext_vsv.h
+ 
+ TESTPROGS = adler32                                                     \
+             aes                                                         \
+diff --git a/libavutil/hwcontext.c b/libavutil/hwcontext.c
+index d13d0f7..bf3d818 100644
+--- a/libavutil/hwcontext.c
++++ b/libavutil/hwcontext.c
+@@ -59,6 +59,11 @@ static const HWContextType * const hw_table[] = {
+ #if CONFIG_MEDIACODEC
+     &ff_hwcontext_type_mediacodec,
+ #endif
++
++#if CONFIG_VSV
++    &ff_hwcontext_type_vsv,
++#endif
++
+ #if CONFIG_VULKAN
+     &ff_hwcontext_type_vulkan,
+ #endif
+@@ -75,6 +80,7 @@ static const char *const hw_type_names[] = {
+     [AV_HWDEVICE_TYPE_VAAPI]  = "vaapi",
+     [AV_HWDEVICE_TYPE_VDPAU]  = "vdpau",
+     [AV_HWDEVICE_TYPE_VIDEOTOOLBOX] = "videotoolbox",
++    [AV_HWDEVICE_TYPE_VSV]    = "vsv",
+     [AV_HWDEVICE_TYPE_MEDIACODEC] = "mediacodec",
+     [AV_HWDEVICE_TYPE_VULKAN] = "vulkan",
+ };
+diff --git a/libavutil/hwcontext.h b/libavutil/hwcontext.h
+index 04d19d8..1c13e52 100644
+--- a/libavutil/hwcontext.h
++++ b/libavutil/hwcontext.h
+@@ -37,6 +37,7 @@ enum AVHWDeviceType {
+     AV_HWDEVICE_TYPE_OPENCL,
+     AV_HWDEVICE_TYPE_MEDIACODEC,
+     AV_HWDEVICE_TYPE_VULKAN,
++    AV_HWDEVICE_TYPE_VSV,
+ };
+ 
+ typedef struct AVHWDeviceInternal AVHWDeviceInternal;
+diff --git a/libavutil/hwcontext_internal.h b/libavutil/hwcontext_internal.h
+index e626649..357d26c 100644
+--- a/libavutil/hwcontext_internal.h
++++ b/libavutil/hwcontext_internal.h
+@@ -175,4 +175,5 @@ extern const HWContextType ff_hwcontext_type_videotoolbox;
+ extern const HWContextType ff_hwcontext_type_mediacodec;
+ extern const HWContextType ff_hwcontext_type_vulkan;
+ 
++extern const HWContextType ff_hwcontext_type_vsv;
+ #endif /* AVUTIL_HWCONTEXT_INTERNAL_H */
+diff --git a/libavutil/hwcontext_vsv.c b/libavutil/hwcontext_vsv.c
+new file mode 100644
+index 0000000..dfeabef
+--- /dev/null
++++ b/libavutil/hwcontext_vsv.c
+@@ -0,0 +1,486 @@
++/*
++ * Copyright (C) 2019  VeriSilicon
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <string.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <sys/ioctl.h>
++
++//#include "transcoder.h"
++#ifdef FB_SYSLOG_ENABLE
++#include "syslog_sink.h"
++#endif
++#include "buffer.h"
++#include "common.h"
++#include "hwcontext.h"
++#include "hwcontext_internal.h"
++#include "hwcontext_vsv.h"
++#include "pixfmt.h"
++#include "pixdesc.h"
++
++#define VSV_FRAME_ALIGNMENT 32
++
++
++static const enum AVPixelFormat supported_formats[] = {
++    AV_PIX_FMT_VSV,
++    /* TODO: currently only support AV_PIX_FMT_VSV */
++    //AV_PIX_FMT_NV12,
++    //AV_PIX_FMT_P010,
++};
++
++static int vsv_frames_get_constraints(AVHWDeviceContext *device_ctx,
++                                       const void *hwconfig,
++                                       AVHWFramesConstraints *constraints)
++{
++    av_log(device_ctx, AV_LOG_TRACE, "%s(%d)\n", __FUNCTION__, __LINE__);
++
++    constraints->valid_hw_formats = av_malloc_array(2, sizeof(*constraints->valid_hw_formats));
++    if (!constraints->valid_hw_formats)
++        return AVERROR(ENOMEM);
++
++    constraints->valid_hw_formats[0] = AV_PIX_FMT_VSV;
++    constraints->valid_hw_formats[1] = AV_PIX_FMT_NONE;
++    constraints->min_width = 144;
++    constraints->min_height = 144;
++    constraints->max_width = 4096;
++    constraints->max_height = 4096;
++    return 0;
++}
++
++static int alloc_mem(AVHWFramesContext *hw_frames_ctx, int stride, int height)
++{
++    AVVSVFramesContext *vsv_frames_ctx = hw_frames_ctx->hwctx;
++    AVHWDeviceContext *hw_device_ctx = hw_frames_ctx->device_ctx;
++    AVVSVDeviceContext *vsv_device_ctx = hw_device_ctx->hwctx;
++    int ret = 0;
++    int size;
++
++    if (!vsv_frames_ctx->buffer) {
++        vsv_frames_ctx->buffer = av_mallocz(sizeof(*vsv_frames_ctx->buffer));
++        if (!vsv_frames_ctx->buffer) {
++            ret = -1;
++            goto error;
++        }
++        av_log(hw_frames_ctx, AV_LOG_TRACE, "%s(%d)\n", __FUNCTION__, __LINE__);
++        vsv_frames_ctx->buffer->mem_type = DWL_MEM_TYPE_CPU;
++
++        size = stride * height;
++        if (DWLMallocLinear(vsv_device_ctx->dwl_inst, size, vsv_frames_ctx->buffer)) {
++            av_log(hw_frames_ctx, AV_LOG_WARNING, "No memory available for the stream buffer\n");
++            ret = -1;
++            goto error;
++        }
++    }
++error:
++    return ret;
++}
++
++static int free_mem(AVHWFramesContext *hw_frames_ctx)
++{
++    AVVSVFramesContext *vsv_frames_ctx = hw_frames_ctx->hwctx;
++    AVHWDeviceContext *hw_device_ctx = hw_frames_ctx->device_ctx;
++    AVVSVDeviceContext *vsv_device_ctx = hw_device_ctx->hwctx;
++
++    if (vsv_frames_ctx->buffer) {
++        DWLFreeLinear(vsv_device_ctx->dwl_inst, vsv_frames_ctx->buffer);
++        av_free(vsv_frames_ctx->buffer);
++        vsv_frames_ctx->buffer = NULL;
++    }
++    return 0;
++}
++
++static void vsv_frames_uninit(AVHWFramesContext *hw_frames_ctx)
++{
++    AVHWDeviceContext *hw_device_ctx = hw_frames_ctx->device_ctx;
++    AVVSVDeviceContext *vsv_device_ctx = hw_device_ctx->hwctx;
++    av_log(hw_frames_ctx, AV_LOG_TRACE, "%s(%d)\n", __FUNCTION__, __LINE__);
++    free_mem(hw_frames_ctx);
++
++#ifndef VSV_CMODEL
++    if (vsv_device_ctx->fd_mem) {
++        //if (ioctl(vsv_device_ctx->fd_mem, IOCTL_CMD_FREE_TASKID, &vsv_device_ctx->task_id) < 0)
++        //    av_log(hw_frames_ctx, AV_LOG_ERROR, "free task id failed!\n");
++        //fprintf(stdout, "0x%08x\n", IOCTL_CMD_FREE_TASKID);
++        close(vsv_device_ctx->fd_mem);
++    }
++#endif
++
++    av_buffer_pool_uninit(&hw_frames_ctx->pool);
++}
++
++static int vsv_frames_init(AVHWFramesContext *hw_frames_ctx)
++{
++    AVVSVFramesContext *vsv_frames_ctx = hw_frames_ctx->hwctx;
++    AVHWDeviceContext *hw_device_ctx = hw_frames_ctx->device_ctx;
++    AVVSVDeviceContext *vsv_device_ctx = hw_device_ctx->hwctx;
++    int i;
++    av_log(hw_frames_ctx, AV_LOG_TRACE, "%s\n", __FUNCTION__);
++
++    for (i = 0; i < FF_ARRAY_ELEMS(supported_formats); i++) {
++        if (hw_frames_ctx->format == supported_formats[i])
++            break;
++    }
++    if (i == FF_ARRAY_ELEMS(supported_formats)) {
++        av_log(hw_frames_ctx, AV_LOG_ERROR, "Pixel format '%s' is not supported\n",
++               av_get_pix_fmt_name(hw_frames_ctx->sw_format));
++        return AVERROR(ENOSYS);
++    }
++
++    hw_frames_ctx->device_ctx = (AVHWDeviceContext *)hw_frames_ctx->device_ref->data;
++    hw_frames_ctx->pool = av_buffer_pool_init(0, NULL);
++    av_log(hw_frames_ctx, AV_LOG_TRACE, "VSV format value = %d, hw_frames_ctx format = %d\n", AV_PIX_FMT_VSV, hw_frames_ctx->format);
++
++#ifndef VSV_CMODEL
++    vsv_device_ctx->fd_mem = open(vsv_device_ctx->device, O_RDWR);
++    if (vsv_device_ctx->fd_mem == -1) {
++        av_log(hw_frames_ctx, AV_LOG_ERROR, "failed to open device: %s\n", vsv_device_ctx->device);
++        goto error;
++    }
++
++    //if (ioctl(vsv_device_ctx->fd_mem, IOCTL_CMD_GET_TASKID, &vsv_device_ctx->task_id) < 0) {
++    //    av_log(hw_frames_ctx, AV_LOG_ERROR, "get task id failed!\n");
++    //    fprintf(stdout, "0x%08x\n", IOCTL_CMD_GET_TASKID);
++    //    goto error;
++    //}
++    //vsv_frames_ctx->task_id = vsv_device_ctx->task_id;
++    //av_log(hw_frames_ctx, AV_LOG_DEBUG, "%s(%d) get task id %d\n", __FUNCTION__, __LINE__, vsv_device_ctx->task_id);
++#endif
++    return 0;
++error:
++    vsv_frames_uninit(hw_frames_ctx);
++    return -1;
++}
++
++static int vsv_frames_get_buffer(AVHWFramesContext *hw_frames_ctx, AVFrame *frame)
++{
++    AVVSVFramesContext *vsv_frames_ctx = hw_frames_ctx->hwctx;
++    int ret = 0;
++
++    frame = av_frame_alloc();
++    frame->width = vsv_frames_ctx->pic_info[0].width;
++    frame->height = vsv_frames_ctx->pic_info[0].height;
++    frame->format = AV_PIX_FMT_YUV420P;
++
++    if ((ret = av_frame_get_buffer(frame, VSV_FRAME_ALIGNMENT)) < 0)
++        av_frame_free(&frame);
++
++    return ret;
++}
++
++static int vsv_transfer_get_formats(AVHWFramesContext *hw_frames_ctx,
++                                     enum AVHWFrameTransferDirection dir,
++                                     enum AVPixelFormat **formats)
++{
++    enum AVPixelFormat *fmts;
++    fmts = av_malloc_array(2, sizeof(*fmts));
++    if (!fmts)
++        return AVERROR(ENOMEM);
++    //fmts[0] = hw_frames_ctx->format;
++    fmts[0] = AV_PIX_FMT_YUV420P;
++    fmts[1] = AV_PIX_FMT_NONE;
++    *formats = fmts;
++    return 0;
++}
++
++static void tile2raster(uint8_t *in, uint8_t *out, uint32_t pic_width, uint32_t pic_height, uint32_t tile_stride)
++{
++    uint32_t i, j;
++    uint32_t k, l;
++    uint32_t s, t;
++
++    const uint32_t tile_width = 4, tile_height = 4;
++    for (i = 0; i < pic_height; i += tile_height) {
++        t = 0;
++        s = 0;
++        for (j = 0; j < pic_width; j += tile_width) {
++            /* copy this tile */
++            for (k = 0; k < tile_height; ++k) {
++                for (l = 0; l < tile_width; ++l)
++                    out[k * pic_width + l + s] = in[t++];
++            }
++            /* move to next horizontal tile */
++            s += tile_width;
++        }
++        out += pic_width * tile_height;
++        in += tile_stride;
++    }
++}
++
++static int dwl_edma_ep2rc_nolink(void* p, addr_t bus_address_dst, addr_t bus_address_orig, int size){
++    memcpy(bus_address_dst, bus_address_orig, size);
++    return 1;
++}
++
++static int vsv_transfer_data_from(AVHWFramesContext *hw_frames_ctx, AVFrame *dst,
++                                   const AVFrame *src)
++{
++    AVVSVFramesContext *vsv_frames_ctx = hw_frames_ctx->hwctx;
++    AVHWDeviceContext *hw_device_ctx = hw_frames_ctx->device_ctx;
++    AVVSVDeviceContext *vsv_device_ctx = hw_device_ctx->hwctx;
++    addr_t bus_address;
++    AVBufferRef *buf;
++    VSVFramePriv* frame_priv;
++    struct DecPicturePpu *pic;
++    struct DecPicture *pic_info;
++    int pp_index = 0;
++    int ret = 0;
++    int i, j;
++    uint8_t *p_data, *p_u_temp, *p_v_temp;
++    uint8_t* packed = av_mallocz(src->width * src->height / 2);
++
++    buf = src->opaque_ref;
++    frame_priv = (VSVFramePriv* )buf->data;
++    if (frame_priv->pp_sel == 0 || frame_priv->pp_sel > (1<<5)) {
++         ret = -1;
++         goto error;
++    }
++    for (pp_index = 0; pp_index < 5; pp_index++) {
++        if (frame_priv->pp_sel & (1<<pp_index))
++            break;
++    }
++    pic = (struct DecPicturePpu *)src->data[0];
++    pic_info = &pic->pictures[pp_index];
++
++    if (!vsv_frames_ctx->buffer) {
++        if ((ret = alloc_mem(hw_frames_ctx, pic_info->pic_stride, pic_info->pic_height)) < 0)
++            goto error;
++    }
++
++    bus_address = pic_info->luma.bus_address;
++
++    if (vsv_frames_ctx->buffer->bus_address != 0) {
++        ret = dwl_edma_ep2rc_nolink(vsv_device_ctx->dwl_inst, bus_address,
++                               vsv_frames_ctx->buffer->bus_address, vsv_frames_ctx->buffer->size);
++        if (ret < 0)
++            goto error;
++    }
++
++    if (vsv_device_ctx->tile_enable) {
++        // tile mode
++        tile2raster((uint8_t *)vsv_frames_ctx->buffer->virtual_address, dst->data[0],
++                 pic_info->pic_width, pic_info->pic_height, pic_info->pic_stride);
++        bus_address = pic_info->chroma.bus_address;
++        if (vsv_frames_ctx->buffer->bus_address != 0) {
++            ret = dwl_edma_ep2rc_nolink(vsv_device_ctx->dwl_inst, bus_address,
++                                   vsv_frames_ctx->buffer->bus_address, vsv_frames_ctx->buffer->size);
++            if (ret < 0)
++                goto error;
++        }
++        tile2raster((uint8_t *)vsv_frames_ctx->buffer->virtual_address, packed,
++                          pic_info->pic_width, pic_info->pic_height / 2, pic_info->pic_stride_ch);
++        p_data = packed;
++        p_u_temp = (uint8_t *)vsv_frames_ctx->buffer->virtual_address;
++        p_v_temp = p_u_temp + pic_info->pic_width * pic_info->pic_height / 4;
++        for (j = 0, i = 0; j < pic_info->pic_width * pic_info->pic_height / 2; j += 2, i++) {
++            p_u_temp[i] = p_data[j];
++            p_v_temp[i] = p_data[j + 1];
++        }
++
++        memcpy(dst->data[1], p_u_temp, pic_info->pic_width * pic_info->pic_height / 4);
++        memcpy(dst->data[2], p_v_temp, pic_info->pic_width * pic_info->pic_height / 4);
++
++    } else if (vsv_device_ctx->planar_enable) {
++        /* TODO: currently don't support */
++        /* planar mode yuv420p */
++        for (i = 0; i < pic_info->pic_height; i++) {
++            memcpy(dst->data[0] + dst->linesize[0] * i,
++                    vsv_frames_ctx->buffer->virtual_address + pic_info->pic_stride * i, pic_info->pic_width);
++        }
++        bus_address = pic_info->chroma.bus_address;
++        if (vsv_frames_ctx->buffer->bus_address != 0) {
++            ret = dwl_edma_ep2rc_nolink(vsv_device_ctx->dwl_inst, bus_address,
++                                   vsv_frames_ctx->buffer->bus_address, vsv_frames_ctx->buffer->size);
++            if (ret < 0)
++                goto error;
++        }
++        for (i = 0; i < pic_info->pic_height / 4; i++) {
++            memcpy(dst->data[1] + dst->linesize[1] * i,
++                    vsv_frames_ctx->buffer->virtual_address + pic_info->pic_stride_ch * i, pic_info->pic_width);
++        }
++        for (i = 0; i < pic_info->pic_height / 4; i++) {
++            memcpy(dst->data[2] + dst->linesize[2] * i,
++                    vsv_frames_ctx->buffer->virtual_address + pic_info->pic_stride_ch * pic_info->pic_width / 4 +
++                    pic_info->pic_stride_ch * i, pic_info->pic_width);
++        }
++    } else {
++        /* TODO: currently don't support */
++        /* nv12 */
++        for (i = 0; i < pic_info->pic_height; i++) {
++            memcpy(dst->data[0] + dst->linesize[0] * i,
++                    vsv_frames_ctx->buffer->virtual_address + pic_info->pic_stride * i, pic_info->pic_width);
++        }
++        bus_address = pic_info->chroma.bus_address;
++        if (vsv_frames_ctx->buffer->bus_address != 0) {
++            ret = dwl_edma_ep2rc_nolink(vsv_device_ctx->dwl_inst, bus_address,
++                                   vsv_frames_ctx->buffer->bus_address, vsv_frames_ctx->buffer->size);
++            if (ret < 0)
++                goto error;
++        }
++        for (i = 0; i < pic_info->pic_height / 2; i++) {
++            memcpy(dst->data[1] + dst->linesize[1] * i,
++                    vsv_frames_ctx->buffer->virtual_address + pic_info->pic_stride_ch * i, pic_info->pic_width);
++        }
++        p_data = dst->data[1];
++        p_u_temp = (uint8_t *)vsv_frames_ctx->buffer->virtual_address;
++        p_v_temp = p_u_temp + pic_info->pic_width * pic_info->pic_height / 4;
++        for (j = 0, i = 0; j < pic_info->pic_width * pic_info->pic_height / 2; j += 2, i++) {
++            p_u_temp[i] = p_data[j];
++            p_v_temp[i] = p_data[j + 1];
++        }
++
++        memcpy(dst->data[1], p_u_temp, pic_info->pic_width * pic_info->pic_height / 4);
++        memcpy(dst->data[2], p_v_temp, pic_info->pic_width * pic_info->pic_height / 4);
++    }
++    av_free(packed);
++
++error:
++    return ret;
++}
++
++static int vsv_transfer_data_to(AVHWFramesContext *hw_frames_ctx, AVFrame *dst,
++                                 const AVFrame *src)
++{
++    return 0;
++}
++
++static void vsv_device_uninit(AVHWDeviceContext *device_ctx)
++{
++    AVVSVDeviceContext *vsv_device_ctx = device_ctx->hwctx;
++
++    av_log(device_ctx, AV_LOG_TRACE, "%s(%d)\n", __FUNCTION__, __LINE__);
++
++#ifdef FB_SYSLOG_ENABLE
++    close_syslog_module();
++#endif
++}
++
++static int vsv_device_init(AVHWDeviceContext *device_ctx)
++{
++    AVVSVDeviceContext *vsv_device_ctx = device_ctx->hwctx;
++
++    av_log(device_ctx, AV_LOG_TRACE, "%s(%d)\n", __FUNCTION__, __LINE__);
++
++#ifdef FB_SYSLOG_ENABLE
++    av_log(device_ctx, AV_LOG_TRACE, "fbloglevel %d\n", vsv_device_ctx->fbloglevel);
++    init_syslog_module((char *)"ffmpeg", vsv_device_ctx->fbloglevel);
++#endif
++
++    return 0;
++}
++
++static int vsv_device_create(AVHWDeviceContext *device_ctx, const char *device,
++                              AVDictionary *opts, int flags)
++{
++    AVVSVDeviceContext *vsv_device_ctx = device_ctx->hwctx;
++    AVDictionaryEntry *opt;
++
++    av_log(device_ctx, AV_LOG_TRACE, "%s(%d) hwctx = %p\n", __FUNCTION__, __LINE__, vsv_device_ctx);
++
++    if (device) {
++        av_log(device_ctx, AV_LOG_TRACE, "device(%s)\n", device);
++    } else {
++        av_log(device_ctx, AV_LOG_ERROR, "device error\n");
++        goto error;
++    }
++
++    if (vsv_device_init(device_ctx) < 0)
++        goto error;
++
++    vsv_device_ctx->priority = TASK_VOD;
++
++    #ifdef FB_SYSLOG_ENABLE
++    vsv_device_ctx->fbloglevel = SYSLOG_SINK_LEV_STAT;
++    #endif
++    
++
++    if (opts) {
++        opt = av_dict_get(opts, "priority", NULL, 0);
++        if (!opt) {
++            vsv_device_ctx->priority = TASK_VOD;
++        } else {
++            av_log(device_ctx, AV_LOG_TRACE, "%s(%s)\n", opt->key, opt->value);
++            if (!strcmp(opt->value, "live")) {
++                vsv_device_ctx->priority = TASK_LIVE;
++            } else if (!strcmp(opt->value, "vod")) {
++                vsv_device_ctx->priority = TASK_VOD;
++            } else {
++                av_log(device_ctx, AV_LOG_ERROR, "Unknow priority : %s\n", opt->value);
++                goto error;
++            }
++        }
++
++        opt = av_dict_get(opts, "fbloglevel", NULL, 0);
++        if (!opt) {
++            #ifdef FB_SYSLOG_ENABLE
++            vsv_device_ctx->fbloglevel = SYSLOG_SINK_LEV_STAT;
++            #endif
++        } else {
++            av_log(device_ctx, AV_LOG_TRACE, "%s(%s)\n", opt->key, opt->value);
++            vsv_device_ctx->fbloglevel = atoi(opt->value);
++        }
++
++        opt = av_dict_get(opts, "tile", NULL, 0);
++        if ( opt && !strcmp(opt->value, "1"))
++            vsv_device_ctx->tile_enable = 1;
++
++        opt = av_dict_get(opts, "planar", NULL, 0);
++        if (opt && !strcmp(opt->value, "1"))
++            vsv_device_ctx->planar_enable = 1;
++    }
++
++    if (vsv_device_ctx->tile_enable == 0 && vsv_device_ctx->planar_enable == 0) {
++        vsv_device_ctx->tile_enable = 1;
++        vsv_device_ctx->planar_enable = 0;
++    }
++
++    vsv_device_ctx->device = av_strdup(device);
++    av_log(device_ctx, AV_LOG_TRACE, "hwctx->device = %s\n", vsv_device_ctx->device);
++
++    return 0;
++
++error:
++
++    vsv_device_uninit(device_ctx);
++    return AVERROR_UNKNOWN;
++}
++
++const HWContextType ff_hwcontext_type_vsv = {
++    .type                 = AV_HWDEVICE_TYPE_VSV,
++    .name                 = "VSV",
++
++    .device_hwctx_size    = sizeof(AVVSVDeviceContext),
++    .frames_hwctx_size    = sizeof(AVVSVFramesContext),
++
++    .device_create        = vsv_device_create,
++    .device_init          = vsv_device_init,
++    .device_uninit        = vsv_device_uninit,
++    .frames_get_constraints = vsv_frames_get_constraints,
++    .frames_init          = vsv_frames_init,
++    .frames_uninit        = vsv_frames_uninit,
++    .frames_get_buffer    = vsv_frames_get_buffer,
++    .transfer_get_formats = vsv_transfer_get_formats,
++    .transfer_data_to     = vsv_transfer_data_to,
++    .transfer_data_from   = vsv_transfer_data_from,
++
++    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_VSV, AV_PIX_FMT_NONE },
++};
++
+diff --git a/libavutil/hwcontext_vsv.h b/libavutil/hwcontext_vsv.h
+new file mode 100644
+index 0000000..58dd579
+--- /dev/null
++++ b/libavutil/hwcontext_vsv.h
+@@ -0,0 +1,95 @@
++/*
++ * Copyright (C) 2019  VeriSilicon
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#ifndef AVUTIL_HWCONTEXT_VSV_H
++#define AVUTIL_HWCONTEXT_VSV_H
++
++#include "vc8000d/lib/inc/dectypes.h"
++#include "vc8000d/lib/inc/dwl.h"
++/**
++ * VAAPI connection details.
++ *
++ * Allocated as AVHWDeviceContext.hwctx
++ */
++#define TASK_LIVE 0
++#define TASK_VOD 1
++
++static int dwl_edma_ep2rc_nolink(void* p, addr_t bus_address_orig, addr_t bus_address_dst, int size);
++
++typedef struct AVVSVDeviceContext {
++    char *device;
++    unsigned int dec_client_type;
++    unsigned int enc_client_type;
++
++    int priority;
++    int fbloglevel;
++    int tile_enable;
++    int planar_enable;
++
++    int fd_mem;
++    int task_id;
++
++    int lookahead;
++    int nb_frames;
++
++    const void *dwl_inst;; // TODO remove it later
++    struct DecPicturePpu pic_ppu;
++} AVVSVDeviceContext;
++
++typedef enum AVVSVFormat {
++    AVVSV_FORMAT_YUV420_SEMIPLANAR,
++} AVVSVFormat;
++
++/**
++ * VAAPI-specific data associated with a frame pool.
++ *
++ * Allocated as AVHWFramesContext.hwctx.
++ */
++typedef struct AVVSVFramesContext {
++    int task_id;
++    struct {
++        int enabled;
++        AVVSVFormat format;
++        int width;
++        int height;
++        struct {
++            int enabled;
++            int x;
++            int y;
++            int w;
++            int h;
++        } crop;
++        struct {
++            int enabled;
++            int w;
++            int h;
++        } scale;
++    } pic_info[5];
++    struct DWLLinearMem* buffer;
++} AVVSVFramesContext;
++
++typedef struct VSVFramePriv {
++    int pp_sel;
++} VSVFramePriv;
++
++#endif
++
++
++
+diff --git a/libavutil/pixdesc.c b/libavutil/pixdesc.c
+index 9d61c52..2348245 100644
+--- a/libavutil/pixdesc.c
++++ b/libavutil/pixdesc.c
+@@ -2371,6 +2371,10 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
+         .name = "vulkan",
+         .flags = AV_PIX_FMT_FLAG_HWACCEL,
+     },
++    [AV_PIX_FMT_VSV] = {
++        .name = "vsv",
++        .flags = AV_PIX_FMT_FLAG_HWACCEL,
++    },
+ };
+ #if FF_API_PLUS1_MINUS1
+ FF_ENABLE_DEPRECATION_WARNINGS
+diff --git a/libavutil/pixfmt.h b/libavutil/pixfmt.h
+index 1c625cf..332334c 100644
+--- a/libavutil/pixfmt.h
++++ b/libavutil/pixfmt.h
+@@ -346,8 +346,9 @@ enum AVPixelFormat {
+     AV_PIX_FMT_YUVA444P12LE, ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), 12b alpha, little-endian
+ 
+     AV_PIX_FMT_NV24,      ///< planar YUV 4:4:4, 24bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
+-    AV_PIX_FMT_NV42,      ///< as above, but U and V bytes are swapped
++    AV_PIX_FMT_NV42,      ///< as above, but U and V bytes are swapped 
+ 
++    AV_PIX_FMT_VSV,       ///< HW acceleration through VeriSilicon VSV VPU
+     /**
+      * Vulkan hardware images.
+      *
+diff --git a/tests/api/Makefile b/tests/api/Makefile
+index b5c4cca..33849b6 100644
+--- a/tests/api/Makefile
++++ b/tests/api/Makefile
+@@ -1,10 +1,11 @@
+ APITESTPROGS-$(call ENCDEC, FLAC, FLAC) += api-flac
+ APITESTPROGS-$(call DEMDEC, H264, H264) += api-h264
+ APITESTPROGS-$(call DEMDEC, H264, H264) += api-h264-slice
+-APITESTPROGS-yes += api-seek
+-APITESTPROGS-yes += api-codec-param
++#APITESTPROGS-yes += api-seek
++#APITESTPROGS-yes += api-codec-param
++#APITESTPROGS-yes += api-vsv-h264dec 
+ APITESTPROGS-$(call DEMDEC, H263, H263) += api-band
+-APITESTPROGS-$(HAVE_THREADS) += api-threadmessage
++#APITESTPROGS-$(HAVE_THREADS) += api-threadmessage
+ APITESTPROGS += $(APITESTPROGS-yes)
+ 
+ APITESTOBJS  := $(APITESTOBJS:%=$(APITESTSDIR)%) $(APITESTPROGS:%=$(APITESTSDIR)/%-test.o)
+@@ -15,6 +16,8 @@ $(APITESTOBJS): | $(sort $(dir $(APITESTOBJS)))
+ $(APITESTOBJS) $(APITESTOBJS:.o=.i): CPPFLAGS += -DTEST
+ $(APITESTOBJS) $(APITESTOBJS:.o=.i): CFLAGS += -Umain
+ 
++#all:$(APITESTPROGS)
++
+ $(APITESTPROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
+ 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(filter %.o,$^) $(FF_EXTRALIBS) $(ELIBS)
+ 
+diff --git a/tests/api/api-vsv-h264dec-test.c b/tests/api/api-vsv-h264dec-test.c
+new file mode 100644
+index 0000000..37b12ec
+--- /dev/null
++++ b/tests/api/api-vsv-h264dec-test.c
+@@ -0,0 +1,157 @@
++#include <libavcodec/avcodec.h>
++#include <libavformat/avformat.h>
++#include <libavutil/imgutils.h>
++#include <math.h>
++#include <string.h>
++#include <time.h>
++
++clock_t start, stop;
++double duration;
++
++int main(int argc, char* argv[]) {
++    //av_register_all();
++
++    AVFormatContext* fmt_ctx = NULL;
++    AVCodecContext* codec_ctx = NULL;
++    AVCodec* codec = NULL;
++    AVPacket pkt;
++    int ret = 0;
++    AVFrame* frame = NULL;
++    int FrameCount = 0;
++    int FrameNum = 0;
++    int video_stream_index = -1;
++    char outPath[10240];
++    snprintf(outPath, sizeof(outPath), "mkdir -p output");
++    ret=system(outPath);
++    if(ret!=0){
++        fprintf(stderr, "Error: create output document failed.\n");
++        goto end;
++    }
++    FILE* fp=NULL;
++    int one_flag = 1;
++    int benchmark = 0;
++    double fps = 0;
++    int width = 0, height=0;
++    if(argc > 2 && !strcmp(argv[2], "-b"))
++    {
++	benchmark = 1;
++    }
++    // Open input file
++    if (avformat_open_input(&fmt_ctx, argv[1], NULL, NULL) < 0) {
++        fprintf(stderr, "Error: Could not open input file.\n");
++        goto end;
++    }
++
++    // Retrieve stream information
++    if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
++        fprintf(stderr, "Error: Could not find stream information.\n");
++        goto end;
++    }
++
++    // Find the first video stream
++    for (int i = 0; i < fmt_ctx->nb_streams; i++) {
++        if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
++            video_stream_index = i;
++            break;
++        }
++    }
++
++    if (video_stream_index == -1) {
++        fprintf(stderr, "Error: Could not find video stream.\n");
++        goto end;
++    }
++    width = fmt_ctx->streams[video_stream_index]->codecpar->width;
++    height = fmt_ctx->streams[video_stream_index]->codecpar->height;
++    // Get a pointer to the codec context for the video stream
++    codec_ctx = avcodec_alloc_context3(NULL);
++    if (!codec_ctx) {
++        fprintf(stderr, "Error: Could not allocate codec context.\n");
++        goto end;
++    }
++    avcodec_parameters_to_context(codec_ctx, fmt_ctx->streams[video_stream_index]->codecpar);
++
++    // Find the decoder for the video stream
++    //codec = avcodec_find_decoder(codec_ctx->codec_id);
++    codec = avcodec_find_decoder_by_name("h264_vsv_decoder");
++    if (!codec) {
++        fprintf(stderr, "Error: Could not find decoder.\n");
++        goto end;
++    }
++    // Open codec
++    if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
++        fprintf(stdout,"ok!\n");
++        fprintf(stderr, "Error: Could not open codec.\n");
++        goto end;
++    }
++    // Allocate video frame
++    frame = av_frame_alloc();
++    if (!frame) {
++        fprintf(stderr, "Error: Could not allocate video frame.\n");
++        goto end;
++    }
++
++    start = clock();
++    // Read frames from the file
++    while (1) {
++        ret = av_read_frame(fmt_ctx, &pkt);
++        if(ret < 0 && one_flag==0)break;
++        if(ret < 0 && one_flag==1){
++            pkt.data = NULL;
++            pkt.size = 0;
++            one_flag = 0;
++        }
++        // If this is a packet from the video stream, decode it
++        if (pkt.stream_index == video_stream_index) {
++            // Send packet to decoder
++                ret = avcodec_send_packet(codec_ctx, &pkt);
++	        if (ret< 0) {
++                    fprintf(stderr, "Error: Failed to send packet to decoder.\n");
++                    return 1;
++                }
++                FrameNum++;
++	    while(ret >= 0) {
++                ret = avcodec_receive_frame(codec_ctx, frame);
++                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
++                    break;
++                } else if (ret < 0) {
++                    fprintf(stdout, "Error: Could not decode video frame.");
++                    return 1;
++                }
++                FrameCount++;
++                if(!benchmark)
++		{
++		    memset(outPath, 0, sizeof(outPath));
++		    snprintf(outPath, sizeof(outPath), "output/%d.yuv",FrameCount);
++		    fp = fopen(outPath, "wb");
++		    fwrite(frame->data[0], 1, frame->width * frame->height, fp);
++		    fwrite(frame->data[1], 1, frame->width * frame->height / 2, fp);
++		    fclose(fp);
++		    fprintf(stdout, "This is the %d frame received!\n", FrameCount);
++		}
++                //if(FrameCount==2)goto ok;
++    	    }
++        }
++
++   }
++   stop = clock();
++
++
++ok:
++duration = ((double)(stop-start))/CLOCKS_PER_SEC;
++fps = 1.0 * FrameCount / duration;
++if(benchmark)
++{
++    fprintf(stdout, "All Frame Decoded Finished. [Resolution]: %dx%d, [Frame Num]: %d, [FPS]: %.3f, [TIME]: %.3fs\n", width, height, FrameCount, fps, duration);
++}
++else
++{
++    fprintf(stdout, "All Frame Decoded Finished. [Resolution]: %dx%d, [Frame Num]: %d\n", width, height, FrameCount);
++}
++end:
++    // Clean up
++    avformat_close_input(&fmt_ctx);
++    avcodec_free_context(&codec_ctx);
++    av_frame_free(&frame);
++    return 0;
++}
++
+diff --git a/tests/api/compile-api-vsv-h264dec-test.sh b/tests/api/compile-api-vsv-h264dec-test.sh
+new file mode 100644
+index 0000000..0232ac5
+--- /dev/null
++++ b/tests/api/compile-api-vsv-h264dec-test.sh
+@@ -0,0 +1,4 @@
++echo "Please modify the --sysroot to the absolute path of the document and remove the # sign below!"
++#riscv64-linux-gcc -g -mcpu=c910 -fstack-protector-strong -O2 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Werror=format-security --no-sysroot-suffix --sysroot=.../yocto/thead-build/light-fm/tmp-glibc/work/riscv64-oe-linux/ffmpeg/4.3.1-r0/recipe-sysroot api-vsv-h264dec-test.c -o api-vsv-h264dec-test \
++#-I../../../image/usr/include \
++#-L../../../image/usr/lib  -lavcodec -lavformat -lavutil -lswscale -lswresample -lavresample
+-- 
+2.17.1
+

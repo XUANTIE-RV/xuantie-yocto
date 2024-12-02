@@ -1,0 +1,257 @@
+From 2ee0d5e1693d849157c1aac1f86b737d9f5f408b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Tue, 19 Nov 2024 07:35:32 +0000
+Subject: [PATCH] xuantie-fpga
+
+---
+ arch/riscv/Kconfig                           |  5 +++
+ arch/riscv/dts/Makefile                      |  2 +-
+ board/xuantie/xuantie_fpga/Kconfig           | 35 ++++++++++++++++++
+ board/xuantie/xuantie_fpga/MAINTAINERS       | 10 ++++++
+ board/xuantie/xuantie_fpga/Makefile          |  7 ++++
+ board/xuantie/xuantie_fpga/xuantie_fpga.c    | 15 ++++++++
+ configs/fpga_xuantie_riscv32_smode_defconfig |  2 +-
+ configs/fpga_xuantie_riscv64_smode_defconfig |  4 ++-
+ doc/board/xuantie/fpga.rst                   | 38 ++++++++++++++++++++
+ include/configs/xuantie_fpga.h               | 25 +++++++++++++
+ 10 files changed, 140 insertions(+), 3 deletions(-)
+ create mode 100644 board/xuantie/xuantie_fpga/Kconfig
+ create mode 100644 board/xuantie/xuantie_fpga/MAINTAINERS
+ create mode 100644 board/xuantie/xuantie_fpga/Makefile
+ create mode 100644 board/xuantie/xuantie_fpga/xuantie_fpga.c
+ create mode 100644 doc/board/xuantie/fpga.rst
+ create mode 100644 include/configs/xuantie_fpga.h
+
+diff --git a/arch/riscv/Kconfig b/arch/riscv/Kconfig
+index 876bec35bc..8891a5359d 100644
+--- a/arch/riscv/Kconfig
++++ b/arch/riscv/Kconfig
+@@ -43,6 +43,10 @@ config TARGET_TH1520_LPI4A
+ 	bool "Support Sipeed's TH1520 Lichee PI 4A Board"
+ 	select SYS_CACHE_SHIFT_6
+ 
++config TARGET_XUANTIE_FPGA
++        bool "Support XUANTIE FPGA"
++        select SYS_CACHE_SHIFT_6
++
+ config TARGET_XILINX_MBV
+ 	bool "Support AMD/Xilinx MicroBlaze V"
+ 
+@@ -91,6 +95,7 @@ source "board/sophgo/milkv_duo/Kconfig"
+ source "board/starfive/visionfive2/Kconfig"
+ source "board/thead/th1520_lpi4a/Kconfig"
+ source "board/xilinx/mbv/Kconfig"
++source "board/xuantie/xuantie_fpga/Kconfig"
+ 
+ # platform-specific options below
+ source "arch/riscv/cpu/andes/Kconfig"
+diff --git a/arch/riscv/dts/Makefile b/arch/riscv/dts/Makefile
+index 17cda483e1..db1ea9f9a9 100644
+--- a/arch/riscv/dts/Makefile
++++ b/arch/riscv/dts/Makefile
+@@ -11,7 +11,7 @@ dtb-$(CONFIG_TARGET_SIPEED_MAIX) += k210-maix-bit.dtb
+ dtb-$(CONFIG_TARGET_STARFIVE_VISIONFIVE2) += jh7110-starfive-visionfive-2.dtb
+ dtb-$(CONFIG_TARGET_TH1520_LPI4A) += th1520-lichee-pi-4a.dtb
+ dtb-$(CONFIG_TARGET_XILINX_MBV) += xilinx-mbv32.dtb
+-
++dtb-$(CONFIG_TARGET_XUANTIE_FPGA) += fpga-xuantie-riscv64.dtb fpga-xuantie-riscv32.dtb
+ include $(srctree)/scripts/Makefile.dts
+ 
+ targets += $(dtb-y)
+diff --git a/board/xuantie/xuantie_fpga/Kconfig b/board/xuantie/xuantie_fpga/Kconfig
+new file mode 100644
+index 0000000000..8df62f5bdb
+--- /dev/null
++++ b/board/xuantie/xuantie_fpga/Kconfig
+@@ -0,0 +1,35 @@
++if TARGET_XUANTIE_FPGA
++
++config ARCH_XUANTIE
++	bool
++	default y
++
++config SYS_BOARD
++	default "xuantie_fpga"
++
++config SYS_VENDOR
++	default "xuantie"
++
++config SYS_CPU
++	default "generic"
++
++config SYS_CONFIG_NAME
++	default "xuantie_fpga"
++
++config TEXT_BASE
++	default 0x60400000 if RISCV_SMODE
++
++
++config BOARD_SPECIFIC_OPTIONS
++	def_bool y
++	select ARCH_EARLY_INIT_R
++	imply CPU
++	imply CPU_RISCV
++	imply RISCV_TIMER if RISCV_SMODE
++	imply CMD_CPU
++	imply SMP
++	imply SUPPORT_OF_CONTROL
++	imply OF_CONTROL
++	imply OF_REAL
++
++endif
+diff --git a/board/xuantie/xuantie_fpga/MAINTAINERS b/board/xuantie/xuantie_fpga/MAINTAINERS
+new file mode 100644
+index 0000000000..c35f9279d8
+--- /dev/null
++++ b/board/xuantie/xuantie_fpga/MAINTAINERS
+@@ -0,0 +1,10 @@
++XUANTIE_FPGA
++M:	CHONGZHI LU <chongzhi.lcz@alibaba-inc.com>
++M:	KAIYUAN DONG <dongkaiyuan.dky@alibaba-inc.com>
++S:	Maintained
++F:	board/xuantie/xuantie_fpga/
++F:      arch/riscv/dts/fpga-xuantie-riscv32.dts
++F:      arch/riscv/dts/fpga-xuantie-riscv64.dts
++F:      configs/fpga_xuantie_riscv32_smode_defconfig
++F:      configs/fpga_xuantie_riscv64_smode_defconfig
++F:	doc/board/xuantie/fpga.rst
+diff --git a/board/xuantie/xuantie_fpga/Makefile b/board/xuantie/xuantie_fpga/Makefile
+new file mode 100644
+index 0000000000..4ac0c8a38a
+--- /dev/null
++++ b/board/xuantie/xuantie_fpga/Makefile
+@@ -0,0 +1,7 @@
++# SPDX-License-Identifier: GPL-2.0+
++#
++# Copyright (c) 2024, Alibaba-inc, Damo
++# chongzhi lu <chongzhi.lcz@alibaba-inc.com>
++# kaiyuan dong <dongkaiyuan.dky@alibaba-inc.com>
++
++obj-y += xuantie_fpga.o
+diff --git a/board/xuantie/xuantie_fpga/xuantie_fpga.c b/board/xuantie/xuantie_fpga/xuantie_fpga.c
+new file mode 100644
+index 0000000000..7f9d96a672
+--- /dev/null
++++ b/board/xuantie/xuantie_fpga/xuantie_fpga.c
+@@ -0,0 +1,15 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (c) 2024, Alibaba-inc, Damo
++ * chongzhi lu <chongzhi.lcz@alibaba-inc.com>
++ * kaiyuan dong <dongkaiyuan.dky@alibaba-inc.com> 
++ */
++
++#include <cpu_func.h>
++
++int board_init(void)
++{
++	enable_caches();
++
++	return 0;
++}
+diff --git a/configs/fpga_xuantie_riscv32_smode_defconfig b/configs/fpga_xuantie_riscv32_smode_defconfig
+index f7ea6a9344..5f12eb9118 100644
+--- a/configs/fpga_xuantie_riscv32_smode_defconfig
++++ b/configs/fpga_xuantie_riscv32_smode_defconfig
+@@ -9,7 +9,7 @@ CONFIG_SYS_NS16550_SERIAL=y
+ CONFIG_SYS_NS16550=y
+ CONFIG_DEFAULT_DEVICE_TREE="fpga-xuantie-riscv32"
+ CONFIG_SYS_LOAD_ADDR=0x60800000
+-CONFIG_TARGET_TH1520_LPI4A=y
++CONFIG_TARGET_XUANTIE_FPGA=y
+ CONFIG_ARCH_RV32I=y
+ CONFIG_RISCV_SMODE=y
+ CONFIG_FIT=y
+diff --git a/configs/fpga_xuantie_riscv64_smode_defconfig b/configs/fpga_xuantie_riscv64_smode_defconfig
+index ceffe180a8..164f3596e8 100644
+--- a/configs/fpga_xuantie_riscv64_smode_defconfig
++++ b/configs/fpga_xuantie_riscv64_smode_defconfig
+@@ -9,7 +9,9 @@ CONFIG_SYS_NS16550_SERIAL=y
+ CONFIG_SYS_NS16550=y
+ CONFIG_DEFAULT_DEVICE_TREE="fpga-xuantie-riscv64"
+ CONFIG_SYS_LOAD_ADDR=0x60800000
+-CONFIG_TARGET_TH1520_LPI4A=y
++CONFIG_SYS_VENDOR="xuantie"
++CONFIG_SYS_BOARD="xuantie_fpga"
++CONFIG_TARGET_XUANTIE_FPGA=y
+ CONFIG_ARCH_RV64I=y
+ CONFIG_RISCV_SMODE=y
+ CONFIG_FIT=y
+diff --git a/doc/board/xuantie/fpga.rst b/doc/board/xuantie/fpga.rst
+new file mode 100644
+index 0000000000..31709d3086
+--- /dev/null
++++ b/doc/board/xuantie/fpga.rst
+@@ -0,0 +1,38 @@
++.. SPDX-License-Identifier: GPL-2.0+
++
++XUANTIE_FPGA
++================================================
++
++The LicheePi4A is a high-performance RISC-V SBC based on TH1520(4xC910@1.85GHz),
++comes with 4/8/16 GB RAM, and up to 128GB eMMC, and rich peripherals.
++
++ - CPUS           XUANTIE SERIES CPUs
++ - System Memory  4GB for 64bit and 1GB for 32bit
++
++Mainline support
++----------------
++
++The support for following drivers are already enabled:
++
++1. ns16550 UART Driver.
++
++Building
++~~~~~~~~
++
++1. Add the RISC-V toolchain to your PATH.
++2. Setup ARCH & cross compilation environment variable:
++
++.. code-block:: none
++
++   export CROSS_COMPILE=<riscv64 toolchain prefix>
++
++The U-Boot is capable of running in S-Mode, so we can directly build it.
++
++.. code-block:: console
++
++	cd <U-Boot-dir>
++	make fpga_xuantie_riscv64_smode_defconfig
++	make
++
++This will generate u-boot.bin
++
+diff --git a/include/configs/xuantie_fpga.h b/include/configs/xuantie_fpga.h
+new file mode 100644
+index 0000000000..c1f1ffec00
+--- /dev/null
++++ b/include/configs/xuantie_fpga.h
+@@ -0,0 +1,25 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++/*
++ * Copyright (c) 2023 Alibaba-inc, Damo
++ * chongzhi lu <chongzhi.lcz@alibaba-inc.com>
++ * kaiyuan dong <dongkaiyuan.dky@alibaba-inc.com>
++ */
++
++#ifndef __XUANTIE_FPGA_H
++#define __XUANTIE_FPGA_H
++
++#include <linux/sizes.h>
++
++#define CFG_SYS_NS16550_COM1		0x1900d000
++#define CFG_SYS_NS16550_CLK		36000000
++#define CFG_SYS_SDRAM_BASE		0x60000000
++
++#define UART_BASE	0xffe7014000
++#define UART_REG_WIDTH  32
++
++/* Environment options */
++
++#define CFG_EXTRA_ENV_SETTINGS \
++	"PS1=[xuantie-fpga]# \0"
++
++#endif /* __XUANTIE_FPGA_H */
+-- 
+2.47.0
+

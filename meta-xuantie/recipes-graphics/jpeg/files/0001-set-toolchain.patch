@@ -1,0 +1,52 @@
+diff --git a/toolchain/riscv64-1.0-gcc.toolchain.cmake b/toolchain/riscv64-1.0-gcc.toolchain.cmake
+index 8419e0e..6093cf1 100644
+--- a/toolchain/riscv64-1.0-gcc.toolchain.cmake
++++ b/toolchain/riscv64-1.0-gcc.toolchain.cmake
+@@ -1,9 +1,9 @@
+ set(CMAKE_SYSTEM_NAME Linux)
+ set(CMAKE_SYSTEM_PROCESSOR riscv64)
+ 
+-set(CMAKE_ASM_COMPILER "riscv64-unknown-linux-gnu-gcc")
+-set(CMAKE_C_COMPILER "riscv64-unknown-linux-gnu-gcc")
+-set(CMAKE_CXX_COMPILER "riscv64-unknown-linux-gnu-g++")
++set(CMAKE_ASM_COMPILER "riscv64-oe-linux-gcc")
++set(CMAKE_C_COMPILER "riscv64-oe-linux-gcc")
++set(CMAKE_CXX_COMPILER "riscv64-oe-linux-g++")
+ 
+ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+@@ -11,7 +11,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+ 
+ # for C910v
+ execute_process(
+-  COMMAND bash -c "riscv64-unknown-linux-gnu-gcc -E -dM -</dev/null | grep __GNUC__ | awk '{print $3}'"
++  COMMAND bash -c "riscv64-oe-linux-gcc -E -dM -</dev/null | grep __GNUC__ | awk '{print $3}'"
+   OUTPUT_VARIABLE XT_GCC_VERSION
+   OUTPUT_STRIP_TRAILING_WHITESPACE
+ )
+diff --git a/toolchain/riscv64.toolchain.cmake b/toolchain/riscv64.toolchain.cmake
+index 09f3925..c211d76 100644
+--- a/toolchain/riscv64.toolchain.cmake
++++ b/toolchain/riscv64.toolchain.cmake
+@@ -1,9 +1,9 @@
+ set(CMAKE_SYSTEM_NAME Linux)
+ set(CMAKE_SYSTEM_PROCESSOR lp64dv)
+ 
+-set(CMAKE_ASM_COMPILER "riscv64-unknown-linux-gnu-gcc")
+-set(CMAKE_C_COMPILER "riscv64-unknown-linux-gnu-gcc")
+-set(CMAKE_CXX_COMPILER "riscv64-unknown-linux-gnu-g++")
++set(CMAKE_ASM_COMPILER "riscv64-oe-linux-gcc")
++set(CMAKE_C_COMPILER "riscv64-oe-linux-gcc")
++set(CMAKE_CXX_COMPILER "riscv64-oe-linux-gnu-g++")
+ 
+ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+@@ -11,7 +11,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+ 
+ # for C910v
+ execute_process(
+-  COMMAND bash -c "riscv64-unknown-linux-gnu-gcc -E -dM -</dev/null | grep __GNUC__ | awk '{print $3}'"
++  COMMAND bash -c "riscv64-oe-linux-gcc -E -dM -</dev/null | grep __GNUC__ | awk '{print $3}'"
+   OUTPUT_VARIABLE XT_GCC_VERSION
+   OUTPUT_STRIP_TRAILING_WHITESPACE
+ )

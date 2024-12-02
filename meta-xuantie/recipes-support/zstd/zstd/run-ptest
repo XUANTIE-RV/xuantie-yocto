@@ -1,0 +1,21 @@
+#!/bin/sh
+
+cd $(dirname "$(realpath "$0")")
+if [ ! -f "programs/source1.c" ]; then
+    FILE_PATH="programs/zstdcli.c"
+
+    for i in {1..5}; do
+        cp $FILE_PATH programs/source$i.c
+    done
+    for i in {1..2}; do
+        cp $FILE_PATH programs/header$i.h
+    done
+    cp $FILE_PATH tests/test_file.c
+fi
+
+cd tests
+if ./playTests.sh ; then
+    echo "PASS: zstd"
+else
+    echo "FAIL: zstd"
+fi

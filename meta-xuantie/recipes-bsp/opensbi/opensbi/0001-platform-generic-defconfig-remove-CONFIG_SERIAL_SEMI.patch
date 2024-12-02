@@ -1,0 +1,25 @@
+From d7db0dbcc6dd937eb57a0106e9d99b2e77c4c759 Mon Sep 17 00:00:00 2001
+From: "cp0613" <cp0613@linux.alibaba.com>
+Date: Fri, 19 May 2023 17:01:56 +0800
+Subject: [PATCH] platform:generic:defconfig:remove CONFIG_SERIAL_SEMIHOSTING
+ 
+Signed-off-by: cp0613 <cp0613@linux.alibaba.com>
+---
+ platform/generic/configs/defconfig | 1 -
+ 1 file changed, 1 deletion(-)
+ 
+diff --git a/platform/generic/configs/defconfig b/platform/generic/configs/defconfig
+index 1ce6a12..177b8dd 100644
+--- a/platform/generic/configs/defconfig
++++ b/platform/generic/configs/defconfig
+@@ -38,7 +38,6 @@ CONFIG_FDT_SERIAL_SIFIVE=y
+ CONFIG_FDT_SERIAL_LITEX=y
+ CONFIG_FDT_SERIAL_UART8250=y
+ CONFIG_FDT_SERIAL_XILINX_UARTLITE=y
+-CONFIG_SERIAL_SEMIHOSTING=y
+ CONFIG_FDT_TIMER=y
+ CONFIG_FDT_TIMER_MTIMER=y
+ CONFIG_FDT_TIMER_PLMT=y
+-- 
+2.25.1
+ 

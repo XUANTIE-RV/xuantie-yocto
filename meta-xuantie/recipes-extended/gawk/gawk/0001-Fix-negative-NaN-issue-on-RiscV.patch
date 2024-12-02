@@ -1,0 +1,54 @@
+diff --git a/eval.c b/eval.c
+index 9e64452..37d0fa6 100644
+--- a/eval.c
++++ b/eval.c
+@@ -41,6 +41,8 @@ static int num_exec_hook = 0;
+ static Func_pre_exec pre_execute[MAX_EXEC_HOOKS];
+ static Func_post_exec post_execute = NULL;
+ 
++static double fix_nan_sign(double left, double right, double result);
++
+ extern void frame_popped();
+ 
+ int OFSlen;
+@@ -1795,3 +1797,20 @@ init_interpret()
+ 		interpret = r_interpret;
+ }
+ 
++/* fix_nan_sign --- fix NaN sign on RiscV */
++
++// See the thread starting at
++// https://lists.gnu.org/archive/html/bug-gawk/2022-09/msg00005.html
++// for why we need this function.
++
++static double
++fix_nan_sign(double left, double right, double result)
++{
++	if (isnan(left) && signbit(left))
++		return copysign(result, -1.0);
++	else if (isnan(right) && signbit(right))
++		return copysign(result, -1.0);
++	else
++		return result;
++}
++
+diff --git a/interpret.h b/interpret.h
+index d52d537..0a7beff 100644
+--- a/interpret.h
++++ b/interpret.h
+@@ -538,6 +538,7 @@ uninitialized_scalar:
+ plus:
+ 			t1 = TOP_NUMBER();
+ 			r = make_number(t1->numbr + x2);
++			r->numbr = fix_nan_sign(t1->numbr, x2, r->numbr);
+ 			DEREF(t1);
+ 			REPLACE(r);
+ 			break;
+@@ -552,6 +553,7 @@ plus:
+ minus:
+ 			t1 = TOP_NUMBER();
+ 			r = make_number(t1->numbr - x2);
++			r->numbr = fix_nan_sign(t1->numbr, x2, r->numbr);
+ 			DEREF(t1);
+ 			REPLACE(r);
+ 			break;

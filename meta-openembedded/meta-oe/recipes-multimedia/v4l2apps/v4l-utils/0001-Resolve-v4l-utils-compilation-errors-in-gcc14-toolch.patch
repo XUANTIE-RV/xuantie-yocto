@@ -1,0 +1,25 @@
+From 9422c0998100431302c1291fbae637a9e0b18d30 Mon Sep 17 00:00:00 2001
+From: bianhq <bhq01502828@alibaba-inc.com>
+Date: Fri, 27 Sep 2024 13:05:46 +0000
+Subject: [PATCH] Resolve v4l-utils compilation errors in gcc14 toolchain
+
+---
+ utils/common/media-info.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/utils/common/media-info.cpp b/utils/common/media-info.cpp
+index 53e132f5..eb8746fe 100644
+--- a/utils/common/media-info.cpp
++++ b/utils/common/media-info.cpp
+@@ -6,7 +6,7 @@
+ #include <cstring>
+ #include <fstream>
+ #include <iostream>
+-
++#include <cstdint>
+ #include <dirent.h>
+ #include <fcntl.h>
+ #include <sys/ioctl.h>
+-- 
+2.41.0
+

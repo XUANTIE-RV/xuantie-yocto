@@ -1,0 +1,35 @@
+description: Disable ANGLE perftests
+author: Michel Le Bihan <michel@lebihan.pl>
+
+--- a/src/chrome/test/BUILD.gn
++++ b/src/chrome/test/BUILD.gn
+@@ -5120,7 +5120,6 @@ template("performance_test_suite_templat
+     }
+ 
+     if (!is_chromeos_lacros) {
+-      data_deps += [ "//third_party/angle/src/tests:angle_perftests" ]
+     }
+ 
+     if (!is_android && !is_chromeos_lacros) {
+--- a/src/third_party/angle/src/tests/BUILD.gn
++++ b/src/third_party/angle/src/tests/BUILD.gn
+@@ -1744,7 +1744,7 @@ group("angle_tests") {
+   if (is_clang) {
+     deps += [ "capture_replay_tests" ]
+   }
+-  if (!is_fuchsia) {
++  if (false) {
+     deps += [
+       ":angle_white_box_perftests",
+       ":angle_white_box_tests",
+--- a/src/third_party/angle/gni/angle.gni
++++ b/src/third_party/angle/gni/angle.gni
+@@ -282,7 +282,7 @@ declare_args() {
+       is_apple &&
+       (angle_enable_glsl || angle_enable_metal || use_fuzzing_engine)
+ 
+-  angle_has_histograms = angle_has_build
++  angle_has_histograms = false
+ 
+   # True if we want to build the ANGLE test suites. On by default in most configs.
+   angle_build_tests = angle_has_build

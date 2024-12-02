@@ -1,0 +1,24 @@
+From f77f6636acdd052a8999fe9b6ac7039e9933cbb8 Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Fri, 18 Oct 2024 09:01:59 +0800
+Subject: [PATCH] Add riscv32gc-oe-linux-gnu into NO_ATOMIC_64 list
+
+---
+ no_atomic.rs | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/no_atomic.rs b/no_atomic.rs
+index 522b3b8..3b0ffbd 100644
+--- a/no_atomic.rs
++++ b/no_atomic.rs
+@@ -40,6 +40,7 @@ const NO_ATOMIC_64: &[&str] = &[
+     "riscv32gc-unknown-linux-gnu",
+     "riscv32gc-unknown-linux-musl",
+     "riscv32imac-unknown-none-elf",
++    "riscv32gc-oe-linux-gnu",
+     "thumbv7em-none-eabi",
+     "thumbv7em-none-eabihf",
+     "thumbv7m-none-eabi",
+-- 
+2.17.1
+

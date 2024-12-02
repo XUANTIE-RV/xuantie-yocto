@@ -1,0 +1,31 @@
+From 0c40cbb6900c7368220f9c018d772246b9dfc203 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Sun, 17 Nov 2024 10:31:06 +0000
+Subject: [PATCH] set bootcmd for qemu
+
+---
+ configs/qemu-riscv32_smode_defconfig | 1 +
+ configs/qemu-riscv64_smode_defconfig | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/configs/qemu-riscv32_smode_defconfig b/configs/qemu-riscv32_smode_defconfig
+index ad349fc5af..c83454c9f7 100644
+--- a/configs/qemu-riscv32_smode_defconfig
++++ b/configs/qemu-riscv32_smode_defconfig
+@@ -21,3 +21,4 @@ CONFIG_SYS_RELOC_GD_ENV_ADDR=y
+ CONFIG_DM_MTD=y
+ CONFIG_FLASH_SHOW_PROGRESS=0
+ CONFIG_SYS_MAX_FLASH_BANKS=2
++CONFIG_BOOTCOMMAND="setenv bootargs 'root=/dev/vda rw console=ttyS0 earlycon=sbi'; cp.l \$fdtcontroladdr \$fdt_addr_r 0x10000; booti \$kernel_addr_r - \$fdt_addr_r"
+diff --git a/configs/qemu-riscv64_smode_defconfig b/configs/qemu-riscv64_smode_defconfig
+index 6baad1de38..b9a27b49bd 100644
+--- a/configs/qemu-riscv64_smode_defconfig
++++ b/configs/qemu-riscv64_smode_defconfig
+@@ -23,3 +23,4 @@ CONFIG_SYS_RELOC_GD_ENV_ADDR=y
+ CONFIG_DM_MTD=y
+ CONFIG_FLASH_SHOW_PROGRESS=0
+ CONFIG_SYS_MAX_FLASH_BANKS=2
++CONFIG_BOOTCOMMAND="setenv bootargs 'root=/dev/vda rw console=ttyS0 earlycon=sbi'; cp.l \$fdtcontroladdr \$fdt_addr_r 0x10000; booti \$kernel_addr_r - \$fdt_addr_r"
+-- 
+2.47.0
+

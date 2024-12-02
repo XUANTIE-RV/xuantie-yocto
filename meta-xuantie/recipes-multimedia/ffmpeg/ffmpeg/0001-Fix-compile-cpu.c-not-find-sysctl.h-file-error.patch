@@ -1,0 +1,11 @@
+--- a/libavutil/cpu.c 2022-11-23 19:36:05.092354787 +0800
++++ b/libavutil/cpu.c 2022-11-23 19:35:18.246554813 +0800
+@@ -43,7 +43,7 @@
+ #include <sys/param.h>
+ #endif
+ #include <sys/types.h>
+-#include <sys/sysctl.h>
++#include <linux/sysctl.h>
+ #endif
+ #if HAVE_UNISTD_H
+ #include <unistd.h>
