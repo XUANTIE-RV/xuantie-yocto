@@ -27,8 +27,6 @@ gen_image()
 					--inputpath "$(pwd)"  	--outputpath "$(pwd)"	--config "${cfg}"
 
 	rm -rf "${GENIMAGE_TMP}"
-	gzip -k -f ${image_name}
-	chmod a+rw ${image_name} ${image_name}.gz;
 }
 
 gen_boot_ext4()
