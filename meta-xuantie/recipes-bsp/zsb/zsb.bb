@@ -8,6 +8,7 @@ SRC_URI = " \
 "
 
 SRCREV = "0844f754ba7f7f86afea99c8423d48ea989d9a8a"
+PV = "1.2"
 S = "${WORKDIR}/git"
 
 CROSS_LDFLAGS:riscv32 = " -melf32lriscv"
