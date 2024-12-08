@@ -3,11 +3,14 @@ LICENSE = "CLOSED"
 
 inherit deploy
 
-SRC_URI = " \
-    git://github.com/XUANTIE-RV/zero_stage_boot;protocol=https;branch=master \
-"
-
 SRCREV = "0844f754ba7f7f86afea99c8423d48ea989d9a8a"
+XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/zero_stage_boot.git"
+XUANTIE_GIT_MIRRORS = "git://git@github.com/XUANTIE-RV/zero_stage_boot.git"
+MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
+SRC_URI = " \
+    ${XUANTIE_GIT_MIRRORS};branch=master;protocol=https \
+    ${XUANTIE_GIT};branch=master;protocol=https \
+"
 PV = "1.2"
 S = "${WORKDIR}/git"
 

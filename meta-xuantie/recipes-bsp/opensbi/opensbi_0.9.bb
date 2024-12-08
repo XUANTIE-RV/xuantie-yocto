@@ -1,7 +1,12 @@
 require opensbi.inc
 
+XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/opensbi.git"
+XUANTIE_GIT_MIRRORS = "git://git@github.com/XUANTIE-RV/opensbi.git"
+MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
+
 SRC_URI = " \
-            git://github.com/XUANTIE-RV/opensbi.git;branch=opensbi-v0.9-dev;protocol=https \
+            ${XUANTIE_GIT_MIRRORS};branch=opensbi-v0.9-dev;protocol=https \
+            ${XUANTIE_GIT};branch=opensbi-v0.9-dev;protocol=https \
             file://0001-Makefile-tmp-fix.patch \
           "
 

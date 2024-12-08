@@ -1,10 +1,18 @@
 DESCRIPTION = "AI benchmark for xuantie"
 LICENSE = "CLOSED"
 
-SRC_URI = "git://git@gitee.com/xuantie-yocto/xtai-benchmark.git;branch=1.0;protocol=ssh;name=xtai-benchmark"
 
 XUANTIE_LINUX_TAG ?= "${AUTOREV}"
 SRCREV = "909d4bcc0ec8f38cac82eec1269c2e0fbf5c4c45"
+XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/xtai-benchmark.git"
+XUANTIE_GIT_MIRRORS = "git://git@github.com/XUANTIE-RV/xtai-benchmark.git"
+MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
+
+SRC_URI = " \
+    ${XUANTIE_GIT_MIRRORS};branch=1.0;protocol=https;name=xtai-benchmark \
+    ${XUANTIE_GIT};branch=1.0;protocol=ssh;name=xtai-benchmark \
+"
+
 PV = "1.0"
 S = "${WORKDIR}/git"
 

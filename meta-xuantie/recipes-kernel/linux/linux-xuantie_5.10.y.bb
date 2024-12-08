@@ -1,8 +1,14 @@
 inherit kernel
 require recipes-kernel/linux/linux-yocto.inc
 
+XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/linux.git"
+XUANTIE_GIT_MIRRORS = "git://git@github.com/XUANTIE-RV/linux.git"
+MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
+
+
 SRC_URI = " \
-            git://github.com/XUANTIE-RV/linux.git;branch=linux-5.10.4;protocol=https \
+            ${XUANTIE_GIT_MIRRORS};branch=linux-5.10.4;protocol=https \
+            ${XUANTIE_GIT};branch=linux-5.10.4;protocol=https \
             file://0001-isa-zicsr-zifencei.patch \
             file://0002-perf-annotate-Fix-build-error.patch \
             file://0003-perf-build-Disable-fewer-flex-warnings.patch \

@@ -1,8 +1,13 @@
 inherit kernel
 require recipes-kernel/linux/linux-yocto.inc
 
+XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/linux-xuantie-kernel.git"
+XUANTIE_GIT_MIRRORS = "git://git@github.com/ruyisdk/linux-xuantie-kernel.git"
+MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
+
 SRC_URI = " \
-            git://github.com/ruyisdk/linux-xuantie-kernel.git;branch=linux-6.6.36;protocol=https \
+            ${XUANTIE_GIT_MIRRORS};branch=linux-6.6.36;protocol=https \
+            ${XUANTIE_GIT};branch=linux-6.6.36;protocol=https \
             file://0001-riscv-kdump-Fix-gen-proc-vmcore.patch \
             file://0002-disable-canaan-gpu.patch \
             file://kernel.12HZ.cfg \
