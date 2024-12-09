@@ -4,9 +4,17 @@ inherit python3-dir autotools texinfo
 SECTION = "devel"
 DEPENDS = "expat mpfr zlib ncurses virtual/libiconv bison-native"
 
-SRC_URI = "git://git@gitee.com/xuantie-yocto/gdb-xuantie-private.git;branch=1.0;protocol=ssh"
 XUANTIE_LINUX_TAG ?= "${AUTOREV}"
-SRCREV = "892dd7338ac1ea5fc55437f4851b7cf477bf58ca"
+SRCREV = "f026a7be7a830fac9eb70a541399a51c90514dff"
+
+XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/gdb-xuantie-private.git"
+XUANTIE_GIT_MIRRORS = "git://git@github.com/XUANTIE-RV/gdb-xuantie-private.git"
+MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
+
+SRC_URI = " \
+    ${XUANTIE_GIT_MIRRORS};branch=1.0;protocol=https \
+    ${XUANTIE_GIT};branch=1.0;protocol=https \
+"
 
 S:riscv32 = "${WORKDIR}/git/gdb_prebuilt/gdb-xuantie-private_15.0.50-r0_riscv32/usr"
 S:riscv64 = "${WORKDIR}/git/gdb_prebuilt/gdb-xuantie-private_15.0.50-r0_riscv64/usr"
