@@ -18,7 +18,7 @@ SRC_URI = " \
 
 S:riscv32 = "${WORKDIR}/git/gdb_prebuilt/gdb-xuantie-private_15.0.50-r0_riscv32/usr"
 S:riscv64 = "${WORKDIR}/git/gdb_prebuilt/gdb-xuantie-private_15.0.50-r0_riscv64/usr"
-
+INSANE_SKIP:${PN} = "already-stripped"
 do_compile() {
 }
 
