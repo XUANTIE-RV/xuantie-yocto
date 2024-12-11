@@ -126,14 +126,14 @@ if ($simulate_run == 0)
 		set *(unsigned long *)($dyninfo_addr + 16) = $opensbi_next_img_addr
 		set *(unsigned long *)($dyninfo_addr + 24) = 1
 		set *(unsigned long *)($dyninfo_addr + 32) = 0
-		set *(unsigned long *)($dyninfo_addr + 40) = -1
+		set *(unsigned long *)($dyninfo_addr + 40) = 0
 	else
 		set *(unsigned long *)($dyninfo_addr)      = 0x4942534f
 		set *(unsigned long *)($dyninfo_addr + 4)  = 2
 		set *(unsigned long *)($dyninfo_addr + 8)  = $opensbi_next_img_addr
 		set *(unsigned long *)($dyninfo_addr + 12) = 1
 		set *(unsigned long *)($dyninfo_addr + 16) = 0
-		set *(unsigned long *)($dyninfo_addr + 20) = -1
+		set *(unsigned long *)($dyninfo_addr + 20) = 0
 	end
 
 	# Set 64lip32 flag off
