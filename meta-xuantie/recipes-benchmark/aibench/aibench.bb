@@ -3,7 +3,7 @@ LICENSE = "CLOSED"
 
 
 XUANTIE_LINUX_TAG ?= "${AUTOREV}"
-SRCREV = "493c20176e4202b17e83656ebf7e737164069db1"
+SRCREV = "0ce0cdc155a93e7c768d57468583a619577a484f"
 XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/xtai-benchmark.git"
 XUANTIE_GIT_MIRRORS = "git://git@github.com/XUANTIE-RV/xtai-benchmark.git"
 MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
