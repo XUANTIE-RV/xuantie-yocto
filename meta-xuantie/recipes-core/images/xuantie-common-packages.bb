@@ -1,10 +1,9 @@
 DESCRIPTION = "xuantie common pacakges"
 LICENSE = "MIT"
 
-PACKAGE_ARCH = "${TUNE_PKGARCH}"
-inherit packagegroup
+require xuantie-image-minimal.bb
 require ../packagegroups/xuantie-buildroot-lite.bb
-RDEPENDS:${PN} += " \
+IMAGE_INSTALL += " \
     acl \
     alsa-lib \
     alsa-utils \
@@ -13,15 +12,21 @@ RDEPENDS:${PN} += " \
     automake \
     bc \
     binutils \
+    binutils-tools \
     bison \
+    clang \
     cmake \
     coreutils \
     curl \
     elfutils \
+    ethtool \
+    expect \
     file \
     flex \
+    gcc \
     gdbm \
     gettext \
+    gflags \
     git \
     glib-2.0 \
     gnu-config \
@@ -30,6 +35,7 @@ RDEPENDS:${PN} += " \
     libcap \
     libcereal \
     libcroco \
+    libevent \
     libffi \
     libnsl2 \
     libpcre \
@@ -39,27 +45,46 @@ RDEPENDS:${PN} += " \
     libusb1 \
     libxml2 \
     lz4 \
-    lzbench-xuantie-test \
+     \
     m4 \
     mpfr \
     nasm \
     ncurses \
+    nfs-utils \
     ninja \
+    ntp \
     openssl \
+    patchelf \
+    perf \
     perl \
+    pkgconfig \
+    popt \
     python3 \
     python3-pip \
     python3-setuptools \
     readline \
     ripgrep \
+    rsync \
     sed \
     sqlite3 \
+    sshfs-fuse \
+    snappy \
     tar \
+    texinfo \
+    tk \
     util-linux \
     wget \
     xz \
     yasm \
+    zeromq \
     zip \
     zlib \
 "
-RDEPENDS:${PN}:append:riscv64 = "libbpf pahole avahi cups"
+
+IMAGE_INSTALL:append:riscv64 = " libbpf pahole avahi cups openmpi nmap "
+
+export IMAGE_BASENAME = "xuantie-common-packages"
+
+do_rootfs[noexec] = "1"
+do_image[noexec] = "1"
+do_image_complete[noexec] = "1"

@@ -2,6 +2,7 @@
 set confirm off
 set height  0
 set remotetimeout 20
+monitor set resume-bkpt-exception on
 
 define import_string_env
 	shell echo set \$$arg0=\"$(echo $$arg0)\" > .gdb.tmp

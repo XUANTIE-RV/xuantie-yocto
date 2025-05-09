@@ -1,0 +1,121 @@
+
+	cpus: cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		timebase-frequency = <25000000>;
+
+		cpu@0 {
+			device_type = "cpu";
+			reg = <0>;
+			status = "okay";
+			compatible = "riscv";
+			riscv,isa = "rv64imacsu";
+			mmu-type = "riscv,sv39";
+			riscv,cbom-block-size = <64>;
+			cpu0_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@1 {
+			device_type = "cpu";
+			reg = <1>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imacsu";
+			mmu-type = "riscv,sv39";
+			riscv,cbom-block-size = <64>;
+			cpu1_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@2 {
+			device_type = "cpu";
+			reg = <2>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imacsu";
+			mmu-type = "riscv,sv39";
+			riscv,cbom-block-size = <64>;
+			cpu2_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@3 {
+			device_type = "cpu";
+			reg = <3>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imacsu";
+			mmu-type = "riscv,sv39";
+			riscv,cbom-block-size = <64>;
+			cpu3_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@4 {
+			device_type = "cpu";
+			reg = <4>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imacsu";
+			mmu-type = "riscv,sv39";
+			riscv,cbom-block-size = <64>;
+			cpu4_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@5 {
+			device_type = "cpu";
+			reg = <5>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imacsu";
+			mmu-type = "riscv,sv39";
+			riscv,cbom-block-size = <64>;
+			cpu5_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@6 {
+			device_type = "cpu";
+			reg = <6>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imacsu";
+			mmu-type = "riscv,sv39";
+			riscv,cbom-block-size = <64>;
+			cpu6_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@7 {
+			device_type = "cpu";
+			reg = <7>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imacsu";
+			mmu-type = "riscv,sv39";
+			riscv,cbom-block-size = <64>;
+			cpu7_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+	};
+
+

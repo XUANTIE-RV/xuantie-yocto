@@ -149,7 +149,9 @@ for i in $distros;do
 
     echo "$notdisplaydistros" | grep -q -w "$distro"
     if [ $? -ne 0 ]; then
-        printf "    %s\n" "$distro"
+        if [ "${distro#*-tcxt}" = "$distro" ]; then
+            printf "    %s\n" "$distro"
+        fi
     fi
 done
 

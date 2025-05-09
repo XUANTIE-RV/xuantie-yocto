@@ -1,0 +1,96 @@
+From 5885f56e021383a6e6c4664598879a5f3348a05c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Wed, 22 Jan 2025 16:49:55 +0800
+Subject: [PATCH] remove the arch-name before gcc and modify the output path.
+
+---
+ Makefile | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 83c02e4..6168c51 100644
+--- a/Makefile
++++ b/Makefile
+@@ -36,20 +36,20 @@ CASES = atomic_fax \
+                  atomic_async_bench \
+                 lock_bench
+ 
+-GCC_TEST_OBJS   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix _gcc.o,$(addprefix build/obj/$(arch)/,$(TESTS))))
++GCC_TEST_OBJS   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix _gcc.o,$(addprefix ../build/obj/$(arch)/,$(TESTS))))
+ ALL_TEST_OBJS   = $(GCC_TEST_OBJS) $(ASM_TEST_OBJS)
+ 
+-GCC_TEST_DUMP   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix _gcc.txt,$(addprefix build/out/$(arch)/,$(TESTS))))
++GCC_TEST_DUMP   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix _gcc.txt,$(addprefix ../build/out/$(arch)/,$(TESTS))))
+ ALL_TEST_DUMP   = $(GCC_TEST_DUMP) $(ASM_TEST_DUMP)
+ 
+-ATOMIC_CASES_OBJS = $(foreach arch,$(CROSS_COMPILE),$(addsuffix .o,$(addprefix build/benchmark/$(arch)/,$(CASES))))
+-ATOMIC_CASES_DUMP   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix _gcc.txt,$(addprefix build/benchmark/$(arch)/,$(CASES))))
++ATOMIC_CASES_OBJS = $(foreach arch,$(CROSS_COMPILE),$(addsuffix .o,$(addprefix ../build/benchmark/$(arch)/,$(CASES))))
++ATOMIC_CASES_DUMP   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix _gcc.txt,$(addprefix ../build/benchmark/$(arch)/,$(CASES))))
+ 
+-ATOMIC_BENCHMARK   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix .o,$(addprefix build/benchmark/$(arch)/,$(BENCHMARK))))
+-ATOMIC_BENCHMARK_BIN   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix .bin,$(addprefix build/benchmark/$(arch)/,$(BENCHMARK))))
++ATOMIC_BENCHMARK   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix .o,$(addprefix ../build/benchmark/$(arch)/,$(BENCHMARK))))
++ATOMIC_BENCHMARK_BIN   = $(foreach arch,$(CROSS_COMPILE),$(addsuffix .bin,$(addprefix ../build/benchmark/$(arch)/,$(BENCHMARK))))
+ ALL_BENCHMARK   = $(ATOMIC_BENCHMARK)
+ ALL_BENCHMARK_BIN   = $(ATOMIC_BENCHMARK_BIN)
+-# build targets
++# ../build targets
+ 
+ all: tests cases benchmark
+ 
+@@ -57,41 +57,41 @@ tests: $(ALL_TEST_OBJS) $(ALL_TEST_DUMP)
+ 
+ cases: $(ATOMIC_CASES_OBJS) $(ATOMIC_CASES_DUMP)
+ 
+-clean: ; rm -fr build
++clean: ; rm -fr ../build
+ 
+ copy: tests
+ 	find results -mindepth 1 -not -name 'README.md' -delete
+-	cp -rv build/out/* results/
++	cp -rv ../build/out/* results/
+ 
+ benchmark: $(ALL_BENCHMARK) $(ALL_BENCHMARK_BIN)
+ 
+ define gcc_obj_arch_template
+-build/obj/$(1)/%_gcc.o: test/%.c
++../build/obj/$(1)/%_gcc.o: test/%.c
+ 	@mkdir -p $$(@D)
+-	@echo $(1)-$$(CC) $$@; $(1)-$$(CC) $$(CFLAGS) $$($(1)-CFLAGS) -DATOMIC_ASM=0 -c -o $$@ $$<
++	@echo $$(CC) $$@; $$(CC) $$(CFLAGS) $$($(1)-CFLAGS) -DATOMIC_ASM=0 -c -o $$@ $$<
+ endef
+ 
+ define gcc_dump_arch_template
+-build/out/$(1)/%_gcc.txt: build/obj/$(1)/%_gcc.o
++../build/out/$(1)/%_gcc.txt: ../build/obj/$(1)/%_gcc.o
+ 	@mkdir -p $$(@D)
+ 	@echo $(1)-$$(OBJDUMP) $$@; $(1)-$$(OBJDUMP) -d $$< > $$@
+ endef
+ 
+ define gcc_dump_case_template
+-build/benchmark/$(1)/%_gcc.txt: build/benchmark/$(1)/%.o
++../build/benchmark/$(1)/%_gcc.txt: ../build/benchmark/$(1)/%.o
+ 	@mkdir -p $$(@D)
+ 	@echo $(1)-$$(OBJDUMP) $$@; $(1)-$$(OBJDUMP) -d $$< > $$@
+ endef
+ 
+ define gcc_benchmark_arch_template
+-build/benchmark/$(1)/%.o: benchmark/%.c
++../build/benchmark/$(1)/%.o: benchmark/%.c
+ 	@mkdir -p $$(@D)
+-	@echo $(1)-$$(CC) $$@; $(1)-$$(CC) $$(CFLAGS2) $$($(1)-CFLAGS) -DATOMIC_ASM=0 -c -o $$@ $$<
++	@echo $$(CC) $$@; $$(CC) $$(CFLAGS2) $$($(1)-CFLAGS) -DATOMIC_ASM=0 -c -o $$@ $$<
+ endef
+ 
+ define get_benchmark
+-build/benchmark/$(1)/main.bin: build/benchmark/$(1)/main.o $(addsuffix .o,$(addprefix build/benchmark/$(1)/,$(CASES)))
+-	@echo $(1)-$$(CC) $$@; $(1)-$$(CC) $$(CFLAGS2) $$($(1)-CFLAGS) -DATOMIC_ASM=0 -o $$@ $$^  -lpthread -latomic
++../build/benchmark/$(1)/main.bin: ../build/benchmark/$(1)/main.o $(addsuffix .o,$(addprefix ../build/benchmark/$(1)/,$(CASES)))
++	@echo $$(CC) $$@; $$(CC) $$(CFLAGS2) $$($(1)-CFLAGS) -DATOMIC_ASM=0 -o $$@ $$^  -lpthread -latomic
+ endef
+ 
+ $(foreach arch,$(CROSS_COMPILE),$(eval $(call gcc_obj_arch_template,$(arch))))
+-- 
+2.25.1
+

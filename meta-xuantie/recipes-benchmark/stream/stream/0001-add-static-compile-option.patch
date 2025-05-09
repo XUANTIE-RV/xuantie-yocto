@@ -1,0 +1,39 @@
+From edf87abc56509553919f5dc7dc5191576f77d0bb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Tue, 25 Mar 2025 13:39:58 +0800
+Subject: [PATCH] add static compile option
+
+---
+ Makefile | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 7746d86..666a823 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,10 +1,10 @@
+-CC = gcc
++CC = ${CC}
+ CFLAGS = -O2 -fopenmp
+ 
+-FC = gfortran
++FC = ${FC}
+ FFLAGS = -O2 -fopenmp
+ 
+-all: stream_f.exe stream_c.exe
++all: stream_c.exe
+ 
+ stream_f.exe: stream.f mysecond.o
+ 	$(CC) $(CFLAGS) -c mysecond.c
+@@ -12,7 +12,7 @@ stream_f.exe: stream.f mysecond.o
+ 	$(FC) $(FFLAGS) stream.o mysecond.o -o stream_f.exe
+ 
+ stream_c.exe: stream.c
+-	$(CC) $(CFLAGS) stream.c -o stream_c.exe
++	$(CC) $(CFLAGS) stream.c -O2 -static -o stream_c.exe
+ 
+ clean:
+ 	rm -f stream_f.exe stream_c.exe *.o
+-- 
+2.25.1
+

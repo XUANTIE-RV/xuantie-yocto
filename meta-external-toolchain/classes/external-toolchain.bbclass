@@ -16,7 +16,7 @@ inherit common-license
 # We don't extract anything which will create S, and we don't want to see the
 # warning about it
 S = "${WORKDIR}"
-
+PR = "r2"
 # Prebuilt binaries, no need for any default dependencies
 INHIBIT_DEFAULT_DEPS = "1"
 

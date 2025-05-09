@@ -63,24 +63,8 @@ LDGOLD_ALTS:loongarch64 = ""
 LDGOLD_ALTS:libc-glibc:mipsarch = ""
 
 USE_ALTERNATIVES_FOR = " \
-	addr2line \
-	ar \
-	as \
-	c++filt \
-	elfedit \
-	gprof \
 	${GPROFNG_ALTS} \
-	ld \
-	ld.bfd \
 	${LDGOLD_ALTS} \
-	nm \
-	objcopy \
-	objdump \
-	ranlib \
-	readelf \
-	size \
-	strings \
-	strip \
 "
 
 python do_package:prepend() {

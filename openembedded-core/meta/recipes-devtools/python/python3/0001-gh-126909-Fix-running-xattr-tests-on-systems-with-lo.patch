@@ -1,0 +1,46 @@
+Upstream-Status: Pending
+From 2c0a21c1aad65ab8362491acf856eb574b1257ad Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C5=82=20G=C3=B3rny?= <mgorny@gentoo.org>
+Date: Mon, 18 Nov 2024 13:05:55 +0000
+Subject: [PATCH] gh-126909: Fix running xattr tests on systems with lower
+ limits (#126930)
+
+Modify the extended attribute tests to write fewer and smaller extended
+attributes, in order to fit within filesystems with total xattr limit
+of 1 KiB (e.g. ext4 with 1 KiB blocks).  Previously, the test would
+write over 2 KiB, making it fail with ENOSPC on such systems.
+---
+ Lib/test/test_os.py                                         | 6 +++---
+ .../Tests/2024-11-17-16-56-48.gh-issue-126909.60VTxW.rst    | 2 ++
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+ create mode 100644 Misc/NEWS.d/next/Tests/2024-11-17-16-56-48.gh-issue-126909.60VTxW.rst
+
+diff --git a/Lib/test/test_os.py b/Lib/test/test_os.py
+index 9a4be78556c..919ed92ddb4 100644
+--- a/Lib/test/test_os.py
++++ b/Lib/test/test_os.py
+@@ -3967,10 +3967,10 @@ def _check_xattrs_str(self, s, getxattr, setxattr, removexattr, listxattr, **kwa
+         xattr.remove("user.test")
+         self.assertEqual(set(listxattr(fn)), xattr)
+         self.assertEqual(getxattr(fn, s("user.test2"), **kwargs), b"foo")
+-        setxattr(fn, s("user.test"), b"a"*1024, **kwargs)
+-        self.assertEqual(getxattr(fn, s("user.test"), **kwargs), b"a"*1024)
++        setxattr(fn, s("user.test"), b"a"*256, **kwargs)
++        self.assertEqual(getxattr(fn, s("user.test"), **kwargs), b"a"*256)
+         removexattr(fn, s("user.test"), **kwargs)
+-        many = sorted("user.test{}".format(i) for i in range(100))
++        many = sorted("user.test{}".format(i) for i in range(32))
+         for thing in many:
+             setxattr(fn, thing, b"x", **kwargs)
+         self.assertEqual(set(listxattr(fn)), set(init_xattr) | set(many))
+diff --git a/Misc/NEWS.d/next/Tests/2024-11-17-16-56-48.gh-issue-126909.60VTxW.rst b/Misc/NEWS.d/next/Tests/2024-11-17-16-56-48.gh-issue-126909.60VTxW.rst
+new file mode 100644
+index 00000000000..68bd9ac70cd
+--- /dev/null
++++ b/Misc/NEWS.d/next/Tests/2024-11-17-16-56-48.gh-issue-126909.60VTxW.rst
+@@ -0,0 +1,2 @@
++Fix test_os extended attribute tests to work on filesystems with 1 KiB xattr size
++limit.
+-- 
+2.25.1
+

@@ -11,4 +11,7 @@ do_install:append() {
     install -m 0644 ${WORKDIR}/ssh-host/ssh_host_ed25519_key.pub   ${D}${sysconfdir}/ssh/
     install -m 0600 ${WORKDIR}/ssh-host/ssh_host_rsa_key           ${D}${sysconfdir}/ssh/
     install -m 0644 ${WORKDIR}/ssh-host/ssh_host_rsa_key.pub       ${D}${sysconfdir}/ssh/
+    if [ "${@bb.utils.filter('DISTRO_FEATURES', 'pam', d)}" ]; then
+        echo 'session    required     pam_limits.so' >> ${D}${sysconfdir}/pam.d/sshd
+    fi
 }

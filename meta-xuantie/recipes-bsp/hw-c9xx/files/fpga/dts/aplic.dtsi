@@ -1,0 +1,47 @@
+		mtimer@2690c000 {
+			interrupts-extended = <&cpu0_intc 0x07>;
+			reg =<0x00 0x2690c000 0x00 0x08 0x00 0x2690c008 0x00 0x08>;
+			compatible = "riscv,aclint-mtimer";
+		};
+
+		intc: aplic@8004000 {
+			numa-node-id = <0x00>;
+			riscv,num-sources = <0x60>;
+			reg = <0x00 0x8004000 0x00 0x4000>;
+			msi-parent = <&imsics00>;
+			interrupt-controller;
+			#interrupt-cells = <0x02>;
+			compatible = "riscv,aplic";
+		};
+
+		intc01: aplic@8000000 {
+			riscv,delegate = <&intc 0x01 0x60>;
+			riscv,children = <&intc>;
+			riscv,num-sources = <0x60>;
+			reg = <0x00 0x8000000 0x00 0x4000>;
+			msi-parent = <&imsics01>;
+			interrupt-controller;
+			#interrupt-cells = <0x02>;
+			compatible = "riscv,aplic";
+		};
+
+		imsics00: imsics@c000000 {
+			riscv,guest-index-bits = <0x02>;
+			riscv,num-ids = <0xff>;
+			reg = <0x00 0xc000000 0x00 0x4000>;
+			interrupts-extended = <&cpu0_intc 0x09>;
+			msi-controller;
+			interrupt-controller;
+			#interrupt-cells = <0x00>;
+			compatible = "riscv,imsics";
+		};
+
+		imsics01: imsics@10000000 {
+			riscv,num-ids = <0xff>;
+			reg = <0x00 0x10000000 0x00 0x1000>;
+			interrupts-extended = <&cpu0_intc 0x0b>;
+			msi-controller;
+			interrupt-controller;
+			#interrupt-cells = <0x00>;
+			compatible = "riscv,imsics";
+		};

@@ -14,8 +14,16 @@ S = "${WORKDIR}/git"
 DEPENDS += "openblas"
 
 
-CFLAGS:append:riscv64 = " -mcpu=c920 -lc"
-CXXFLAGS:append:riscv64 = " -mcpu=c920 -lc"
+inherit xuantie-set-package-arch-with-mcpu
+
+def openblas_get_config(d):
+    generic_configs = ["c9xx-riscv64"]
+    if d.getVar('XUANTIE_MCPU') in generic_configs:
+        return "${XUANTIE_TUNE_CCARGS}";
+    else:
+        return "-mcpu=" + d.getVar('XUANTIE_MCPU');
+
+TUNE_CCARGS += "${@openblas_get_config(d)} -Wno-implicit-function-declaration"
 
 export ARCH = "RISCV64"
 

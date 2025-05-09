@@ -1,3 +1,9 @@
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
+
+SRC_URI:append:riscv32 = " \
+    file://bin32 \
+"
+
 INHIBIT_PACKAGE_STRIP_FILES += "${PKGD}${base_libdir}/ld-2.33.so ${PKGD}${base_libdir}/libpthread-2.33.so"
 
 copy_files() {
@@ -17,9 +23,9 @@ copy_files() {
 do_install:append() {
     if [ ${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME} != "lib64xthead" ] || [ ${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME} != "lp64d" ]; then
         if [ ${TUNE_ARCH} = "riscv32" ]; then
-            copy_files "${EXTERNAL_TOOLCHAIN_SYSROOT}/sbin32" "${D}${base_sbindir}"
-            copy_files "${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/sbin32" "${D}${sbindir}"
-            copy_files "${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/bin32" "${D}${bindir}"
+            copy_files "${WORKDIR}/bin32/${base_sbindir}" "${D}${base_sbindir}"
+            copy_files "${WORKDIR}/bin32/${sbindir}" "${D}${sbindir}"
+            copy_files "${WORKDIR}/bin32/${bindir}" "${D}${bindir}"
             rm -rf ${D}${libexecdir}/*
             cp -rfP ${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/libexec32/* ${D}${libexecdir}
         fi
@@ -56,3 +62,5 @@ external_toolchain_sysroot_adjust() {
 	install -d ${SYSROOT_DESTDIR}/usr/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}/
 	ln -s ../lib ${SYSROOT_DESTDIR}/usr/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}/${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME}
 }
+
+DEPENDS:append:toolchain-clang = " clang-cross-${TARGET_ARCH}"

@@ -7,6 +7,11 @@
 #      a. run socinit gdb script
 #      b. load all all images and start
 
+set -e
+
+SCRIPT_DIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+cd $SCRIPT_DIR
+
 source script/system_alias_config.sh
 
 if [ "$#" -eq 0 ] || \
@@ -32,7 +37,7 @@ if [ "$#" -eq 0 ] || \
 	echo "     --enable_uboot       value: false | true"
 #	echo "     --enable_optee     value: false | true"
 	echo "     --opensbi_ver        value: 1.3 | 0.9"
-	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c906fdv | 5.10@c908v"
+	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c906fdv"
 	echo "     --kernel_cfg         value: debug | default"
 	echo "     --rootfs_type        value: lite"
 #	echo "     --restore_base_addr  value: 0x60000000"
@@ -190,8 +195,7 @@ fi
 
 if [ ${params_array["opensbi_ver"]} == "0.9" ] && \
      ( [ ${params_array["kernel_ver"]} == "5.10" ] || \
-       [ ${params_array["kernel_ver"]} == "5.10@c906fdv" ] || \
-       [ ${params_array["kernel_ver"]} == "5.10@c908v" ] \
+       [ ${params_array["kernel_ver"]} == "5.10@c906fdv" ] \
      ); then
 	gdb_control_array["opensbi_0_9_with_kernel_5_10"]=1
 fi
@@ -218,15 +222,17 @@ fi
 
 # modify .hw.dts with correct rootfs size
 echo ">> generate '.hw.dts'"
-cp $DTS .hw.dts
+if [ ! -f .hw.dts ] ; then
+	./dtc -I dts -O dts $DTS > .hw.dts
+fi
 ROOTFS_BASE=`cat .hw.dts | grep initrd-start | awk -F " " '{print $4}' | awk -F ">" '{print $1}'`
 ROOTFS_SIZE=`ls -lt $(realpath ${images_array["image_rootfs"]}) | awk '{print $5}'`
 ((ROOTFS_END= $ROOTFS_BASE + $ROOTFS_SIZE))
 ROOTFS_END=`printf "0x%x" $ROOTFS_END`
-sed -i "s/linux,initrd-end = <0x0 .*/linux,initrd-end = <0x0 $ROOTFS_END>;/g" .hw.dts
+sed -i "s/linux,initrd-end = <0x0* .*/linux,initrd-end = <0x00 $ROOTFS_END>;/g" .hw.dts
 
 # compile device tree file
-dtc -I dts -O dtb .hw.dts > hw.dtb
+./dtc -I dts -O dtb .hw.dts > hw.dtb
 
 # check all images_array image file exist before run
 echo "<< images name:"

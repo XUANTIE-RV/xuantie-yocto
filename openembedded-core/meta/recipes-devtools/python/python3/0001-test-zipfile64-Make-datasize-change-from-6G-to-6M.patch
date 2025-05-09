@@ -1,0 +1,26 @@
+Upstream-Status: Inappropriate [oe-core specific]
+From 789441eb83a783ee43581b5816cc2dfc6468fa56 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Wed, 8 Jan 2025 15:13:41 +0800
+Subject: [PATCH] [test][zipfile64]: Make datasize change from 6G to 6M
+
+---
+ Lib/test/test_zipfile64.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Lib/test/test_zipfile64.py b/Lib/test/test_zipfile64.py
+index 0947013..9b19f91 100644
+--- a/Lib/test/test_zipfile64.py
++++ b/Lib/test/test_zipfile64.py
+@@ -42,7 +42,7 @@ class TestsWithSourceFile(unittest.TestCase):
+ 
+             # It will contain enough copies of self.data to reach about 6 GiB of
+             # raw data to store.
+-            filecount = 6*1024**3 // len(self.data)
++            filecount = 6*1024**2 // len(self.data)
+ 
+             next_time = time.monotonic() + _PRINT_WORKING_MSG_INTERVAL
+             for num in range(filecount):
+-- 
+2.25.1
+

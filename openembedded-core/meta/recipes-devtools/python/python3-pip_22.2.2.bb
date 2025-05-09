@@ -53,6 +53,7 @@ RDEPENDS:${PN} = "\
   python3-pickle \
   python3-distutils \
   python3-image \
+  patchelf \
 "
 
 BBCLASSEXTEND = "native nativesdk"

@@ -1,29 +1,28 @@
 DESCRIPTION = "AI benchmark for xuantie"
 LICENSE = "CLOSED"
 
-
-XUANTIE_LINUX_TAG ?= "${AUTOREV}"
-SRCREV = "0ce0cdc155a93e7c768d57468583a619577a484f"
-XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/xtai-benchmark.git"
-XUANTIE_GIT_MIRRORS = "git://git@github.com/XUANTIE-RV/xtai-benchmark.git"
-MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
-
-SRC_URI = " \
-    ${XUANTIE_GIT_MIRRORS};branch=1.0;protocol=https;name=xtai-benchmark \
-    ${XUANTIE_GIT};branch=1.0;protocol=ssh;name=xtai-benchmark \
+SRC_URI = "\
+    ${@bb.utils.contains('MACHINECONFIG', 'public', \
+    '${XUANTIE_GIT}/xtai-benchmark.git;nobranch=1;protocol=https;name=xtai-benchmark', \
+    'git://gitlab.alibaba-inc.com/hhb-tools/xtai-benchmark.git;branch=master;protocol=ssh;name=xtai-benchmark', d)} \
 "
 
+XUANTIE_LINUX_TAG ?= "${AUTOREV}"
+SRCREV = "${XUANTIE_LINUX_TAG}"
+PR = "r2"
 PV = "1.0"
 S = "${WORKDIR}/git"
 
 inherit autotools
-inherit xuantie-set-package-arch-with-mcpu
-PACKAGE_ARCH = "${MACHINE_ARCH}"
-do_patch:prepend() {
-    #fetch submodule
-    os.system("cd {} && git submodule init && git submodule update".format(d.getVar('S')))
+inherit xuantie-set-package-arch-with-mcpu-benchmark
+do_fetch_git_submodule() {
+    cd ${S}
+    git submodule init
+    git submodule update
 }
+addtask do_fetch_git_submodule after do_unpack before do_compile
 
+CFLAGS += " -Wno-implicit-function-declaration "
 python do_compile() {
     import os
     cpu = None
@@ -31,6 +30,10 @@ python do_compile() {
         cpu = "../git/c907"
     elif d.getVar('XUANTIE_MCPU') == 'c908v':
         cpu = "../git/c908"
+    elif d.getVar('XUANTIE_MCPU') == 'c920v3':
+        cpu = "../git/c920v3"
+    elif d.getVar('XUANTIE_MCPU') == 'r908fdv' or d.getVar('XUANTIE_MCPU') == 'r908fdv-cp':
+        cpu = "../git/r908"
     quant_names = os.listdir(cpu)
     for j, quant_name in enumerate(quant_names):
         qt_path = os.path.join(cpu, quant_name)
@@ -63,15 +66,21 @@ def collect(cpu, d):
                 os.system(sen3)
             else:
                 os.system(sen2)
-            out_path = "../image/usr/bin/aibench/{}/{}/{}".format(cpu.split("/")[2], quant_name, model)
-            os.system("mkdir -p {}".format(out_path))
 
-            oo_path = "{}/aibench/{}/{}/{}".format(d.getVar('bindir'), cpu.split("/")[2], quant_name, model)
             cpu2 = None
             if cpu.split("/")[2]=="c907":
                 cpu2 = "c907fdv"
             elif cpu.split("/")[2]=="c908":
                 cpu2 = "c908v"
+            elif cpu.split("/")[2]=="c920v3":
+                cpu2 = "c920v3"
+            elif cpu.split("/")[2]=="r908" and d.getVar('XUANTIE_MCPU') == 'r908fdv':
+                cpu2 = "r908fdv"
+            elif cpu.split("/")[2]=="r908" and d.getVar('XUANTIE_MCPU') == 'r908fdv-cp':
+                cpu2 = "r908fdv-cp"
+            out_path = "../image/usr/bin/aibench/{}/{}/{}".format(cpu2, quant_name, model)
+            os.system("mkdir -p {}".format(out_path))
+
             package = "aibench-{}-{}-{}".format(cpu2, quant_name.lower().replace('_', '-'), model.lower().replace('_', '-'))
             package_sen += package
             package_sen += " \ \n"
@@ -89,32 +98,36 @@ python do_install() {
         cpu = "../git/c907"
     elif d.getVar('XUANTIE_MCPU') == 'c908v':
         cpu = "../git/c908"
+    elif d.getVar('XUANTIE_MCPU') == 'c920v3':
+        cpu = "../git/c920v3"
+    elif d.getVar('XUANTIE_MCPU') == 'r908fdv' or d.getVar('XUANTIE_MCPU') == 'r908fdv-cp':
+        cpu = "../git/r908"
     collect(cpu, d)
 }
 
-FILES:aibench-c907fdv-float16-onnx-bert = "${bindir}/aibench/c907/float16/onnx_bert/*"
-FILES:aibench-c907fdv-float16-onnx-efficientnet = "${bindir}/aibench/c907/float16/onnx_efficientnet/*"
-FILES:aibench-c907fdv-float16-onnx-mobilenetvit = "${bindir}/aibench/c907/float16/onnx_mobilenetVit/*"
-FILES:aibench-c907fdv-float16-onnx-mobilenetv2-12 = "${bindir}/aibench/c907/float16/onnx_mobilenetv2-12/*"
-FILES:aibench-c907fdv-float16-onnx-resnet50-v1-7 = "${bindir}/aibench/c907/float16/onnx_resnet50-v1-7/*"
-FILES:aibench-c907fdv-float16-onnx-retinaface = "${bindir}/aibench/c907/float16/onnx_retinaface/*"
-FILES:aibench-c907fdv-float16-onnx-shufflenet-v2-9 = "${bindir}/aibench/c907/float16/onnx_shufflenet-v2-9/*"
-FILES:aibench-c907fdv-float16-onnx-swin = "${bindir}/aibench/c907/float16/onnx_swin/*"
-FILES:aibench-c907fdv-float32-onnx-bert = "${bindir}/aibench/c907/float32/onnx_bert/*"
-FILES:aibench-c907fdv-float32-onnx-efficientnet = "${bindir}/aibench/c907/float32/onnx_efficientnet/*"
-FILES:aibench-c907fdv-float32-onnx-mobilenetvit = "${bindir}/aibench/c907/float32/onnx_mobilenetVit/*"
-FILES:aibench-c907fdv-float32-onnx-mobilenetv2-12 = "${bindir}/aibench/c907/float32/onnx_mobilenetv2-12/*"
-FILES:aibench-c907fdv-float32-onnx-resnet50-v1-7 = "${bindir}/aibench/c907/float32/onnx_resnet50-v1-7/*"
-FILES:aibench-c907fdv-float32-onnx-retinaface = "${bindir}/aibench/c907/float32/onnx_retinaface/*"
-FILES:aibench-c907fdv-float32-onnx-shufflenet-v2-9 = "${bindir}/aibench/c907/float32/onnx_shufflenet-v2-9/*"
-FILES:aibench-c907fdv-float32-onnx-swin = "${bindir}/aibench/c907/float32/onnx_swin/*"
-FILES:aibench-c907fdv-int8-asym-w-sym-onnx-bert = "${bindir}/aibench/c907/int8_asym_w_sym/onnx_bert/*"
-FILES:aibench-c907fdv-int8-asym-w-sym-onnx-efficientnet = "${bindir}/aibench/c907/int8_asym_w_sym/onnx_efficientnet/*"
-FILES:aibench-c907fdv-int8-asym-w-sym-onnx-mobilenetvit = "${bindir}/aibench/c907/int8_asym_w_sym/onnx_mobilenetVit/*"
-FILES:aibench-c907fdv-int8-asym-w-sym-onnx-mobilenetv2-12 = "${bindir}/aibench/c907/int8_asym_w_sym/onnx_mobilenetv2-12/*"
-FILES:aibench-c907fdv-int8-asym-w-sym-onnx-resnet50-v1-7 = "${bindir}/aibench/c907/int8_asym_w_sym/onnx_resnet50-v1-7/*"
-FILES:aibench-c907fdv-int8-asym-w-sym-onnx-retinaface = "${bindir}/aibench/c907/int8_asym_w_sym/onnx_retinaface/*"
-FILES:aibench-c907fdv-int8-asym-w-sym-onnx-swin = "${bindir}/aibench/c907/int8_asym_w_sym/onnx_swin/*"
+FILES:aibench-c907fdv-float16-onnx-bert = "${bindir}/aibench/c907fdv/float16/onnx_bert/*"
+FILES:aibench-c907fdv-float16-onnx-efficientnet = "${bindir}/aibench/c907fdv/float16/onnx_efficientnet/*"
+FILES:aibench-c907fdv-float16-onnx-mobilenetvit = "${bindir}/aibench/c907fdv/float16/onnx_mobilenetVit/*"
+FILES:aibench-c907fdv-float16-onnx-mobilenetv2-12 = "${bindir}/aibench/c907fdv/float16/onnx_mobilenetv2-12/*"
+FILES:aibench-c907fdv-float16-onnx-resnet50-v1-7 = "${bindir}/aibench/c907fdv/float16/onnx_resnet50-v1-7/*"
+FILES:aibench-c907fdv-float16-onnx-retinaface = "${bindir}/aibench/c907fdv/float16/onnx_retinaface/*"
+FILES:aibench-c907fdv-float16-onnx-shufflenet-v2-9 = "${bindir}/aibench/c907fdv/float16/onnx_shufflenet-v2-9/*"
+FILES:aibench-c907fdv-float16-onnx-swin = "${bindir}/aibench/c907fdv/float16/onnx_swin/*"
+FILES:aibench-c907fdv-float32-onnx-bert = "${bindir}/aibench/c907fdv/float32/onnx_bert/*"
+FILES:aibench-c907fdv-float32-onnx-efficientnet = "${bindir}/aibench/c907fdv/float32/onnx_efficientnet/*"
+FILES:aibench-c907fdv-float32-onnx-mobilenetvit = "${bindir}/aibench/c907fdv/float32/onnx_mobilenetVit/*"
+FILES:aibench-c907fdv-float32-onnx-mobilenetv2-12 = "${bindir}/aibench/c907fdv/float32/onnx_mobilenetv2-12/*"
+FILES:aibench-c907fdv-float32-onnx-resnet50-v1-7 = "${bindir}/aibench/c907fdv/float32/onnx_resnet50-v1-7/*"
+FILES:aibench-c907fdv-float32-onnx-retinaface = "${bindir}/aibench/c907fdv/float32/onnx_retinaface/*"
+FILES:aibench-c907fdv-float32-onnx-shufflenet-v2-9 = "${bindir}/aibench/c907fdv/float32/onnx_shufflenet-v2-9/*"
+FILES:aibench-c907fdv-float32-onnx-swin = "${bindir}/aibench/c907fdv/float32/onnx_swin/*"
+FILES:aibench-c907fdv-int8-asym-w-sym-onnx-bert = "${bindir}/aibench/c907fdv/int8_asym_w_sym/onnx_bert/*"
+FILES:aibench-c907fdv-int8-asym-w-sym-onnx-efficientnet = "${bindir}/aibench/c907fdv/int8_asym_w_sym/onnx_efficientnet/*"
+FILES:aibench-c907fdv-int8-asym-w-sym-onnx-mobilenetvit = "${bindir}/aibench/c907fdv/int8_asym_w_sym/onnx_mobilenetVit/*"
+FILES:aibench-c907fdv-int8-asym-w-sym-onnx-mobilenetv2-12 = "${bindir}/aibench/c907fdv/int8_asym_w_sym/onnx_mobilenetv2-12/*"
+FILES:aibench-c907fdv-int8-asym-w-sym-onnx-resnet50-v1-7 = "${bindir}/aibench/c907fdv/int8_asym_w_sym/onnx_resnet50-v1-7/*"
+FILES:aibench-c907fdv-int8-asym-w-sym-onnx-retinaface = "${bindir}/aibench/c907fdv/int8_asym_w_sym/onnx_retinaface/*"
+FILES:aibench-c907fdv-int8-asym-w-sym-onnx-swin = "${bindir}/aibench/c907fdv/int8_asym_w_sym/onnx_swin/*"
 
 PACKAGES = " \
 aibench-c907fdv-float16-onnx-bert \
@@ -142,36 +155,36 @@ aibench-c907fdv-int8-asym-w-sym-onnx-retinaface \
 aibench-c907fdv-int8-asym-w-sym-onnx-swin \
 "
 
-FILES:aibench-c908v-float16-onnx-bert = "${bindir}/aibench/c908/float16/onnx_bert/*"
-FILES:aibench-c908v-float16-onnx-efficientnet = "${bindir}/aibench/c908/float16/onnx_efficientnet/*"
-FILES:aibench-c908v-float16-onnx-mobilenetvit = "${bindir}/aibench/c908/float16/onnx_mobilenetVit/*"
-FILES:aibench-c908v-float16-onnx-mobilenetv2-12 = "${bindir}/aibench/c908/float16/onnx_mobilenetv2-12/*"
-FILES:aibench-c908v-float16-onnx-resnet50-v1-7 = "${bindir}/aibench/c908/float16/onnx_resnet50-v1-7/*"
-FILES:aibench-c908v-float16-onnx-retinaface = "${bindir}/aibench/c908/float16/onnx_retinaface/*"
-FILES:aibench-c908v-float16-onnx-shufflenet-v2-9 = "${bindir}/aibench/c908/float16/onnx_shufflenet-v2-9/*"
-FILES:aibench-c908v-float16-onnx-swin = "${bindir}/aibench/c908/float16/onnx_swin/*"
-FILES:aibench-c908v-float16-w-int8-onnx-bert = "${bindir}/aibench/c908/float16_w_int8/onnx_bert/*"
-FILES:aibench-c908v-float16-w-int8-onnx-efficientnet = "${bindir}/aibench/c908/float16_w_int8/onnx_efficientnet/*"
-FILES:aibench-c908v-float16-w-int8-onnx-mobilenetvit = "${bindir}/aibench/c908/float16_w_int8/onnx_mobilenetVit/*"
-FILES:aibench-c908v-float16-w-int8-onnx-mobilenetv2-12 = "${bindir}/aibench/c908/float16_w_int8/onnx_mobilenetv2-12/*"
-FILES:aibench-c908v-float16-w-int8-onnx-resnet50-v1-7 = "${bindir}/aibench/c908/float16_w_int8/onnx_resnet50-v1-7/*"
-FILES:aibench-c908v-float16-w-int8-onnx-retinaface = "${bindir}/aibench/c908/float16_w_int8/onnx_retinaface/*"
-FILES:aibench-c908v-float16-w-int8-onnx-swin = "${bindir}/aibench/c908/float16_w_int8/onnx_swin/*"
-FILES:aibench-c908v-float32-onnx-bert = "${bindir}/aibench/c908/float32/onnx_bert/*"
-FILES:aibench-c908v-float32-onnx-efficientnet = "${bindir}/aibench/c908/float32/onnx_efficientnet/*"
-FILES:aibench-c908v-float32-onnx-mobilenetvit = "${bindir}/aibench/c908/float32/onnx_mobilenetVit/*"
-FILES:aibench-c908v-float32-onnx-mobilenetv2-12 = "${bindir}/aibench/c908/float32/onnx_mobilenetv2-12/*"
-FILES:aibench-c908v-float32-onnx-resnet50-v1-7 = "${bindir}/aibench/c908/float32/onnx_resnet50-v1-7/*"
-FILES:aibench-c908v-float32-onnx-retinaface = "${bindir}/aibench/c908/float32/onnx_retinaface/*"
-FILES:aibench-c908v-float32-onnx-shufflenet-v2-9 = "${bindir}/aibench/c908/float32/onnx_shufflenet-v2-9/*"
-FILES:aibench-c908v-float32-onnx-swin = "${bindir}/aibench/c908/float32/onnx_swin/*"
-FILES:aibench-c908v-int8-asym-w-sym-onnx-bert = "${bindir}/aibench/c908/int8_asym_w_sym/onnx_bert/*"
-FILES:aibench-c908v-int8-asym-w-sym-onnx-efficientnet = "${bindir}/aibench/c908/int8_asym_w_sym/onnx_efficientnet/*"
-FILES:aibench-c908v-int8-asym-w-sym-onnx-mobilenetvit = "${bindir}/aibench/c908/int8_asym_w_sym/onnx_mobilenetVit/*"
-FILES:aibench-c908v-int8-asym-w-sym-onnx-mobilenetv2-12 = "${bindir}/aibench/c908/int8_asym_w_sym/onnx_mobilenetv2-12/*"
-FILES:aibench-c908v-int8-asym-w-sym-onnx-resnet50-v1-7 = "${bindir}/aibench/c908/int8_asym_w_sym/onnx_resnet50-v1-7/*"
-FILES:aibench-c908v-int8-asym-w-sym-onnx-retinaface = "${bindir}/aibench/c908/int8_asym_w_sym/onnx_retinaface/*"
-FILES:aibench-c908v-int8-asym-w-sym-onnx-swin = "${bindir}/aibench/c908/int8_asym_w_sym/onnx_swin/*"
+FILES:aibench-c908v-float16-onnx-bert = "${bindir}/aibench/c908v/float16/onnx_bert/*"
+FILES:aibench-c908v-float16-onnx-efficientnet = "${bindir}/aibench/c908v/float16/onnx_efficientnet/*"
+FILES:aibench-c908v-float16-onnx-mobilenetvit = "${bindir}/aibench/c908v/float16/onnx_mobilenetVit/*"
+FILES:aibench-c908v-float16-onnx-mobilenetv2-12 = "${bindir}/aibench/c908v/float16/onnx_mobilenetv2-12/*"
+FILES:aibench-c908v-float16-onnx-resnet50-v1-7 = "${bindir}/aibench/c908v/float16/onnx_resnet50-v1-7/*"
+FILES:aibench-c908v-float16-onnx-retinaface = "${bindir}/aibench/c908v/float16/onnx_retinaface/*"
+FILES:aibench-c908v-float16-onnx-shufflenet-v2-9 = "${bindir}/aibench/c908v/float16/onnx_shufflenet-v2-9/*"
+FILES:aibench-c908v-float16-onnx-swin = "${bindir}/aibench/c908v/float16/onnx_swin/*"
+FILES:aibench-c908v-float16-w-int8-onnx-bert = "${bindir}/aibench/c908v/float16_w_int8/onnx_bert/*"
+FILES:aibench-c908v-float16-w-int8-onnx-efficientnet = "${bindir}/aibench/c908v/float16_w_int8/onnx_efficientnet/*"
+FILES:aibench-c908v-float16-w-int8-onnx-mobilenetvit = "${bindir}/aibench/c908v/float16_w_int8/onnx_mobilenetVit/*"
+FILES:aibench-c908v-float16-w-int8-onnx-mobilenetv2-12 = "${bindir}/aibench/c908v/float16_w_int8/onnx_mobilenetv2-12/*"
+FILES:aibench-c908v-float16-w-int8-onnx-resnet50-v1-7 = "${bindir}/aibench/c908v/float16_w_int8/onnx_resnet50-v1-7/*"
+FILES:aibench-c908v-float16-w-int8-onnx-retinaface = "${bindir}/aibench/c908v/float16_w_int8/onnx_retinaface/*"
+FILES:aibench-c908v-float16-w-int8-onnx-swin = "${bindir}/aibench/c908v/float16_w_int8/onnx_swin/*"
+FILES:aibench-c908v-float32-onnx-bert = "${bindir}/aibench/c908v/float32/onnx_bert/*"
+FILES:aibench-c908v-float32-onnx-efficientnet = "${bindir}/aibench/c908v/float32/onnx_efficientnet/*"
+FILES:aibench-c908v-float32-onnx-mobilenetvit = "${bindir}/aibench/c908v/float32/onnx_mobilenetVit/*"
+FILES:aibench-c908v-float32-onnx-mobilenetv2-12 = "${bindir}/aibench/c908v/float32/onnx_mobilenetv2-12/*"
+FILES:aibench-c908v-float32-onnx-resnet50-v1-7 = "${bindir}/aibench/c908v/float32/onnx_resnet50-v1-7/*"
+FILES:aibench-c908v-float32-onnx-retinaface = "${bindir}/aibench/c908v/float32/onnx_retinaface/*"
+FILES:aibench-c908v-float32-onnx-shufflenet-v2-9 = "${bindir}/aibench/c908v/float32/onnx_shufflenet-v2-9/*"
+FILES:aibench-c908v-float32-onnx-swin = "${bindir}/aibench/c908v/float32/onnx_swin/*"
+FILES:aibench-c908v-int8-asym-w-sym-onnx-bert = "${bindir}/aibench/c908v/int8_asym_w_sym/onnx_bert/*"
+FILES:aibench-c908v-int8-asym-w-sym-onnx-efficientnet = "${bindir}/aibench/c908v/int8_asym_w_sym/onnx_efficientnet/*"
+FILES:aibench-c908v-int8-asym-w-sym-onnx-mobilenetvit = "${bindir}/aibench/c908v/int8_asym_w_sym/onnx_mobilenetVit/*"
+FILES:aibench-c908v-int8-asym-w-sym-onnx-mobilenetv2-12 = "${bindir}/aibench/c908v/int8_asym_w_sym/onnx_mobilenetv2-12/*"
+FILES:aibench-c908v-int8-asym-w-sym-onnx-resnet50-v1-7 = "${bindir}/aibench/c908v/int8_asym_w_sym/onnx_resnet50-v1-7/*"
+FILES:aibench-c908v-int8-asym-w-sym-onnx-retinaface = "${bindir}/aibench/c908v/int8_asym_w_sym/onnx_retinaface/*"
+FILES:aibench-c908v-int8-asym-w-sym-onnx-swin = "${bindir}/aibench/c908v/int8_asym_w_sym/onnx_swin/*"
 
 PACKAGES =+ " \
 aibench-c908v-float16-onnx-bert \
@@ -205,3 +218,208 @@ aibench-c908v-int8-asym-w-sym-onnx-resnet50-v1-7 \
 aibench-c908v-int8-asym-w-sym-onnx-retinaface \
 aibench-c908v-int8-asym-w-sym-onnx-swin \
 "
+
+FILES:aibench-c920v3-float16-onnx-bert = "${bindir}/aibench/c920v3/float16/onnx_bert/*"
+FILES:aibench-c920v3-float16-onnx-efficientnet = "${bindir}/aibench/c920v3/float16/onnx_efficientnet/*"
+FILES:aibench-c920v3-float16-onnx-mobilenetvit = "${bindir}/aibench/c920v3/float16/onnx_mobilenetVit/*"
+FILES:aibench-c920v3-float16-onnx-mobilenetv2-12 = "${bindir}/aibench/c920v3/float16/onnx_mobilenetv2-12/*"
+FILES:aibench-c920v3-float16-onnx-resnet50-v1-7 = "${bindir}/aibench/c920v3/float16/onnx_resnet50-v1-7/*"
+FILES:aibench-c920v3-float16-onnx-retinaface = "${bindir}/aibench/c920v3/float16/onnx_retinaface/*"
+FILES:aibench-c920v3-float16-onnx-shufflenet-v2-9 = "${bindir}/aibench/c920v3/float16/onnx_shufflenet-v2-9/*"
+FILES:aibench-c920v3-float16-onnx-swin = "${bindir}/aibench/c920v3/float16/onnx_swin/*"
+FILES:aibench-c920v3-float16-w-int8-onnx-bert = "${bindir}/aibench/c920v3/float16_w_int8/onnx_bert/*"
+FILES:aibench-c920v3-float16-w-int8-onnx-efficientnet = "${bindir}/aibench/c920v3/float16_w_int8/onnx_efficientnet/*"
+FILES:aibench-c920v3-float16-w-int8-onnx-mobilenetvit = "${bindir}/aibench/c920v3/float16_w_int8/onnx_mobilenetVit/*"
+FILES:aibench-c920v3-float16-w-int8-onnx-mobilenetv2-12 = "${bindir}/aibench/c920v3/float16_w_int8/onnx_mobilenetv2-12/*"
+FILES:aibench-c920v3-float16-w-int8-onnx-resnet50-v1-7 = "${bindir}/aibench/c920v3/float16_w_int8/onnx_resnet50-v1-7/*"
+FILES:aibench-c920v3-float16-w-int8-onnx-retinaface = "${bindir}/aibench/c920v3/float16_w_int8/onnx_retinaface/*"
+FILES:aibench-c920v3-float16-w-int8-onnx-swin = "${bindir}/aibench/c920v3/float16_w_int8/onnx_swin/*"
+FILES:aibench-c920v3-float16-w-int8-onnx-shufflenet-v2-9 = "${bindir}/aibench/c920v3/float16_w_int8/onnx_shufflenet-v2-9/*"
+FILES:aibench-c920v3-float32-onnx-bert = "${bindir}/aibench/c920v3/float32/onnx_bert/*"
+FILES:aibench-c920v3-float32-onnx-efficientnet = "${bindir}/aibench/c920v3/float32/onnx_efficientnet/*"
+FILES:aibench-c920v3-float32-onnx-mobilenetvit = "${bindir}/aibench/c920v3/float32/onnx_mobilenetVit/*"
+FILES:aibench-c920v3-float32-onnx-mobilenetv2-12 = "${bindir}/aibench/c920v3/float32/onnx_mobilenetv2-12/*"
+FILES:aibench-c920v3-float32-onnx-resnet50-v1-7 = "${bindir}/aibench/c920v3/float32/onnx_resnet50-v1-7/*"
+FILES:aibench-c920v3-float32-onnx-retinaface = "${bindir}/aibench/c920v3/float32/onnx_retinaface/*"
+FILES:aibench-c920v3-float32-onnx-shufflenet-v2-9 = "${bindir}/aibench/c920v3/float32/onnx_shufflenet-v2-9/*"
+FILES:aibench-c920v3-float32-onnx-swin = "${bindir}/aibench/c920v3/float32/onnx_swin/*"
+FILES:aibench-c920v3-int8-asym-w-sym-onnx-bert = "${bindir}/aibench/c920v3/int8_asym_w_sym/onnx_bert/*"
+FILES:aibench-c920v3-int8-asym-w-sym-onnx-efficientnet = "${bindir}/aibench/c920v3/int8_asym_w_sym/onnx_efficientnet/*"
+FILES:aibench-c920v3-int8-asym-w-sym-onnx-mobilenetvit = "${bindir}/aibench/c920v3/int8_asym_w_sym/onnx_mobilenetVit/*"
+FILES:aibench-c920v3-int8-asym-w-sym-onnx-mobilenetv2-12 = "${bindir}/aibench/c920v3/int8_asym_w_sym/onnx_mobilenetv2-12/*"
+FILES:aibench-c920v3-int8-asym-w-sym-onnx-resnet50-v1-7 = "${bindir}/aibench/c920v3/int8_asym_w_sym/onnx_resnet50-v1-7/*"
+FILES:aibench-c920v3-int8-asym-w-sym-onnx-retinaface = "${bindir}/aibench/c920v3/int8_asym_w_sym/onnx_retinaface/*"
+FILES:aibench-c920v3-int8-asym-w-sym-onnx-swin = "${bindir}/aibench/c920v3/int8_asym_w_sym/onnx_swin/*"
+FILES:aibench-c920v3-int8-asym-w-sym-onnx-shufflenet-v2-9 = "${bindir}/aibench/c920v3/int8_asym_w_sym/onnx_shufflenet-v2-9/*"
+
+PACKAGES =+ " \
+aibench-c920v3-float16-onnx-bert \
+aibench-c920v3-float16-onnx-efficientnet \
+aibench-c920v3-float16-onnx-mobilenetvit \
+aibench-c920v3-float16-onnx-mobilenetv2-12 \
+aibench-c920v3-float16-onnx-resnet50-v1-7 \
+aibench-c920v3-float16-onnx-retinaface \
+aibench-c920v3-float16-onnx-shufflenet-v2-9 \
+aibench-c920v3-float16-onnx-swin \
+aibench-c920v3-float16-w-int8-onnx-bert \
+aibench-c920v3-float16-w-int8-onnx-efficientnet \
+aibench-c920v3-float16-w-int8-onnx-mobilenetvit \
+aibench-c920v3-float16-w-int8-onnx-mobilenetv2-12 \
+aibench-c920v3-float16-w-int8-onnx-resnet50-v1-7 \
+aibench-c920v3-float16-w-int8-onnx-retinaface \
+aibench-c920v3-float16-w-int8-onnx-swin \
+aibench-c920v3-float16-w-int8-onnx-shufflenet-v2-9 \
+aibench-c920v3-float32-onnx-bert \
+aibench-c920v3-float32-onnx-efficientnet \
+aibench-c920v3-float32-onnx-mobilenetvit \
+aibench-c920v3-float32-onnx-mobilenetv2-12 \
+aibench-c920v3-float32-onnx-resnet50-v1-7 \
+aibench-c920v3-float32-onnx-retinaface \
+aibench-c920v3-float32-onnx-shufflenet-v2-9 \
+aibench-c920v3-float32-onnx-swin \
+aibench-c920v3-int8-asym-w-sym-onnx-bert \
+aibench-c920v3-int8-asym-w-sym-onnx-efficientnet \
+aibench-c920v3-int8-asym-w-sym-onnx-mobilenetvit \
+aibench-c920v3-int8-asym-w-sym-onnx-mobilenetv2-12 \
+aibench-c920v3-int8-asym-w-sym-onnx-resnet50-v1-7 \
+aibench-c920v3-int8-asym-w-sym-onnx-retinaface \
+aibench-c920v3-int8-asym-w-sym-onnx-swin \
+aibench-c920v3-int8-asym-w-sym-onnx-shufflenet-v2-9 \
+"
+
+FILES:aibench-r908fdv-float16-onnx-bert = "${bindir}/aibench/r908fdv/float16/onnx_bert/*"
+FILES:aibench-r908fdv-float16-onnx-efficientnet = "${bindir}/aibench/r908fdv/float16/onnx_efficientnet/*"
+FILES:aibench-r908fdv-float16-onnx-mobilenetvit = "${bindir}/aibench/r908fdv/float16/onnx_mobilenetVit/*"
+FILES:aibench-r908fdv-float16-onnx-mobilenetv2-12 = "${bindir}/aibench/r908fdv/float16/onnx_mobilenetv2-12/*"
+FILES:aibench-r908fdv-float16-onnx-resnet50-v1-7 = "${bindir}/aibench/r908fdv/float16/onnx_resnet50-v1-7/*"
+FILES:aibench-r908fdv-float16-onnx-retinaface = "${bindir}/aibench/r908fdv/float16/onnx_retinaface/*"
+FILES:aibench-r908fdv-float16-onnx-shufflenet-v2-9 = "${bindir}/aibench/r908fdv/float16/onnx_shufflenet-v2-9/*"
+FILES:aibench-r908fdv-float16-onnx-swin = "${bindir}/aibench/r908fdv/float16/onnx_swin/*"
+FILES:aibench-r908fdv-float16-w-int8-onnx-bert = "${bindir}/aibench/r908fdv/float16_w_int8/onnx_bert/*"
+FILES:aibench-r908fdv-float16-w-int8-onnx-efficientnet = "${bindir}/aibench/r908fdv/float16_w_int8/onnx_efficientnet/*"
+FILES:aibench-r908fdv-float16-w-int8-onnx-mobilenetvit = "${bindir}/aibench/r908fdv/float16_w_int8/onnx_mobilenetVit/*"
+FILES:aibench-r908fdv-float16-w-int8-onnx-mobilenetv2-12 = "${bindir}/aibench/r908fdv/float16_w_int8/onnx_mobilenetv2-12/*"
+FILES:aibench-r908fdv-float16-w-int8-onnx-resnet50-v1-7 = "${bindir}/aibench/r908fdv/float16_w_int8/onnx_resnet50-v1-7/*"
+FILES:aibench-r908fdv-float16-w-int8-onnx-retinaface = "${bindir}/aibench/r908fdv/float16_w_int8/onnx_retinaface/*"
+FILES:aibench-r908fdv-float16-w-int8-onnx-swin = "${bindir}/aibench/r908fdv/float16_w_int8/onnx_swin/*"
+FILES:aibench-r908fdv-float16-w-int8-onnx-shufflenet-v2-9 = "${bindir}/aibench/r908fdv/float16_w_int8/onnx_shufflenet-v2-9/*"
+FILES:aibench-r908fdv-float32-onnx-bert = "${bindir}/aibench/r908fdv/float32/onnx_bert/*"
+FILES:aibench-r908fdv-float32-onnx-efficientnet = "${bindir}/aibench/r908fdv/float32/onnx_efficientnet/*"
+FILES:aibench-r908fdv-float32-onnx-mobilenetvit = "${bindir}/aibench/r908fdv/float32/onnx_mobilenetVit/*"
+FILES:aibench-r908fdv-float32-onnx-mobilenetv2-12 = "${bindir}/aibench/r908fdv/float32/onnx_mobilenetv2-12/*"
+FILES:aibench-r908fdv-float32-onnx-resnet50-v1-7 = "${bindir}/aibench/r908fdv/float32/onnx_resnet50-v1-7/*"
+FILES:aibench-r908fdv-float32-onnx-retinaface = "${bindir}/aibench/r908fdv/float32/onnx_retinaface/*"
+FILES:aibench-r908fdv-float32-onnx-shufflenet-v2-9 = "${bindir}/aibench/r908fdv/float32/onnx_shufflenet-v2-9/*"
+FILES:aibench-r908fdv-float32-onnx-swin = "${bindir}/aibench/r908fdv/float32/onnx_swin/*"
+FILES:aibench-r908fdv-int8-asym-w-sym-onnx-bert = "${bindir}/aibench/r908fdv/int8_asym_w_sym/onnx_bert/*"
+FILES:aibench-r908fdv-int8-asym-w-sym-onnx-efficientnet = "${bindir}/aibench/r908fdv/int8_asym_w_sym/onnx_efficientnet/*"
+FILES:aibench-r908fdv-int8-asym-w-sym-onnx-mobilenetvit = "${bindir}/aibench/r908fdv/int8_asym_w_sym/onnx_mobilenetVit/*"
+FILES:aibench-r908fdv-int8-asym-w-sym-onnx-mobilenetv2-12 = "${bindir}/aibench/r908fdv/int8_asym_w_sym/onnx_mobilenetv2-12/*"
+FILES:aibench-r908fdv-int8-asym-w-sym-onnx-resnet50-v1-7 = "${bindir}/aibench/r908fdv/int8_asym_w_sym/onnx_resnet50-v1-7/*"
+FILES:aibench-r908fdv-int8-asym-w-sym-onnx-retinaface = "${bindir}/aibench/r908fdv/int8_asym_w_sym/onnx_retinaface/*"
+FILES:aibench-r908fdv-int8-asym-w-sym-onnx-swin = "${bindir}/aibench/r908fdv/int8_asym_w_sym/onnx_swin/*"
+FILES:aibench-r908fdv-int8-asym-w-sym-onnx-shufflenet-v2-9 = "${bindir}/aibench/r908fdv/int8_asym_w_sym/onnx_shufflenet-v2-9/*"
+
+PACKAGES =+ " \
+aibench-r908fdv-float16-onnx-bert \
+aibench-r908fdv-float16-onnx-efficientnet \
+aibench-r908fdv-float16-onnx-mobilenetvit \
+aibench-r908fdv-float16-onnx-mobilenetv2-12 \
+aibench-r908fdv-float16-onnx-resnet50-v1-7 \
+aibench-r908fdv-float16-onnx-retinaface \
+aibench-r908fdv-float16-onnx-shufflenet-v2-9 \
+aibench-r908fdv-float16-onnx-swin \
+aibench-r908fdv-float16-w-int8-onnx-bert \
+aibench-r908fdv-float16-w-int8-onnx-efficientnet \
+aibench-r908fdv-float16-w-int8-onnx-mobilenetvit \
+aibench-r908fdv-float16-w-int8-onnx-mobilenetv2-12 \
+aibench-r908fdv-float16-w-int8-onnx-resnet50-v1-7 \
+aibench-r908fdv-float16-w-int8-onnx-retinaface \
+aibench-r908fdv-float16-w-int8-onnx-swin \
+aibench-r908fdv-float16-w-int8-onnx-shufflenet-v2-9 \
+aibench-r908fdv-float32-onnx-bert \
+aibench-r908fdv-float32-onnx-efficientnet \
+aibench-r908fdv-float32-onnx-mobilenetvit \
+aibench-r908fdv-float32-onnx-mobilenetv2-12 \
+aibench-r908fdv-float32-onnx-resnet50-v1-7 \
+aibench-r908fdv-float32-onnx-retinaface \
+aibench-r908fdv-float32-onnx-shufflenet-v2-9 \
+aibench-r908fdv-float32-onnx-swin \
+aibench-r908fdv-int8-asym-w-sym-onnx-bert \
+aibench-r908fdv-int8-asym-w-sym-onnx-efficientnet \
+aibench-r908fdv-int8-asym-w-sym-onnx-mobilenetvit \
+aibench-r908fdv-int8-asym-w-sym-onnx-mobilenetv2-12 \
+aibench-r908fdv-int8-asym-w-sym-onnx-resnet50-v1-7 \
+aibench-r908fdv-int8-asym-w-sym-onnx-retinaface \
+aibench-r908fdv-int8-asym-w-sym-onnx-swin \
+aibench-r908fdv-int8-asym-w-sym-onnx-shufflenet-v2-9 \
+"
+
+FILES:aibench-r908fdv-cp-float16-onnx-bert = "${bindir}/aibench/r908fdv-cp/float16/onnx_bert/*"
+FILES:aibench-r908fdv-cp-float16-onnx-efficientnet = "${bindir}/aibench/r908fdv-cp/float16/onnx_efficientnet/*"
+FILES:aibench-r908fdv-cp-float16-onnx-mobilenetvit = "${bindir}/aibench/r908fdv-cp/float16/onnx_mobilenetVit/*"
+FILES:aibench-r908fdv-cp-float16-onnx-mobilenetv2-12 = "${bindir}/aibench/r908fdv-cp/float16/onnx_mobilenetv2-12/*"
+FILES:aibench-r908fdv-cp-float16-onnx-resnet50-v1-7 = "${bindir}/aibench/r908fdv-cp/float16/onnx_resnet50-v1-7/*"
+FILES:aibench-r908fdv-cp-float16-onnx-retinaface = "${bindir}/aibench/r908fdv-cp/float16/onnx_retinaface/*"
+FILES:aibench-r908fdv-cp-float16-onnx-shufflenet-v2-9 = "${bindir}/aibench/r908fdv-cp/float16/onnx_shufflenet-v2-9/*"
+FILES:aibench-r908fdv-cp-float16-onnx-swin = "${bindir}/aibench/r908fdv-cp/float16/onnx_swin/*"
+FILES:aibench-r908fdv-cp-float16-w-int8-onnx-bert = "${bindir}/aibench/r908fdv-cp/float16_w_int8/onnx_bert/*"
+FILES:aibench-r908fdv-cp-float16-w-int8-onnx-efficientnet = "${bindir}/aibench/r908fdv-cp/float16_w_int8/onnx_efficientnet/*"
+FILES:aibench-r908fdv-cp-float16-w-int8-onnx-mobilenetvit = "${bindir}/aibench/r908fdv-cp/float16_w_int8/onnx_mobilenetVit/*"
+FILES:aibench-r908fdv-cp-float16-w-int8-onnx-mobilenetv2-12 = "${bindir}/aibench/r908fdv-cp/float16_w_int8/onnx_mobilenetv2-12/*"
+FILES:aibench-r908fdv-cp-float16-w-int8-onnx-resnet50-v1-7 = "${bindir}/aibench/r908fdv-cp/float16_w_int8/onnx_resnet50-v1-7/*"
+FILES:aibench-r908fdv-cp-float16-w-int8-onnx-retinaface = "${bindir}/aibench/r908fdv-cp/float16_w_int8/onnx_retinaface/*"
+FILES:aibench-r908fdv-cp-float16-w-int8-onnx-swin = "${bindir}/aibench/r908fdv-cp/float16_w_int8/onnx_swin/*"
+FILES:aibench-r908fdv-cp-float16-w-int8-onnx-shufflenet-v2-9 = "${bindir}/aibench/r908fdv-cp/float16_w_int8/onnx_shufflenet-v2-9/*"
+FILES:aibench-r908fdv-cp-float32-onnx-bert = "${bindir}/aibench/r908fdv-cp/float32/onnx_bert/*"
+FILES:aibench-r908fdv-cp-float32-onnx-efficientnet = "${bindir}/aibench/r908fdv-cp/float32/onnx_efficientnet/*"
+FILES:aibench-r908fdv-cp-float32-onnx-mobilenetvit = "${bindir}/aibench/r908fdv-cp/float32/onnx_mobilenetVit/*"
+FILES:aibench-r908fdv-cp-float32-onnx-mobilenetv2-12 = "${bindir}/aibench/r908fdv-cp/float32/onnx_mobilenetv2-12/*"
+FILES:aibench-r908fdv-cp-float32-onnx-resnet50-v1-7 = "${bindir}/aibench/r908fdv-cp/float32/onnx_resnet50-v1-7/*"
+FILES:aibench-r908fdv-cp-float32-onnx-retinaface = "${bindir}/aibench/r908fdv-cp/float32/onnx_retinaface/*"
+FILES:aibench-r908fdv-cp-float32-onnx-shufflenet-v2-9 = "${bindir}/aibench/r908fdv-cp/float32/onnx_shufflenet-v2-9/*"
+FILES:aibench-r908fdv-cp-float32-onnx-swin = "${bindir}/aibench/r908fdv-cp/float32/onnx_swin/*"
+FILES:aibench-r908fdv-cp-int8-asym-w-sym-onnx-bert = "${bindir}/aibench/r908fdv-cp/int8_asym_w_sym/onnx_bert/*"
+FILES:aibench-r908fdv-cp-int8-asym-w-sym-onnx-efficientnet = "${bindir}/aibench/r908fdv-cp/int8_asym_w_sym/onnx_efficientnet/*"
+FILES:aibench-r908fdv-cp-int8-asym-w-sym-onnx-mobilenetvit = "${bindir}/aibench/r908fdv-cp/int8_asym_w_sym/onnx_mobilenetVit/*"
+FILES:aibench-r908fdv-cp-int8-asym-w-sym-onnx-mobilenetv2-12 = "${bindir}/aibench/r908fdv-cp/int8_asym_w_sym/onnx_mobilenetv2-12/*"
+FILES:aibench-r908fdv-cp-int8-asym-w-sym-onnx-resnet50-v1-7 = "${bindir}/aibench/r908fdv-cp/int8_asym_w_sym/onnx_resnet50-v1-7/*"
+FILES:aibench-r908fdv-cp-int8-asym-w-sym-onnx-retinaface = "${bindir}/aibench/r908fdv-cp/int8_asym_w_sym/onnx_retinaface/*"
+FILES:aibench-r908fdv-cp-int8-asym-w-sym-onnx-swin = "${bindir}/aibench/r908fdv-cp/int8_asym_w_sym/onnx_swin/*"
+FILES:aibench-r908fdv-cp-int8-asym-w-sym-onnx-shufflenet-v2-9 = "${bindir}/aibench/r908fdv-cp/int8_asym_w_sym/onnx_shufflenet-v2-9/*"
+
+PACKAGES =+ " \
+aibench-r908fdv-cp-float16-onnx-bert \
+aibench-r908fdv-cp-float16-onnx-efficientnet \
+aibench-r908fdv-cp-float16-onnx-mobilenetvit \
+aibench-r908fdv-cp-float16-onnx-mobilenetv2-12 \
+aibench-r908fdv-cp-float16-onnx-resnet50-v1-7 \
+aibench-r908fdv-cp-float16-onnx-retinaface \
+aibench-r908fdv-cp-float16-onnx-shufflenet-v2-9 \
+aibench-r908fdv-cp-float16-onnx-swin \
+aibench-r908fdv-cp-float16-w-int8-onnx-bert \
+aibench-r908fdv-cp-float16-w-int8-onnx-efficientnet \
+aibench-r908fdv-cp-float16-w-int8-onnx-mobilenetvit \
+aibench-r908fdv-cp-float16-w-int8-onnx-mobilenetv2-12 \
+aibench-r908fdv-cp-float16-w-int8-onnx-resnet50-v1-7 \
+aibench-r908fdv-cp-float16-w-int8-onnx-retinaface \
+aibench-r908fdv-cp-float16-w-int8-onnx-swin \
+aibench-r908fdv-cp-float16-w-int8-onnx-shufflenet-v2-9 \
+aibench-r908fdv-cp-float32-onnx-bert \
+aibench-r908fdv-cp-float32-onnx-efficientnet \
+aibench-r908fdv-cp-float32-onnx-mobilenetvit \
+aibench-r908fdv-cp-float32-onnx-mobilenetv2-12 \
+aibench-r908fdv-cp-float32-onnx-resnet50-v1-7 \
+aibench-r908fdv-cp-float32-onnx-retinaface \
+aibench-r908fdv-cp-float32-onnx-shufflenet-v2-9 \
+aibench-r908fdv-cp-float32-onnx-swin \
+aibench-r908fdv-cp-int8-asym-w-sym-onnx-bert \
+aibench-r908fdv-cp-int8-asym-w-sym-onnx-efficientnet \
+aibench-r908fdv-cp-int8-asym-w-sym-onnx-mobilenetvit \
+aibench-r908fdv-cp-int8-asym-w-sym-onnx-mobilenetv2-12 \
+aibench-r908fdv-cp-int8-asym-w-sym-onnx-resnet50-v1-7 \
+aibench-r908fdv-cp-int8-asym-w-sym-onnx-retinaface \
+aibench-r908fdv-cp-int8-asym-w-sym-onnx-swin \
+aibench-r908fdv-cp-int8-asym-w-sym-onnx-shufflenet-v2-9 \
+"
+

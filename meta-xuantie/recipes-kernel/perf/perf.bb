@@ -9,9 +9,9 @@ HOMEPAGE = "https://perf.wiki.kernel.org/index.php/Main_Page"
 
 LICENSE = "GPL-2.0-only"
 
+PR = "r1"
 
 PACKAGECONFIG ??= "python tui libtraceevent jevents"
-PACKAGECONFIG[dwarf] = ",NO_DWARF=1"
 PACKAGECONFIG[perl] = ",NO_LIBPERL=1,perl"
 PACKAGECONFIG[python] = ",NO_LIBPYTHON=1,python3 python3-setuptools-native"
 # gui support was added with kernel 3.6.35
@@ -19,12 +19,10 @@ PACKAGECONFIG[python] = ",NO_LIBPYTHON=1,python3 python3-setuptools-native"
 # to cover a wide range of kernel we add both dependencies
 PACKAGECONFIG[tui] = ",NO_NEWT=1,libnewt slang"
 PACKAGECONFIG[libunwind] = ",NO_LIBUNWIND=1 NO_LIBDW_DWARF_UNWIND=1,libunwind"
-PACKAGECONFIG[libnuma] = ",NO_LIBNUMA=1"
-PACKAGECONFIG[bfd] = ",NO_LIBBFD=1"
+PACKAGECONFIG[bfd] = ",BUILD_NONDISTRO=1"
 PACKAGECONFIG[systemtap] = ",NO_SDT=1,systemtap"
 PACKAGECONFIG[jvmti] = ",NO_JVMTI=1"
 # libaudit support would need scripting to be enabled
-PACKAGECONFIG[audit] = ",NO_LIBAUDIT=1,audit"
 PACKAGECONFIG[manpages] = ",,xmlto-native asciidoc-native"
 PACKAGECONFIG[cap] = ",,libcap"
 PACKAGECONFIG[libtraceevent] = ",NO_LIBTRACEEVENT=1,libtraceevent"
@@ -40,11 +38,22 @@ PACKAGECONFIG[babeltrace] = ",NO_LIBBABELTRACE=1,babeltrace"
 PACKAGECONFIG:remove:arc = "libunwind"
 PACKAGECONFIG:remove:riscv32 = "libunwind"
 
+RDEPENDS:${PN} += "numactl \
+                   audit \
+                   binutils \
+                   libatomic \
+                   libcap-ng \
+                   libbfd \
+                   libopcodes \
+"
+
 DEPENDS = " \
     virtual/${MLPREFIX}libc \
     ${MLPREFIX}elfutils \
-    ${MLPREFIX}binutils \
+    binutils \
     bison-native flex-native xz \
+    numactl \
+    audit \
 "
 
 do_configure[depends] += "virtual/kernel:do_shared_workdir"

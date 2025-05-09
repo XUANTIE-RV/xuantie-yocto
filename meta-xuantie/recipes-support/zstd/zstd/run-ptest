@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cd $(dirname "$(realpath "$0")")
 if [ ! -f "programs/source1.c" ]; then

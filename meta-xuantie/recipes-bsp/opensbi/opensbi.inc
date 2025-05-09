@@ -3,8 +3,6 @@ LICENSE = "CLOSED"
 
 inherit deploy
 
-PACKAGE_ARCH = "${MACHINE_ARCH}"
-
 S = "${WORKDIR}/git"
 
 export PLATFORM = "generic"

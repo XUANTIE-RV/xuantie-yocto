@@ -22,7 +22,7 @@ if [ "$#" -eq 0 ] || \
 	echo "[OPTION] format is: [--KEY=VALUE] defines below, the 1st value is DEFAULT."
 	echo "     --target_remote      value: 192.168.0.1:1234"
 	echo "     --abi_mode           value: rv64_std "
-	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c908v"
+	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c908v-vlen256"
 	echo "     --kernel_cfg         value: debug | default"
 	for item in "${system_alias[@]}"
 	do
@@ -167,13 +167,13 @@ KERNEL=${params_array["kernel_ver"]}
 TARGET_REMOTE=${params_array["target_remote"]}
 SOCINIT=gdbinit/zsb_socinit.gdbinit
 GDBINIT=gdbinit/${BOARD}_optee.gdbinit
-if [[ $KERNEL == "5.10" || $KERNEL == "5.10@c908v" ]]; then
+if [[ $KERNEL == "5.10" || $KERNEL == "5.10@c908v-vlen256" ]]; then
 	DTS=dts/${BOARD}_optee_kernel-5.10.dts
 else
 	DTS=dts/${BOARD}_optee.dts
 fi
 
-if [[ "$KERNEL" == "5.10" || "$KERNEL" == "5.10@c908v" ]]; then
+if [[ "$KERNEL" == "5.10" || "$KERNEL" == "5.10@c908v-vlen256" ]]; then
 	ROOTFS=images/rootfs/rootfs.xuantie-image-rv64-5.10-lite.cpio.gz
 elif [ $KERNEL == "6.6" ]; then
 	ROOTFS=images/rootfs/rootfs.xuantie-image-rv64-6.6-lite.cpio.gz
@@ -210,7 +210,7 @@ sed -i "s/linux,initrd-end = <0x0 .*/linux,initrd-end = <0x0 $ROOTFS_END>;/g" .h
 set -x
 
 # compile device tree file
-dtc -I dts -O dtb .hw.dts > hw.dtb
+./dtc -I dts -O dtb .hw.dts > hw.dtb
 
 # check all images_array image file exist before run
 echo "<< images name:"

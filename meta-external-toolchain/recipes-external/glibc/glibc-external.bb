@@ -108,6 +108,10 @@ python adjust_locale_names () {
 glibc_external_do_install_extra () {
     mkdir -p ${D}${sysconfdir}
     touch ${D}${sysconfdir}/ld.so.conf
+    echo "include /etc/ld.so.conf.d/*.conf" >> ${D}${sysconfdir}/ld.so.conf
+    mkdir -p ${D}${sysconfdir}/ld.so.conf.d
+    touch ${D}${sysconfdir}/ld.so.conf.d/riscv-linux-gnu.conf
+    echo "/usr/riscv64-unknown-linux-gnu/lib" >> ${D}${sysconfdir}/ld.so.conf.d/riscv-linux-gnu.conf
 
     if [ ! -e ${D}${libdir}/libc.so ]; then
         bbfatal "Unable to locate installed libc.so file (${libdir}/libc.so)." \
@@ -174,6 +178,7 @@ python () {
     d.setVar('libc_baselibs', baselibs)
 }
 
+FILES:${PN} += "${sysconfdir}/ld.so.conf.d/riscv-linux-gnu.conf"
 # Default pattern is too greedy
 FILES:${PN}-utils = "\
     ${bindir}/gencat \
@@ -232,6 +237,8 @@ FILES:${PN}-dev += "\
     ${includedir}/fpu_control.h \
     ${includedir}/stdc-predef.h \
     ${includedir}/uchar.h \
+    ${includedir}/sys/cachectl.h \
+    ${includedir}/sys/asm.h \
     ${includedir}/features-time64.h \
 "
 FILES:${PN}-dev[file-checksums] += "${libc_headers_file}:True"

@@ -137,6 +137,9 @@ do_compile() {
 do_install() {
     cd ${S}
     oe_runmake install DESTDIR=${D}
+    rm -rf ${D}/usr/bin/hwloc-ls ${D}/usr/bin/lstopo
+    ln -s riscv64-oe-linux-lstopo-no-graphics ${D}/usr/bin/hwloc-ls
+    ln -s riscv64-oe-linux-lstopo-no-graphics ${D}/usr/bin/lstopo
 }
 
 FILES:${PN} += "${datadir}"

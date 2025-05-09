@@ -1,0 +1,81 @@
+From 198b177174492a45feeee2d9a9931b081c4da3f9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Fri, 27 Dec 2024 11:31:57 +0800
+Subject: [PATCH] modify the build flags
+
+---
+ libomptarget/DeviceRTL/CMakeLists.txt |  4 ++--
+ runtime/cmake/config-ix.cmake         | 14 +++++++-------
+ runtime/src/CMakeLists.txt            |  2 +-
+ 3 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/libomptarget/DeviceRTL/CMakeLists.txt b/libomptarget/DeviceRTL/CMakeLists.txt
+index 1ce3e1e..e73dbaf 100644
+--- a/libomptarget/DeviceRTL/CMakeLists.txt
++++ b/libomptarget/DeviceRTL/CMakeLists.txt
+@@ -130,7 +130,7 @@ list(TRANSFORM LIBOMPTARGET_LLVM_INCLUDE_DIRS_DEVICERTL PREPEND "-I")
+ set(bc_flags -c -foffload-lto -std=c++17 -fvisibility=hidden
+               ${clang_opt_flags} --offload-device-only
+              -nocudalib -nogpulib -nostdinc
+-             -fopenmp -fopenmp-cuda-mode
++             -fopenmp=libomp -fopenmp-cuda-mode
+              -Wno-unknown-cuda-version
+              -DOMPTARGET_DEVICE_RUNTIME
+              -I${include_directory}
+@@ -271,7 +271,7 @@ function(compileDeviceRTLLibrary target_cpu target_name target_triple)
+     set(ide_target_name omptarget-ide-${target_name}-${target_cpu})
+     add_library(${ide_target_name} STATIC EXCLUDE_FROM_ALL ${src_files})
+     target_compile_options(${ide_target_name} PRIVATE
+-      -fopenmp --offload-arch=${target_cpu} -fopenmp-cuda-mode
++      -fopenmp=libomp --offload-arch=${target_cpu} -fopenmp-cuda-mode
+       -mllvm -openmp-opt-disable
+       -foffload-lto -fvisibility=hidden --offload-device-only
+       -nocudalib -nogpulib -nostdinc -Wno-unknown-cuda-version
+diff --git a/runtime/cmake/config-ix.cmake b/runtime/cmake/config-ix.cmake
+index 76f471a..c6aa327 100644
+--- a/runtime/cmake/config-ix.cmake
++++ b/runtime/cmake/config-ix.cmake
+@@ -17,7 +17,7 @@ include(CheckLibraryExists)
+ include(CheckIncludeFiles)
+ include(CheckSymbolExists)
+ include(LibompCheckFortranFlag)
+-include(LLVMCheckCompilerLinkerFlag)
++#include(LLVMCheckCompilerLinkerFlag)
+ 
+ # Check for versioned symbols
+ function(libomp_check_version_symbols retval)
+@@ -129,12 +129,12 @@ check_symbol_exists(_aligned_malloc "malloc.h" LIBOMP_HAVE__ALIGNED_MALLOC)
+ # Check linker flags
+ if(WIN32)
+   llvm_check_compiler_linker_flag(C /SAFESEH LIBOMP_HAVE_SAFESEH_FLAG)
+-elseif(NOT APPLE)
+-  llvm_check_compiler_linker_flag(C -Wl,-x LIBOMP_HAVE_X_FLAG)
+-  llvm_check_compiler_linker_flag(C -Wl,--as-needed LIBOMP_HAVE_AS_NEEDED_FLAG)
+-  llvm_check_compiler_linker_flag(C "-Wl,--version-script=${LIBOMP_SRC_DIR}/exports_test_so.txt" LIBOMP_HAVE_VERSION_SCRIPT_FLAG)
+-  llvm_check_compiler_linker_flag(C -static-libgcc LIBOMP_HAVE_STATIC_LIBGCC_FLAG)
+-  llvm_check_compiler_linker_flag(C -Wl,-z,noexecstack LIBOMP_HAVE_Z_NOEXECSTACK_FLAG)
++#elseif(NOT APPLE)
++#  llvm_check_compiler_linker_flag(C -Wl,-x LIBOMP_HAVE_X_FLAG)
++#  llvm_check_compiler_linker_flag(C -Wl,--as-needed LIBOMP_HAVE_AS_NEEDED_FLAG)
++#  llvm_check_compiler_linker_flag(C "-Wl,--version-script=${LIBOMP_SRC_DIR}/exports_test_so.txt" LIBOMP_HAVE_VERSION_SCRIPT_FLAG)
++#  llvm_check_compiler_linker_flag(C -static-libgcc LIBOMP_HAVE_STATIC_LIBGCC_FLAG)
++#  llvm_check_compiler_linker_flag(C -Wl,-z,noexecstack LIBOMP_HAVE_Z_NOEXECSTACK_FLAG)
+ endif()
+ 
+ # Check Intel(R) C Compiler specific flags
+diff --git a/runtime/src/CMakeLists.txt b/runtime/src/CMakeLists.txt
+index 619d4f7..975d2f8 100644
+--- a/runtime/src/CMakeLists.txt
++++ b/runtime/src/CMakeLists.txt
+@@ -8,7 +8,7 @@
+ #//===----------------------------------------------------------------------===//
+ #
+ 
+-include(ExtendPath)
++#include(ExtendPath)
+ 
+ # Configure omp.h, kmp_config.h and omp-tools.h if necessary
+ configure_file(${LIBOMP_INC_DIR}/omp.h.var omp.h @ONLY)
+-- 
+2.25.1
+

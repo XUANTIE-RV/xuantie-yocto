@@ -1,20 +1,20 @@
 require conf/machine/include/riscv/tune-riscv.inc
+require xuantie-clang.inc
 
 DISTRO_NAME = "xuantie C9xx Release Distro"
-DISTRO_VERSION = "1.0.6"
+DISTRO_VERSION = "1.1.0-RC8"
 
-XUANTIE_LINUX_TAG = "XuanTie_V1.0.6"
+XUANTIE_LINUX_TAG = "XuanTie_V1.1.0-RC8"
 
 EXTERNAL_TOOLCHAIN ?= "${TOPDIR}/../../riscv-toolchain"
 TCMODE = "external"
 TARGET_PREFIX = "riscv64-linux-"
 TARGET_OS = "linux"
-QEMU_TOOLCHAIN_PATH ?= "${EXTERNAL_TOOLCHAIN}/csky-qemu/bin/"
 EXTERNAL_TOOLCHAIN_SYSROOT ?= "${EXTERNAL_TOOLCHAIN}/sysroot"
 
 export EXTERNAL_TOOLCHAIN_EXPORT ?= "${EXTERNAL_TOOLCHAIN}"
 BB_BASEHASH_IGNORE_VARS:append = " EXTERNAL_TOOLCHAIN_BIN EXTERNAL_TOOLCHAIN_LIBROOT \
-    EXTERNAL_TOOLCHAIN_SYSROOT EXTERNAL_HEADERS_MULTILIB_SUFFIX QEMU_TOOLCHAIN_PATH \
+    EXTERNAL_TOOLCHAIN_SYSROOT EXTERNAL_HEADERS_MULTILIB_SUFFIX \
     TOOLCHAIN_DIR EXTERNAL_TOOLCHAIN_EXPORT BUILD_ROOT RV_TOOLCHAIN "
 
 INSANE_SKIP:${PN} += "glibc-so gobject-introspection-so glibc-external"
@@ -64,14 +64,14 @@ python() {
     d.setVar('BSP_VERSION_LIMIT', version_limit)
 }
 
-PACKAGE_FEED_URIS ?= "http://114.55.254.174/xuantie/deb/release/1.x/${XUANTIE_KERNEL_VERSION}/${TUNE_ARCH}"
+PACKAGE_FEED_URIS ?= "http://114.55.254.174/xuantie/deb/dev/1.1/${XUANTIE_KERNEL_VERSION}/${TUNE_ARCH}"
 PACKAGE_FEED_ARCHS = "common"
 
 INHERIT += "own-mirrors"
-SOURCE_MIRROR_URL ?= "http://114.55.254.174/xuantie/downloads-mirror/1.x/release"
-SSTATE_MIRRORS ?= "file://.* http://114.55.254.174/xuantie/sstate-cache/1.x/release/${XUANTIE_LINUX_TAG}/${XUANTIE_KERNEL_VERSION}/PATH;downloadfilename=PATH"
+SOURCE_MIRROR_URL ?= "http://114.55.254.174/xuantie/downloads-mirror/1.x/dev"
+SSTATE_MIRRORS ?= "file://.* http://114.55.254.174/xuantie/sstate-cache/1.1/dev/${XUANTIE_LINUX_TAG}/${XUANTIE_KERNEL_VERSION}/PATH;downloadfilename=PATH"
 
-PYTHON_PIP_URL ?= "http://114.55.254.174/xuantie/python3/release/simple/"
+PYTHON_PIP_URL ?= "http://114.55.254.174/th1520/python3/release/simple/"
 
 PREFERRED_VERSION_opencv ?= "4.5.4"
 
@@ -83,3 +83,12 @@ XUANTIE_TUNE_CCARGS ?= "-march=${XUANTIE_MARCH} -mabi=${XUANTIE_MABI}"
 TUNE_CCARGS:append = "${@bb.utils.contains('XUANTIE_PACKAGE_ARCH_SET', 'NO', " ${XUANTIE_TUNE_CCARGS}", ' ', d)}"
 
 EXTERNAL_TOOLCHAIN_ABI_DIR_NAME ?= "${XUANTIE_MABI}"
+
+# mirrors
+XUANTIE_GIT ?= "git://git@gitee.com/xuantie-yocto"
+MIRRORS += "\
+${XUANTIE_GIT} git://git@github.com/XUANTIE-RV \
+${XUANTIE_GIT} git://git@github.com/ruyisdk/ \
+"
+
+require xuantie-proprietary.inc

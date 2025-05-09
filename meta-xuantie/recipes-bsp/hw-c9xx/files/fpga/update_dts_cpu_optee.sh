@@ -115,10 +115,10 @@ function update_cpu_socinit
 {
 	if [[ $CPU =~ c906.* ]]; then
 		echo ">> updating socinit ncore to noncore"
-		sed -i "s/set \$is_use_ncore = .*/set \$is_use_ncore = 0/g" gdbinit/zsb_socinit.gdbinit
+		sed -i "s/set \$link_mode = .*/set \$link_mode = 0/g" gdbinit/zsb_socinit.gdbinit
 	else
 		echo ">> updating socinit to ncore"
-		sed -i "s/set \$is_use_ncore = .*/set \$is_use_ncore = 1/g" gdbinit/zsb_socinit.gdbinit
+		sed -i "s/set \$link_mode = .*/set \$link_mode = 1/g" gdbinit/zsb_socinit.gdbinit
 	fi
 }
 
@@ -149,9 +149,9 @@ function update_dts_core_layout
 	# if $CORE_LAYOUT is defined then update it
 	if [ ! -z $CORE_LAYOUT ]; then
 		if [ $CORE_LAYOUT -eq 1 ];then
-			sed -i '/^\s*set\s*\*0x18030000 = 0x7f/s/^\(\s*\)\(set\)/\1# \2/' gdbinit/zsb.gdbinit
+			sed -i '/^\s*set\s*\*0x18030000 = 0x7f/s/^\(\s*\)\(set\)/\1# \2/' gdbinit/zsb_rv64_optee.gdbinit
 		else
-			sed -i '/#\s*set\s*\*0x18030000 = 0x7f/s/#\s*//' gdbinit/zsb.gdbinit
+			sed -i '/#\s*set\s*\*0x18030000 = 0x7f/s/#\s*//' gdbinit/zsb_rv64_optee.gdbinit
 		fi
 		echo ">> updating core layout to $CORE_LAYOUT"
 		decimal=$((2#$CORE_LAYOUT))

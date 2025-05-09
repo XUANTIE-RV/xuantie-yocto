@@ -36,3 +36,5 @@ PACKAGECONFIG[devel-headers] = "--enable-devel-headers, --disable-devel-headers"
 PACKAGECONFIG[examples] = "--enable-examples, --disable-examples"
 
 FILES:${PN}-dev += "${libdir}/ucx/*.so"
+
+DEPENDS:append:toolchain-clang = " openmp"

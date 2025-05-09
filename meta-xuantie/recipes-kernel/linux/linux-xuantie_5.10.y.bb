@@ -1,14 +1,10 @@
 inherit kernel
 require recipes-kernel/linux/linux-yocto.inc
 
-XUANTIE_GIT = "git://git@gitee.com/xuantie-yocto/linux.git"
-XUANTIE_GIT_MIRRORS = "git://git@github.com/XUANTIE-RV/linux.git"
-MIRRORS += "${XUANTIE_GIT} ${XUANTIE_GIT_MIRRORS}"
-
-
 SRC_URI = " \
-            ${XUANTIE_GIT_MIRRORS};branch=linux-5.10.4;protocol=https \
-            ${XUANTIE_GIT};branch=linux-5.10.4;protocol=https \
+            ${@bb.utils.contains('MACHINECONFIG', 'public', \
+            '${XUANTIE_GIT}/linux.git;branch=linux-5.10.4;protocol=https', \
+            'git://github.com/XUANTIE-RV/linux.git;branch=linux-5.10.4;protocol=https', d)} \
             file://0001-isa-zicsr-zifencei.patch \
             file://0002-perf-annotate-Fix-build-error.patch \
             file://0003-perf-build-Disable-fewer-flex-warnings.patch \
@@ -40,9 +36,9 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 KERNEL_VERSION_SANITY_SKIP="1"
 
-# Date: Thu Nov 21 10:54:xx 2024 +0800
-# commit info: merge-tee-updates-from-optee-3.14.0
-SRCREV = "b56a88cbb3bbb051197aeedeb93675001834460c"
+# Date: Thu Feb 13 16:00:xx 2025 +0800
+# commit info: riscv: use CSR_SATP instead of the legacy sptbr name in switch_mm
+SRCREV = "3d6305636ecd304ac00d872796901b341006ccea"
 LICENSE = "CLOSED"
 
 S = "${WORKDIR}/linux-${PV}"
