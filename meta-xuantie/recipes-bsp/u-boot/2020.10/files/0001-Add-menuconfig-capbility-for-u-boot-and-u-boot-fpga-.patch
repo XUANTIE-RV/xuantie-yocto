@@ -1,0 +1,118 @@
+From 56987edc01063d1b82c230eb4b88b51cfbe05039 Mon Sep 17 00:00:00 2001
+From: o_bianhq <bhq01502828@alibaba-inc.com>
+Date: Thu, 27 Feb 2025 11:40:51 +0800
+Subject: [PATCH] Add menuconfig capbility for u-boot and u-boot-fpga in
+ Xuantie SDK.
+
+---
+ .../u-boot/u-boot-fpga_2024.10.bbappend       | 41 +++++++++++++++++++
+ .../u-boot/u-boot_2024.10.bbappend            | 41 +++++++++++++++++++
+ 2 files changed, 82 insertions(+)
+
+diff --git a/meta-xuantie/recipes-bsp/u-boot/u-boot-fpga_2024.10.bbappend b/meta-xuantie/recipes-bsp/u-boot/u-boot-fpga_2024.10.bbappend
+index 7cc680e..62dd239 100644
+--- a/meta-xuantie/recipes-bsp/u-boot/u-boot-fpga_2024.10.bbappend
++++ b/meta-xuantie/recipes-bsp/u-boot/u-boot-fpga_2024.10.bbappend
+@@ -14,6 +14,47 @@ UBOOT_CONFIG[general-rv64-fpga] = "fpga_xuantie_riscv64_smode_defconfig"
+ UBOOT_CONFIG:riscv32 = "general-rv32-fpga"
+ UBOOT_CONFIG[general-rv32-fpga] = "fpga_xuantie_riscv32_smode_defconfig"
+ 
++python do_menuconfig() {
++    import shutil
++    if d.getVar('TUNE_ARCH') == "riscv32":
++        build_path = "/build/fpga_xuantie_riscv32_smode_defconfig/"
++    elif d.getVar('TUNE_ARCH') == "riscv64":
++        build_path = "/build/fpga_xuantie_riscv64_smode_defconfig/"
++    os.system("ln -sf /usr/bin/cc {}".format(d.getVar('WORKDIR')+"/recipe-sysroot-native/usr/bin/riscv64-oe-linux/cc"))
++    d.setVar('KCONFIG_CONFIG_ROOTDIR', (d.getVar('WORKDIR') + build_path))
++    config = os.path.join(d.getVar('KCONFIG_CONFIG_ROOTDIR'), ".config")
++    configorig = os.path.join(d.getVar('KCONFIG_CONFIG_ROOTDIR'), ".config.orig")
++
++    try:
++        mtime = os.path.getmtime(config)
++        shutil.copy(config, configorig)
++    except OSError:
++        mtime = 0
++
++    # setup native pkg-config variables (kconfig scripts call pkg-config directly, cannot generically be overriden to pkg-config-native)
++    d.setVar("PKG_CONFIG_DIR", "${STAGING_DIR_NATIVE}${libdir_native}/pkgconfig")
++    d.setVar("PKG_CONFIG_PATH", "${PKG_CONFIG_DIR}:${STAGING_DATADIR_NATIVE}/pkgconfig")
++    d.setVar("PKG_CONFIG_LIBDIR", "${PKG_CONFIG_DIR}")
++    d.setVarFlag("PKG_CONFIG_SYSROOT_DIR", "unexport", "1")
++    # ensure that environment variables are overwritten with this tasks 'd' values
++    d.appendVar("OE_TERMINAL_EXPORTS", " PKG_CONFIG_DIR PKG_CONFIG_PATH PKG_CONFIG_LIBDIR PKG_CONFIG_SYSROOT_DIR")
++
++    oe_terminal("sh -c \"cd %s && make menuconfig; if [ \\$? -ne 0 ]; then echo 'Command failed.'; printf 'Press any key to continue... '; read r; fi\"" % (d.getVar('WORKDIR') + build_path), d.getVar('PN') + ' Configuration', d)
++
++    # FIXME this check can be removed when the minimum bitbake version has been bumped
++    if hasattr(bb.build, 'write_taint'):
++        try:
++            newmtime = os.path.getmtime(config)
++        except OSError:
++            newmtime = 0
++
++        if newmtime > mtime:
++            bb.note("Configuration changed, recompile will be forced")
++            bb.build.write_taint('do_compile', d)
++}
++
++# Ensure do_menuconfig runs after do_configure
++addtask do_menuconfig after do_configure
+ 
+ FILES:${PN} += " ${bindir} "
+ INSANE_SKIP:${PN} += "installed-vs-shipped"
+diff --git a/meta-xuantie/recipes-bsp/u-boot/u-boot_2024.10.bbappend b/meta-xuantie/recipes-bsp/u-boot/u-boot_2024.10.bbappend
+index 37ce411..552c2c1 100644
+--- a/meta-xuantie/recipes-bsp/u-boot/u-boot_2024.10.bbappend
++++ b/meta-xuantie/recipes-bsp/u-boot/u-boot_2024.10.bbappend
+@@ -9,6 +9,47 @@ UBOOT_CONFIG[general-rv64] = "qemu-riscv64_smode_defconfig"
+ UBOOT_CONFIG:riscv32 = "general-rv32"
+ UBOOT_CONFIG[general-rv32] = "qemu-riscv32_smode_defconfig"
+ 
++python do_menuconfig() {
++    import shutil
++    if d.getVar('TUNE_ARCH') == "riscv32":
++        build_path = "/build/qemu-riscv32_smode_defconfig/"
++    elif d.getVar('TUNE_ARCH') == "riscv64":
++        build_path = "/build/qemu-riscv64_smode_defconfig/"
++    os.system("ln -sf /usr/bin/cc {}".format(d.getVar('WORKDIR')+"/recipe-sysroot-native/usr/bin/riscv64-oe-linux/cc"))
++    d.setVar('KCONFIG_CONFIG_ROOTDIR', (d.getVar('WORKDIR') + build_path))
++    config = os.path.join(d.getVar('KCONFIG_CONFIG_ROOTDIR'), ".config")
++    configorig = os.path.join(d.getVar('KCONFIG_CONFIG_ROOTDIR'), ".config.orig")
++
++    try:
++        mtime = os.path.getmtime(config)
++        shutil.copy(config, configorig)
++    except OSError:
++        mtime = 0
++
++    # setup native pkg-config variables (kconfig scripts call pkg-config directly, cannot generically be overriden to pkg-config-native)
++    d.setVar("PKG_CONFIG_DIR", "${STAGING_DIR_NATIVE}${libdir_native}/pkgconfig")
++    d.setVar("PKG_CONFIG_PATH", "${PKG_CONFIG_DIR}:${STAGING_DATADIR_NATIVE}/pkgconfig")
++    d.setVar("PKG_CONFIG_LIBDIR", "${PKG_CONFIG_DIR}")
++    d.setVarFlag("PKG_CONFIG_SYSROOT_DIR", "unexport", "1")
++    # ensure that environment variables are overwritten with this tasks 'd' values
++    d.appendVar("OE_TERMINAL_EXPORTS", " PKG_CONFIG_DIR PKG_CONFIG_PATH PKG_CONFIG_LIBDIR PKG_CONFIG_SYSROOT_DIR")
++
++    oe_terminal("sh -c \"cd %s && make menuconfig; if [ \\$? -ne 0 ]; then echo 'Command failed.'; printf 'Press any key to continue... '; read r; fi\"" % (d.getVar('WORKDIR') + build_path), d.getVar('PN') + ' Configuration', d)
++
++    # FIXME this check can be removed when the minimum bitbake version has been bumped
++    if hasattr(bb.build, 'write_taint'):
++        try:
++            newmtime = os.path.getmtime(config)
++        except OSError:
++            newmtime = 0
++
++        if newmtime > mtime:
++            bb.note("Configuration changed, recompile will be forced")
++            bb.build.write_taint('do_compile', d)
++}
++
++# Ensure do_menuconfig runs after do_configure
++addtask do_menuconfig after do_configure
+ 
+ FILES:${PN} += " ${bindir} "
+ INSANE_SKIP:${PN} += "installed-vs-shipped"
+-- 
+2.25.1
+
