@@ -249,7 +249,7 @@ RDEPENDS:${PN}-misc = "perl"
 RDEPENDS:${PN}-ptest += "openssl-bin perl perl-modules bash sed"
 
 RDEPENDS:${PN}-bin += "openssl-conf"
-
+RDEPENDS:${PN} += "openssl-bin"
 BBCLASSEXTEND = "native nativesdk"
 
 CVE_PRODUCT = "openssl:openssl"

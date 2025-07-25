@@ -1,0 +1,125 @@
+From 6dfbc3b72395974f13dcfc95304abb84f7ee9388 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Fri, 10 Jan 2025 22:36:14 +0800
+Subject: [PATCH] Add k230-canmv-xuantie.dts
+
+---
+ .../boot/dts/canaan/k230-canmv-xuantie.dts    | 106 ++++++++++++++++++
+ 1 file changed, 106 insertions(+)
+ create mode 100644 arch/riscv/boot/dts/canaan/k230-canmv-xuantie.dts
+
+diff --git a/arch/riscv/boot/dts/canaan/k230-canmv-xuantie.dts b/arch/riscv/boot/dts/canaan/k230-canmv-xuantie.dts
+new file mode 100644
+index 000000000000..01da0a2a14df
+--- /dev/null
++++ b/arch/riscv/boot/dts/canaan/k230-canmv-xuantie.dts
+@@ -0,0 +1,106 @@
++// SPDX-License-Identifier: GPL-2.0 OR MIT
++/*
++ * Copyright (C) 2024 Yangyu Chen <cyy@cyyself.name>
++ */
++
++#include "k230.dtsi"
++
++/ {
++	model = "Canaan CanMV-K230";
++	compatible = "canaan,canmv-k230", "canaan,kendryte-k230";
++
++	aliases {
++		serial3 = &uart3;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	ddr: memory@0 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x20000000>;
++	};
++};
++
++&uart0 {
++	status = "okay";
++};
++&uart3 {
++	status = "okay";
++};
++&mmc_sd1{
++	status = "okay";
++	no-1-8-v;
++	cap-sd-highspeed;
++	mshc_ctrl_r = <0x00>;
++};
++
++&usb0 {
++	status = "okay";
++};
++&usb1 {
++	status = "okay";
++};
++
++&i2c3 {
++	status = "okay";
++};
++
++&i2c4 {
++	status = "okay";
++
++	lt9611: hdmi-bridge@3b {
++		compatible = "lontium,lt9611";
++		reg = <0x3b>;
++		reset-gpios = <&gpio1_ports 10 GPIO_ACTIVE_HIGH>;
++		interrupt-parent = <&gpio1_ports>;
++		interrupts = <11 IRQ_TYPE_EDGE_FALLING>;
++		ports {
++			#address-cells  = <1>;
++			#size-cells     = <0>;
++			port@1 {
++				reg = <1>;
++				lt9611_in: endpoint {
++					remote-endpoint = <&dsi_out_lt9611>;
++				};
++			};
++
++			port@2 {
++				reg = <2>;
++				lt9611_out: endpoint {
++					remote-endpoint = <&hdmi_connector_in>;
++				};
++			};
++		};
++	};
++};
++
++&dsi {
++	ports {
++		port@1 {
++			reg = <1>;
++			dsi_out_lt9611: endpoint {
++				remote-endpoint = <&lt9611_in>;
++			};
++		};
++	};
++};
++
++/ {
++	hdmi: connector {
++		compatible = "hdmi-connector";
++		label = "hdmi";
++		type = "a";
++
++		port {
++			hdmi_connector_in: endpoint {
++				remote-endpoint = <&lt9611_out>;
++			};
++		};
++	};
++};
++
++&vo {
++	vth_line = <10>;
++};
+-- 
+2.25.1
+

@@ -22,7 +22,7 @@ if [ "$#" -eq 0 ] || \
 	echo "[OPTION] format is: [--KEY=VALUE] defines below, the 1st value is DEFAULT."
 	echo "     --target_remote      value: 192.168.0.1:1234"
 	echo "     --abi_mode           value: rv64_std "
-	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c908v"
+	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c908v-vlen256"
 	echo "     --kernel_cfg         value: debug | default"
 	for item in "${system_alias[@]}"
 	do
@@ -167,13 +167,9 @@ KERNEL=${params_array["kernel_ver"]}
 TARGET_REMOTE=${params_array["target_remote"]}
 SOCINIT=gdbinit/zsb_socinit.gdbinit
 GDBINIT=gdbinit/${BOARD}_optee.gdbinit
-if [[ $KERNEL == "5.10" || $KERNEL == "5.10@c908v" ]]; then
-	DTS=dts/${BOARD}_optee_kernel-5.10.dts
-else
-	DTS=dts/${BOARD}_optee.dts
-fi
+DTS=dts/${BOARD}.dts
 
-if [[ "$KERNEL" == "5.10" || "$KERNEL" == "5.10@c908v" ]]; then
+if [[ "$KERNEL" == "5.10" || "$KERNEL" == "5.10@c908v-vlen256" ]]; then
 	ROOTFS=images/rootfs/rootfs.xuantie-image-rv64-5.10-lite.cpio.gz
 elif [ $KERNEL == "6.6" ]; then
 	ROOTFS=images/rootfs/rootfs.xuantie-image-rv64-6.6-lite.cpio.gz
@@ -195,22 +191,22 @@ if [ ! -f $GDBINIT -o ! -f $SOCINIT -o ! -f $DTS ]; then
 fi
 
 echo ">> generate '.hw.dts'"
-cp $DTS .hw.dts
-
-
+if [ ! -f .hw.dts ] ; then
+	./dtc -I dts -O dts $DTS > .hw.dts
+fi
 
 # modify .hw.dts with correct rootfs size
 ROOTFS_BASE=`cat .hw.dts | grep initrd-start | awk -F " " '{print $4}' | awk -F ">" '{print $1}'`
 ROOTFS_SIZE=`ls -lt $(realpath ../$ROOTFS) | awk '{print $5}'`
 ((ROOTFS_END= $ROOTFS_BASE + $ROOTFS_SIZE))
 ROOTFS_END=`printf "0x%x" $ROOTFS_END`
-sed -i "s/linux,initrd-end = <0x0 .*/linux,initrd-end = <0x0 $ROOTFS_END>;/g" .hw.dts
+sed -i "s/linux,initrd-end = <0x0* .*/linux,initrd-end = <0x00 $ROOTFS_END>;/g" .hw.dts
 
 
 set -x
 
 # compile device tree file
-dtc -I dts -O dtb .hw.dts > hw.dtb
+./dtc -I dts -O dtb .hw.dts > hw.dtb
 
 # check all images_array image file exist before run
 echo "<< images name:"

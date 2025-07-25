@@ -1,0 +1,25 @@
+From e868f28ea282623f1ee576b660d8590f9d34010c Mon Sep 17 00:00:00 2001
+From: =ruiyuan.sw <ruiyuan.sw@alibaba-inc.com>
+Date: Thu, 28 Nov 2024 15:43:28 +0000
+Subject: [PATCH] delete cfi kselftest(toolchain not support)
+
+---
+ tools/testing/selftests/riscv/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/testing/selftests/riscv/Makefile b/tools/testing/selftests/riscv/Makefile
+index 636dc3131..ac583a024 100644
+--- a/tools/testing/selftests/riscv/Makefile
++++ b/tools/testing/selftests/riscv/Makefile
+@@ -5,7 +5,7 @@
+ ARCH ?= $(shell uname -m 2>/dev/null || echo not)
+ 
+ ifneq (,$(filter $(ARCH),riscv))
+-RISCV_SUBTARGETS ?= hwprobe vector mm pm cfi1 cfi2
++RISCV_SUBTARGETS ?= hwprobe vector mm pm
+ else
+ RISCV_SUBTARGETS :=
+ endif
+-- 
+2.25.1
+

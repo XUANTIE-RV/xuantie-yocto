@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=4c21215bd9a7b56c0de1dcde838cb795"
 SRC_URI = " \
     git://github.com/open-mpi/ompi.git;protocol=https;branch=main \
     git://github.com/openpmix/openpmix.git;protocol=https;destsuffix=git/3rd-party/openpmix;name=openpmix;branch=master \
-    git://github.com/open-mpi/prrte.git;protocol=https;destsuffix=git/3rd-party/prrte;name=prrte;branch=master \
+    git://github.com/open-mpi/prrte.git;protocol=https;destsuffix=git/3rd-party/prrte;name=prrte;nobranch=1 \
     git://github.com/open-mpi/oac.git;protocol=https;destsuffix=git/config/oac;name=oac;branch=main \
     git://github.com/open-mpi/oac.git;protocol=https;destsuffix=git/3rd-party/openpmix/config/oac;name=oac;branch=main \
     git://github.com/open-mpi/oac.git;protocol=https;destsuffix=git/3rd-party/prrte/config/oac;name=oac;branch=main \
@@ -137,6 +137,9 @@ do_compile() {
 do_install() {
     cd ${S}
     oe_runmake install DESTDIR=${D}
+    rm -rf ${D}/usr/bin/hwloc-ls ${D}/usr/bin/lstopo
+    ln -s riscv64-oe-linux-lstopo-no-graphics ${D}/usr/bin/hwloc-ls
+    ln -s riscv64-oe-linux-lstopo-no-graphics ${D}/usr/bin/lstopo
 }
 
 FILES:${PN} += "${datadir}"

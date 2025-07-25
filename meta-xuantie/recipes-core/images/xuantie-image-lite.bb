@@ -4,13 +4,14 @@ LICENSE = "MIT"
 require xuantie-image-minimal.bb
 
 #testing basic tools
-IMAGE_INSTALL += " glibc-external-utils time unzip ldd binutils file procps"
+IMAGE_INSTALL += " glibc-external-utils time unzip ldd file procps"
 
 #buildroot lite
 IMAGE_INSTALL += " hello hexedit memtool phytool os-release "
 
 #remote access services
 IMAGE_INSTALL += " inetutils-telnetd haveged nbd-client "
+
 IMAGE_FEATURES:append = " ssh-server-openssh "
 
 #for FPGA

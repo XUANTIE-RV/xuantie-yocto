@@ -19,3 +19,6 @@ do_install:append() {
         echo '/sbin/sysctl -e -w kernel.core_pattern=core.%e.%p kernel.core_uses_pid=1 >/dev/null' >> ${D}${sysconfdir}/init.d/rcS
     fi
 }
+
+# Replace bash with busybox for better performance
+ALTERNATIVE_PRIORITY[sh] = "110"

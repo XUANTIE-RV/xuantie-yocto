@@ -1,0 +1,24 @@
+From 026c58cad17d750faf2a3ddd3d262c84b6404b93 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Fri, 20 Dec 2024 14:35:59 +0800
+Subject: [PATCH] Add extra makefile in riscv test case.
+
+---
+ tools/testing/selftests/riscv/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/testing/selftests/riscv/Makefile b/tools/testing/selftests/riscv/Makefile
+index ac583a02..88e12612 100644
+--- a/tools/testing/selftests/riscv/Makefile
++++ b/tools/testing/selftests/riscv/Makefile
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+ # Originally tools/testing/arm64/Makefile
+ 
++include ../lib.mk
+ # When ARCH not overridden for crosscompiling, lookup machine
+ ARCH ?= $(shell uname -m 2>/dev/null || echo not)
+ 
+-- 
+2.25.1
+

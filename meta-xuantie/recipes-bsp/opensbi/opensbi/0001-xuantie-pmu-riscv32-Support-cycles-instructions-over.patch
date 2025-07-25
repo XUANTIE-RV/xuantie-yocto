@@ -1,0 +1,31 @@
+From 53d6178fa35800c08d98be25835ff8f5211b5bd8 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Sun, 22 Jun 2025 16:00:22 +0800
+Subject: [PATCH] xuantie: pmu: riscv32: Support cycles&instructions overflow
+ interrupt
+
+---
+ lib/sbi/sbi_pmu.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/lib/sbi/sbi_pmu.c b/lib/sbi/sbi_pmu.c
+index e38fb64..c461a91 100644
+--- a/lib/sbi/sbi_pmu.c
++++ b/lib/sbi/sbi_pmu.c
+@@ -308,7 +308,12 @@ static int pmu_ctr_enable_irq_hw(int ctr_idx)
+ 		return SBI_EFAIL;
+ 
+ #if __riscv_xlen == 32
+-	mhpmevent_csr = CSR_MHPMEVENT3H  + ctr_idx - 3;
++	if (ctr_idx == 0)
++		mhpmevent_csr = CSR_MHPMEVENT0;
++	else if (ctr_idx == 2)
++		mhpmevent_csr = CSR_MHPMEVENT2;
++	else
++		mhpmevent_csr = CSR_MHPMEVENT3H  + ctr_idx - 3;
+ 	of_mask = (uint32_t)~MHPMEVENTH_OF;
+ #else
+ 	if (ctr_idx == 0)
+-- 
+2.25.1
+

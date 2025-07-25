@@ -1,0 +1,46 @@
+From 0a6c096d95160001fa96798ce22a481a0160b56a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Thu, 20 Mar 2025 18:02:16 +0800
+Subject: [PATCH] testfloat riscv makefile
+
+---
+ build/Linux-RISCV64-GCC/Makefile | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/build/Linux-RISCV64-GCC/Makefile b/build/Linux-RISCV64-GCC/Makefile
+index fd7ea80..c5bad44 100644
+--- a/build/Linux-RISCV64-GCC/Makefile
++++ b/build/Linux-RISCV64-GCC/Makefile
+@@ -36,9 +36,9 @@
+ #=============================================================================
+ 
+ SOURCE_DIR ?= ../../source
+-SOFTFLOAT_DIR ?= ../../../berkeley-softfloat-3
++SOFTFLOAT_DIR ?= ${WORKDIR}/../../softfloat/3-r0/git
+ PLATFORM ?= Linux-RISCV64-GCC
+-CC ?= riscv64-unknown-linux-gnu-gcc
++CC ?= riscv64-linux-gcc
+ MARCH ?= rv64g_zfh_zfhmin_zfbfmin0p8
+ MABI ?= lp64d
+ 
+@@ -57,14 +57,14 @@ DELETE = rm -f
+ C_INCLUDES = \
+   -I. -I$(SUBJ_SOURCE_DIR) -I$(SOURCE_DIR) -I$(SOFTFLOAT_INCLUDE_DIR)
+ COMPILE_C = \
+-  $(CC) -march=$(MARCH) -mabi=$(MABI) -c -frounding-math -fsignaling-nans -Werror-implicit-function-declaration $(TESTFLOAT_OPTS) \
++  $(CC) -c -frounding-math -fsignaling-nans -Werror-implicit-function-declaration $(TESTFLOAT_OPTS) \
+     $(C_INCLUDES) -O0 -o $@
+ COMPILE_SLOWFLOAT_C = \
+-  $(CC) -march=$(MARCH) -mabi=$(MABI) -c -frounding-math -fsignaling-nans -Werror-implicit-function-declaration $(TESTFLOAT_OPTS) \
++  $(CC) -c -frounding-math -fsignaling-nans -Werror-implicit-function-declaration $(TESTFLOAT_OPTS) \
+     $(C_INCLUDES) -O0 -o $@
+ MAKELIB = ar crs $@
+ LINK_FLAGS =
+-LINK = $(CC) -march=$(MARCH) -mabi=$(MABI) $(LINK_FLAGS) -o $@
++LINK = $(CC) $(LINK_FLAGS) -o $@
+ OTHER_LIBS = -lm
+ 
+ OBJ = .o
+-- 
+2.25.1
+

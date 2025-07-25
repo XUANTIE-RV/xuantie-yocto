@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-DTB="k230-canmv.dtb"
+DTB="k230-canmv-xuantie.dtb"
 
 if [ $# -ne 2 ]; then
     exit 1
@@ -32,7 +32,7 @@ gen_image()
 gen_boot_ext4()
 {
 	cp "../../../xuantie-build/xuantie/tmp-glibc/deploy/images/riscv64-k6.6ry-kc${image_type}-tcxt/Image" boot
-	cp "../../../xuantie-build/xuantie/tmp-glibc/deploy/images/riscv64-k6.6ry-kc${image_type}-tcxt/k230-canmv.dtb" boot
+	cp "../../../xuantie-build/xuantie/tmp-glibc/deploy/images/riscv64-k6.6ry-kc${image_type}-tcxt/k230-canmv-xuantie.dtb" boot
 	cd boot
 	rm -rf k.dtb; ln -s ${DTB} k.dtb; cd -;
 	rm -rf boot.ext4 ;fakeroot mkfs.ext4 -d boot  -r 1 -N 0 -m 1 -L "boot" -O ^64bit boot.ext4 50M

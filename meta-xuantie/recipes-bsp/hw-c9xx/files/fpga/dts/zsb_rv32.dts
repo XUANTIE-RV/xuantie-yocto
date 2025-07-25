@@ -282,7 +282,7 @@
 	};
 
 	chosen {
-		bootargs = "console=ttyS0,115200 norandmaps loglevel=7";
+		bootargs = "console=ttyS0,115200 norandmaps loglevel=7 no_check_unaligned_access";
 		linux,initrd-start = <0x0 0x64000000>;
 		linux,initrd-end = <0x0 0x0>;
 		stdout-path = "/soc/serial@1900D000:115200";

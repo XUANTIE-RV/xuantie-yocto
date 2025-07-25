@@ -80,18 +80,6 @@ if [[ ${params_array["abi_mode"]} == "rv64_std" ]]; then
 				 "kernel_cfg=${params_array["kernel_cfg"]}"
 			exit 1
 		fi
-	elif [[ ${params_array["kernel_ver"]} == "5.10@c908v" ]]; then
-		if [[ ${params_array["kernel_cfg"]} == "default" ]]; then
-			images_array["image_kernel"]=$image_path/kernel/Image-5.10-rv64-kcdefault@c908v
-		elif [[ ${params_array["kernel_cfg"]} == "debug" ]]; then
-			images_array["image_kernel"]=$image_path/kernel/Image-5.10-rv64-kcdebug@c908v
-		else
-			echo "Error[$LINENO]: not supported kernel with:" \
-			     "abi_mode=${params_array["abi_mode"]}," \
-				 "kernel_ver=${params_array["kernel_ver"]}," \
-				 "kernel_cfg=${params_array["kernel_cfg"]}"
-			exit 1
-		fi
 	else
 		echo "Error[$LINENO]: not supported kernel with:" \
 			 "abi_mode=${params_array["abi_mode"]}," \

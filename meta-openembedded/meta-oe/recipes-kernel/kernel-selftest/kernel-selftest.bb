@@ -4,7 +4,12 @@ LICENSE = "GPL-2.0-only"
 
 LIC_FILES_CHKSUM = "file://../COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
 
-DEPENDS = "rsync-native llvm-native"
+DEPENDS = "rsync-native llvm-native alsa-lib elfutils ethtool libcap-ng liburing numactl"
+
+RDEPENDS:{PN} += "python3 liburing numactl libcap-ng perl"
+
+# below RDEPENDS are for selftests/riscv/cfi3/modify_lp_func_label_hash.sh
+RDEPENDS:{PN} += "bash coreutils binutils"
 
 # for musl libc
 SRC_URI:append:libc-musl = "\
@@ -12,6 +17,7 @@ SRC_URI:append:libc-musl = "\
                       "
 SRC_URI += "file://run-ptest \
             file://COPYING \
+            file://0006-riscv-Makefile-include-.-lib.mk.patch \
             "
 
 # now we just test bpf and vm
@@ -39,18 +45,39 @@ do_patch[depends] += "virtual/kernel:do_shared_workdir"
 
 inherit linux-kernel-base kernel-arch ptest
 
+CFLAGS = ""
+LDFLAGS = ""
+FULL_OPTIMIZATION = ""
+
 S = "${WORKDIR}/${BP}"
 
 TEST_LIST = "\
-    ${@bb.utils.filter('PACKAGECONFIG', 'bpf firmware vm', d)} \
-    rtc \
+    cgroup \
+    cpu-hotplug \
+    filesystems \
+    filesystems/binderfs \
+    filesystems/epoll \
+    filesystems/fat \
+    ftrace \
+    livepatch \
+    memory-hotplug \
+    mm \
+    perf_events \
+    pid_namespace \
+    resctrl \
+    riscv \
+    syscall_user_dispatch \
+    iommu \
 "
+
+TEST_LIST:append:riscv64 = " kvm"
 
 EXTRA_OEMAKE = '\
     CROSS_COMPILE=${TARGET_PREFIX} \
     ARCH=${ARCH} \
     CC="${CC}" \
     CLANG="clang -fno-stack-protector -target ${TARGET_ARCH} ${TOOLCHAIN_OPTIONS}" \
+    LDFLAGS+="-L${WORKDIR}/recipe-sysroot/usr/lib -ldl -lm -pthread" \
     AR="${AR}" \
     LD="${LD}" \
     DESTDIR="${D}" \
@@ -65,6 +92,8 @@ KERNEL_SELFTEST_SRC ?= "Makefile \
                         scripts \
                         arch \
                         LICENSES \
+                        mm \
+                        drivers \
 "
 
 do_compile() {
@@ -89,6 +118,7 @@ do_install() {
         oe_runmake -s --no-print-directory COLLECTION=${i} -C ${S}/tools/testing/selftests/${i} emit_tests \
             >> ${D}/usr/kernel-selftest/kselftest-list.txt
     done
+    rm -rf ${D}/usr/kernel-selftest/x86
     # Install kselftest runner.
     install -m 0755 ${S}/tools/testing/selftests/run_kselftest.sh ${D}/usr/kernel-selftest/
     cp -R --no-dereference --preserve=mode,links -v ${S}/tools/testing/selftests/kselftest ${D}/usr/kernel-selftest/
@@ -143,3 +173,9 @@ COMPATIBLE_HOST:libc-musl = 'null'
 # It has native clang/llvm dependency, poky distro is reluctant to include them as deps
 # this helps with world builds on AB
 EXCLUDE_FROM_WORLD = "1"
+
+INSANE_SKIP:${PN} += "file-rdeps already-stripped"
+
+DEPENDS:remove = "llvm-native clang-native"
+
+EXCLUDE_FROM_WORLD:forcevariable = ""

@@ -9,19 +9,11 @@ SRC_URI = " \
     file://0001-coremark-add-cflags.patch \
 "
 PV = "1.01"
+PR="r2"
 S = "${WORKDIR}/git"
-inherit xuantie-set-package-arch-with-mcpu
+inherit xuantie-set-package-arch-with-mcpu-benchmark
 EXTRA_OEMAKE = "PORT_DIR=linux"
-
-PACKAGE_ARCH = "${MACHINE_ARCH}"
-# Extend cpu configuration for different xuantie cpu
-python () {
-    if d.getVar('XUANTIE_MCPU'):
-        d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
-}
-# remove -O2
-FULL_OPTIMIZATION = ""
-
+PACKAGE_ARCH = "${XUANTIE_MCPU}_external"
 do_compile() {
 	oe_runmake
 }

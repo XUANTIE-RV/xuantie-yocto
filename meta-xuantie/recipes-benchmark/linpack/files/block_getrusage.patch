@@ -1,0 +1,11 @@
+--- linpack.c	2025-02-12 16:55:23.560962713 +0800
++++ linpack.c	2011-04-06 07:00:00.000000000 +0800
+@@ -896,7 +896,7 @@
+ struct rusage ru;
+ REAL t ;
+ 
+-void getrusage();
++//void getrusage();
+  
+ getrusage(RUSAGE_SELF,&ru) ;
+  

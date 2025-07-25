@@ -17,3 +17,5 @@ do_install:append() {
         copy_files "${EXTERNAL_TOOLCHAIN_SYSROOT}/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}/${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME}" "${D}${base_libdir}"
     fi
 }
+
+DEPENDS:append:toolchain-clang = " clang-cross-${TARGET_ARCH}"

@@ -1,5 +1,5 @@
 DEPENDS = "virtual/${TUNE_PKGARCH}-go go-native"
-DEPENDS:class-nativesdk = "virtual/${TARGET_PREFIX}go-crosssdk go-native"
+DEPENDS:class-nativesdk = "virtual/${TARGET_PREFIX}go go-native"
 
 DEBUG_PREFIX_MAP = "\
                      -fdebug-prefix-map=${STAGING_DIR_HOST}= \
@@ -13,9 +13,7 @@ export CGO_CXXFLAGS = "${CXXFLAGS}"
 export CGO_LDFLAGS = "${@ ' '.join(filter(lambda f: not f.startswith('-fdebug-prefix-map'), d.getVar('LDFLAGS').split())) }"
 
 export GOCACHE = "${B}/.cache"
-GO_LDFLAGS = ""
-GO_LDFLAGS:class-nativesdk = " -linkmode external"
-export GO_LDFLAGS
+export GO_LDFLAGS = ""
 export GOBUILDFLAGS = "-gcflags=-trimpath=$GOPATH -asmflags=-trimpath=$GOPATH -trimpath"
 CC:append:class-nativesdk = " ${SECURITY_NOPIE_CFLAGS}"
 
@@ -34,8 +32,13 @@ do_compile[cleandirs] += "${GOTMPDIR} ${B}/bin ${B}/pkg"
 do_install() {
 	install -d ${D}${libdir}/go/pkg/tool
 	cp --preserve=mode,timestamps -R ${B}/pkg/tool/${TARGET_GOTUPLE} ${D}${libdir}/go/pkg/tool/
+
+	install -d ${D}${libdir}/go
+	cp --preserve=mode,timestamps -R ${B}/test ${D}${libdir}/go/
+
 	install -d ${D}${libdir}/go/src
 	cp --preserve=mode,timestamps -R ${S}/src/cmd ${D}${libdir}/go/src/
+
 	find ${D}${libdir}/go/src -depth -type d -name testdata -exec rm -rf {} \;
 	install -d ${D}${libdir}/go/bin
 	install -d ${D}${bindir}
@@ -48,7 +51,7 @@ do_install() {
 }
 
 PACKAGES = "${PN} ${PN}-dev"
-FILES:${PN} = "${libdir}/go/bin ${libdir}/go/pkg/tool/${TARGET_GOTUPLE} ${bindir}"
+FILES:${PN} = "${libdir}/go/bin ${libdir}/go/pkg/tool/${TARGET_GOTUPLE} ${bindir} ${libdir}/go/test"
 RDEPENDS:${PN} = "go-runtime"
 INSANE_SKIP:${PN} = "ldflags"
 

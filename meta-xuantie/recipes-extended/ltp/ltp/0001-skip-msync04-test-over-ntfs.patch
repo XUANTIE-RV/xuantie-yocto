@@ -1,0 +1,24 @@
+From f56c3905c47c65b78ad6adf8ee068542023094b1 Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Fri, 11 Apr 2025 10:58:31 +0800
+Subject: [PATCH] skip msync04 test over ntfs
+
+---
+ testcases/kernel/syscalls/msync/msync04.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/testcases/kernel/syscalls/msync/msync04.c b/testcases/kernel/syscalls/msync/msync04.c
+index 72ddc27a4..f34a314c7 100644
+--- a/testcases/kernel/syscalls/msync/msync04.c
++++ b/testcases/kernel/syscalls/msync/msync04.c
+@@ -100,6 +100,7 @@ static struct tst_test test = {
+ 	.all_filesystems = 1,
+ 	.skip_filesystems = (const char *[]) {
+ 		"tmpfs",
++		"ntfs",
+ 		NULL
+ 	},
+ };
+-- 
+2.25.1
+

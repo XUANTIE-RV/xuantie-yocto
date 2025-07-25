@@ -1,0 +1,24 @@
+From cbdad10ab1e1fb449376781ef621bb93eb80dcfa Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Wed, 18 Jun 2025 20:34:44 +0800
+Subject: [PATCH] riscv/Makefile: include ../lib.mk
+
+---
+ tools/testing/selftests/riscv/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/testing/selftests/riscv/Makefile b/tools/testing/selftests/riscv/Makefile
+index 4a9ff515a..81d752561 100644
+--- a/tools/testing/selftests/riscv/Makefile
++++ b/tools/testing/selftests/riscv/Makefile
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+ # Originally tools/testing/arm64/Makefile
+ 
++include ../lib.mk
+ # When ARCH not overridden for crosscompiling, lookup machine
+ ARCH ?= $(shell uname -m 2>/dev/null || echo not)
+ 
+-- 
+2.25.1
+

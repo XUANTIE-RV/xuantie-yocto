@@ -1,0 +1,99 @@
+From 3e4e7c6c1205f33f10eacb35334b2877e8554bdf Mon Sep 17 00:00:00 2001
+From: ruiyuan.sw <ruiyuan.sw@alibaba-inc.com>
+Date: Thu, 7 Nov 2024 19:20:10 +0000
+Subject: [PATCH] modify kselftests-resctrl to test RISCV(support
+ ssqosid-extension) resctrl
+
+---
+ tools/testing/selftests/resctrl/resctrl.h       |  1 +
+ tools/testing/selftests/resctrl/resctrl_tests.c | 17 ++++++++++++++---
+ 2 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/tools/testing/selftests/resctrl/resctrl.h b/tools/testing/selftests/resctrl/resctrl.h
+index 8578a8b4e..6d8581e2b 100644
+--- a/tools/testing/selftests/resctrl/resctrl.h
++++ b/tools/testing/selftests/resctrl/resctrl.h
+@@ -30,6 +30,7 @@
+
+ #define ARCH_INTEL     1
+ #define ARCH_AMD       2
++#define ARCH_RISCV     3
+
+ #define END_OF_TESTS	1
+
+diff --git a/tools/testing/selftests/resctrl/resctrl_tests.c b/tools/testing/selftests/resctrl/resctrl_tests.c
+index 31373b69e..ec0bcab67 100644
+--- a/tools/testing/selftests/resctrl/resctrl_tests.c
++++ b/tools/testing/selftests/resctrl/resctrl_tests.c
+@@ -15,23 +15,31 @@ static int detect_vendor(void)
+ 	FILE *inf = fopen("/proc/cpuinfo", "r");
+ 	int vendor_id = 0;
+ 	char *s = NULL;
+-	char *res;
++	char *a = NULL;
++	char *res;
++	char *isa;
+
+ 	if (!inf)
+ 		return vendor_id;
+
+ 	res = fgrep(inf, "vendor_id");
++	isa = fgrep(inf, "isa");
+
+ 	if (res)
+ 		s = strchr(res, ':');
++	if (isa)
++		a = strchr(isa, ':');
+
+ 	if (s && !strcmp(s, ": GenuineIntel\n"))
+ 		vendor_id = ARCH_INTEL;
+ 	else if (s && !strcmp(s, ": AuthenticAMD\n"))
+ 		vendor_id = ARCH_AMD;
++	if (a && strstr(a, "ssqosid"))
++		vendor_id = ARCH_RISCV;
+
+ 	fclose(inf);
+ 	free(res);
++	free(isa);
+ 	return vendor_id;
+ }
+ 
+@@ -105,7 +112,7 @@ static void run_mbm_test(const char * const *benchmark_cmd, int cpu_no)
+
+ 	if (!validate_resctrl_feature_request("L3_MON", "mbm_total_bytes") ||
+ 	    !validate_resctrl_feature_request("L3_MON", "mbm_local_bytes") ||
+-	    (get_vendor() != ARCH_INTEL)) {
++	    ((get_vendor() != ARCH_INTEL) && (get_vendor() != ARCH_RISCV))) {
+ 		ksft_test_result_skip("Hardware does not support MBM or MBM is disabled\n");
+ 		goto cleanup;
+ 	}
+@@ -114,6 +121,8 @@ static void run_mbm_test(const char * const *benchmark_cmd, int cpu_no)
+ 	ksft_test_result(!res, "MBM: bw change\n");
+ 	if ((get_vendor() == ARCH_INTEL) && res)
+ 		ksft_print_msg("Intel MBM may be inaccurate when Sub-NUMA Clustering is enabled. Check BIOS configuration.\n");
++	if ((get_vendor() == ARCH_RISCV) && res)
++		ksft_print_msg("RISCV MBM may be inaccurate when Sub-NUMA Clustering is enabled. Check BIOS configuration.\n");
+
+ cleanup:
+ 	test_cleanup();
+@@ -132,7 +141,7 @@ static void run_mba_test(const char * const *benchmark_cmd, int cpu_no)
+
+ 	if (!validate_resctrl_feature_request("MB", NULL) ||
+ 	    !validate_resctrl_feature_request("L3_MON", "mbm_local_bytes") ||
+-	    (get_vendor() != ARCH_INTEL)) {
++	    ((get_vendor() != ARCH_INTEL) && (get_vendor() != ARCH_RISCV))) {
+ 		ksft_test_result_skip("Hardware does not support MBA or MBA is disabled\n");
+ 		goto cleanup;
+ 	}
+@@ -165,6 +174,8 @@ static void run_cmt_test(const char * const *benchmark_cmd, int cpu_no)
+ 	ksft_test_result(!res, "CMT: test\n");
+ 	if ((get_vendor() == ARCH_INTEL) && res)
+ 		ksft_print_msg("Intel CMT may be inaccurate when Sub-NUMA Clustering is enabled. Check BIOS configuration.\n");
++	if ((get_vendor() == ARCH_RISCV) && res)
++		ksft_print_msg("RISCV MBM may be inaccurate when Sub-NUMA Clustering is enabled. Check BIOS configuration.\n");
+
+ cleanup:
+ 	test_cleanup();
+--
+2.25.1
+

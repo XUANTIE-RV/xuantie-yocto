@@ -2,9 +2,11 @@ DEPENDS += "elfutils-native"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI:append:riscv64 = " file://canaan-k230.cfg"
+SRC_URI:append:riscv64 = " file://canaan-k230.cfg \
+    file://0001-Add-k230-canmv-xuantie.dts.patch \
+    "
 
-KERNEL_DEVICETREE:append:riscv64 = " canaan/k230-canmv.dtb canaan/k230-evb.dtb"
+KERNEL_DEVICETREE:append:riscv64 = " canaan/k230-canmv-xuantie.dtb canaan/k230-evb.dtb"
 
 IMAGES = "${THISDIR}/images"
 

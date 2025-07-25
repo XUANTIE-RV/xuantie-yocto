@@ -1,0 +1,28 @@
+From acbb5cfd12622072d954c141559b65171eeed87d Mon Sep 17 00:00:00 2001
+From: "hanyu.cp" <hanyu.cp@alibaba-inc.com>
+Date: Sun, 2 Apr 2023 15:03:39 +0800
+Subject: [PATCH] perf:rv32:fix definition of SYS_futex
+
+Signed-off-by: Chen Pei <cp0613@linux.alibaba.com>
+---
+ tools/perf/bench/futex.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/tools/perf/bench/futex.h b/tools/perf/bench/futex.h
+index ebdc2b032..916fddcf5 100644
+--- a/tools/perf/bench/futex.h
++++ b/tools/perf/bench/futex.h
+@@ -13,6 +13,10 @@
+ #include <sys/types.h>
+ #include <linux/futex.h>
+ 
++#if !defined(SYS_futex) && defined(SYS_futex_time64)
++#define SYS_futex SYS_futex_time64
++#endif
++
+ struct bench_futex_parameters {
+ 	bool silent;
+ 	bool fshared;
+-- 
+2.17.1
+

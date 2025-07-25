@@ -24,8 +24,10 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 # Extend cpu configuration for different xuantie cpu
 python () {
-    if d.getVar('XUANTIE_MCPU'):
+    if d.getVar('XUANTIE_MCPU') and (d.getVar('XUANTIE_MCPU') != d.getVar('XUANTIE_MCPU_GENERIC')):
         d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
+    else:
+        d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " " + d.getVar('XUANTIE_TUNE_CCARGS_GENERIC'))
 }
 
 S = "${WORKDIR}/git"

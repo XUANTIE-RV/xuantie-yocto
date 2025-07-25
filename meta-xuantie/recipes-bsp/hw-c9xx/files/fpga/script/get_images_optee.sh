@@ -36,13 +36,13 @@ if [[ ${params_array["abi_mode"]} == "rv64_std" ]]; then
 				 "kernel_cfg=${params_array["kernel_cfg"]}"
 			exit 1
 		fi
-        elif [[ ${params_array["kernel_ver"]} == "5.10@c908v" ]]; then
-                images_array["bl31_path"]=$image_path/optee/kernel5.10@c908v-rv64-fpga/bringup/bl31.bin
-                images_array["teeos_path"]=$image_path/optee/kernel5.10@c908v-rv64-fpga/bringup/tee-pager_v2.bin
+        elif [[ ${params_array["kernel_ver"]} == "5.10@c908v-vlen256" ]]; then
+                images_array["bl31_path"]=$image_path/optee/kernel5.10@c908v-vlen256-rv64-fpga/bringup/bl31.bin
+                images_array["teeos_path"]=$image_path/optee/kernel5.10@c908v-vlen256-rv64-fpga/bringup/tee-pager_v2.bin
                 if [[ ${params_array["kernel_cfg"]} == "default" ]]; then
-                        images_array["image_kernel"]=$image_path/kernel/Image-5.10-rv64-kcdefault@c908v
+                        images_array["image_kernel"]=$image_path/kernel/Image-5.10-rv64-kcdefault@c908v-vlen256
                 elif [[ ${params_array["kernel_cfg"]} == "debug" ]]; then
-                        images_array["image_kernel"]=$image_path/kernel/Image-5.10-rv64-kcdebug@c908v
+                        images_array["image_kernel"]=$image_path/kernel/Image-5.10-rv64-kcdebug@c908v-vlen256
                 else
                         echo "Error[$LINENO]: not supported kernel with:" \
                              "abi_mode=${params_array["abi_mode"]}," \

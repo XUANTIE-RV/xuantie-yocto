@@ -62,5 +62,5 @@ fi
 
 EDITOR="vi"			# needed for packages like cron, git-commit
 export PATH PS1 OPIEDIR QPEDIR QTDIR EDITOR TERM
-
+export TERM=xterm-256color
 umask 022

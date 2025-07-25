@@ -1,0 +1,34 @@
+From 3595cdc58315b5f5046b811cd48777b1855c3490 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Thu, 20 Mar 2025 17:22:17 +0800
+Subject: [PATCH] softfloat riscv makefile
+
+---
+ build/Linux-RISCV64-GCC/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/build/Linux-RISCV64-GCC/Makefile b/build/Linux-RISCV64-GCC/Makefile
+index 72e1f63..10dec4d 100644
+--- a/build/Linux-RISCV64-GCC/Makefile
++++ b/build/Linux-RISCV64-GCC/Makefile
+@@ -38,7 +38,7 @@ SOURCE_DIR ?= ../../source
+ SPECIALIZE_TYPE ?= RISCV
+ MARCH ?= rv64gcv_zfh_zfhmin
+ MABI ?= lp64d
+-CC ?= riscv64-unknown-linux-gnu-gcc
++CC ?= riscv64-linux-gcc
+ 
+ SOFTFLOAT_OPTS ?= \
+   -DSOFTFLOAT_ROUND_ODD -DINLINE_LEVEL=5 -DSOFTFLOAT_FAST_DIV32TO16 \
+@@ -47,7 +47,7 @@ SOFTFLOAT_OPTS ?= \
+ DELETE = rm -f
+ C_INCLUDES = -I. -I$(SOURCE_DIR)/$(SPECIALIZE_TYPE) -I$(SOURCE_DIR)/include
+ COMPILE_C = \
+-  $(CC) -c -march=$(MARCH) -mabi=$(MABI) -Werror-implicit-function-declaration -DSOFTFLOAT_FAST_INT64 \
++  $(CC) -c -Werror-implicit-function-declaration -DSOFTFLOAT_FAST_INT64 \
+     $(SOFTFLOAT_OPTS) $(C_INCLUDES) -O2 -o $@
+ MAKELIB = ar crs $@
+ 
+-- 
+2.25.1
+

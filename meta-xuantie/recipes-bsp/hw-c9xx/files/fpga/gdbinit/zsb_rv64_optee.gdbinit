@@ -1,6 +1,8 @@
 # Set gdb environment
 set confirm off
 set height  0
+set remotetimeout 20
+monitor set resume-bkpt-exception on
 
 define import_string_env
         shell echo set \$$arg0=\"$(echo $$arg0)\" > .gdb.tmp
@@ -25,7 +27,7 @@ import_string_env bl31_path
 import_string_env teeos_path
 import_string_env image_dtb
 import_string_env image_kernel
-import_string_env image_rootfs 
+import_string_env image_rootfs
 
 # This is only for opensbi 0.9 with 5.10 kernel
 # plic delegate

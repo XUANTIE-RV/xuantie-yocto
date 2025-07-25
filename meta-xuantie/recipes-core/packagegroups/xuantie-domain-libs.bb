@@ -12,7 +12,7 @@ python () {
 python () {
     supported_cpus = ["c906fdv", "c907fdvm", "c908v", "c920v2", "c920"]
     if d.getVar('XUANTIE_MCPU') in supported_cpus:
-        d.appendVar('IMAGE_INSTALL', ' openblas')
+        d.appendVar('IMAGE_INSTALL', ' openblas openblas-test')
 }
 
 # install libeigen according to libeigen_xx.bb

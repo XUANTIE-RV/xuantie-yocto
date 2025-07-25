@@ -2,6 +2,7 @@
 set confirm off
 set height  0
 set remotetimeout 20
+monitor set resume-bkpt-exception on
 
 define import_string_env
 	shell echo set \$$arg0=\"$(echo $$arg0)\" > .gdb.tmp
@@ -36,7 +37,6 @@ import_string_env kernel_ver
 import_string_env kernel_cfg
 import_string_env rootfs_type
 import_string_env restore_base_addr
-import_string_env simulate_run
 
 # import image names
 import_string_env image_zsb
@@ -51,6 +51,7 @@ import_string_env image_rootfs
 # riscv64-elf-gdb not support $_streq, just support integer compare
 import_integer_env rv64_std
 import_integer_env rv32_std
+import_integer_env skip_load_image
 import_integer_env simulate_run
 import_integer_env ctl_enable_uboot
 import_integer_env opensbi_0_9_with_kernel_5_10
@@ -99,23 +100,33 @@ set $dyninfo_addr = $rootfs_addr  - 0x40
 set $flag_addr    = $rootfs_addr  - 0x100
 
 if ($simulate_run == 0)
-	restore_xt $image_zsb      binary $zsb_addr
-	restore_xt $image_dtb      binary $dtb_addr
-	restore_xt $image_opensbi  binary $opensbi_addr
-	if ($ctl_enable_uboot == 1)
-		restore_xt $image_uboot  binary $uboot_addr
+	if ($skip_load_image == 0)
+		printf "start load images by gdb\n"
+		restore_xt $image_zsb      binary $zsb_addr
+		restore_xt $image_dtb      binary $dtb_addr
+		restore_xt $image_opensbi  binary $opensbi_addr
+		if ($ctl_enable_uboot == 1)
+			restore_xt $image_uboot  binary $uboot_addr
+		end
+		restore_xt $image_kernel   binary $vmlinux_addr
+		restore_xt $image_rootfs   binary $rootfs_addr
+	else
+		printf "skip load images by gdb\n"
 	end
-	restore_xt $image_kernel   binary $vmlinux_addr
-	restore_xt $image_rootfs   binary $rootfs_addr
 else
-	printf "restore %-60s binary 0x%x\n", $image_zsb, $zsb_addr
-	printf "restore %-60s binary 0x%x\n", $image_dtb, $dtb_addr
-	printf "restore %-60s binary 0x%x\n", $image_opensbi, $opensbi_addr
-	if ($ctl_enable_uboot == 1)
-		printf "restore %-60s binary 0x%x\n", $image_uboot, $uboot_addr
+	if ($skip_load_image == 0)
+		printf "start load images by gdb\n"
+		printf "restore %-60s binary 0x%x\n", $image_zsb, $zsb_addr
+		printf "restore %-60s binary 0x%x\n", $image_dtb, $dtb_addr
+		printf "restore %-60s binary 0x%x\n", $image_opensbi, $opensbi_addr
+		if ($ctl_enable_uboot == 1)
+			printf "restore %-60s binary 0x%x\n", $image_uboot, $uboot_addr
+		end
+		printf "restore %-60s binary 0x%x\n", $image_kernel, $vmlinux_addr
+		printf "restore %-60s binary 0x%x\n", $image_rootfs, $rootfs_addr
+	else
+		printf "skip load images by gdb\n"
 	end
-	printf "restore %-60s binary 0x%x\n", $image_kernel, $vmlinux_addr
-	printf "restore %-60s binary 0x%x\n", $image_rootfs, $rootfs_addr
 end
 
 # Set opensbi dynamic info param

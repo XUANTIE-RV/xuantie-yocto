@@ -1,0 +1,10 @@
+	reserved-memory {
+		#address-cells = <0x2>;
+		#size-cells = <0x2>;
+		ranges;
+
+		xuantie_ntrace_reserved:memory@a0000000 {
+			reg = <0x0 0xf0000000 0x0 0x10000000>;
+			no-map;
+		};
+	};

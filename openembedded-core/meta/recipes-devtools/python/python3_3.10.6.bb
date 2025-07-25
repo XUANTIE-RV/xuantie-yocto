@@ -36,6 +36,8 @@ SRC_URI = "http://www.python.org/ftp/python/${PV}/Python-${PV}.tar.xz \
            file://deterministic_imports.patch \
            file://0001-Avoid-shebang-overflow-on-python-config.py.patch \
            file://0001-Mitigate-the-race-condition-in-testSockName.patch \
+           file://0001-gh-126909-Fix-running-xattr-tests-on-systems-with-lo.patch \
+           file://0001-test-zipfile64-Make-datasize-change-from-6G-to-6M.patch \
            "
 
 SRC_URI:append:class-native = " \

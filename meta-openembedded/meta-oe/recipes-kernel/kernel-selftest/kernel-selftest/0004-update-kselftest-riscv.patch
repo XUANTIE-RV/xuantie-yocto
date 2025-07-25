@@ -1,0 +1,167 @@
+From 7fad97afc00ffcea79d6a4e94ef1fe735ce57434 Mon Sep 17 00:00:00 2001
+From: ruiyuan.sw <ruiyuan.sw@alibaba-inc.com>
+Date: Fri, 29 Nov 2024 14:49:49 +0000
+Subject: [PATCH] update kselftest-riscv
+
+---
+ tools/testing/selftests/riscv/hwprobe/Makefile  |  1 +
+ tools/testing/selftests/riscv/hwprobe/cbo.c   | 28 +++++++++----------
+ tools/testing/selftests/riscv/hwprobe/hwprobe.c |  8 +++---
+ tools/testing/selftests/riscv/hwprobe/hwprobe.h | 14 ++++++++--
+ 4 files changed, 30 insertions(+), 21 deletions(-)
+
+diff --git a/tools/testing/selftests/riscv/hwprobe/Makefile b/tools/testing/selftests/riscv/hwprobe/Makefile
+index f224b84591fb..49fe871333a9 100644
+--- a/tools/testing/selftests/riscv/hwprobe/Makefile
++++ b/tools/testing/selftests/riscv/hwprobe/Makefile
+@@ -3,6 +3,7 @@
+ # Originally tools/testing/arm64/abi/Makefile
+ 
+ CFLAGS += -I$(top_srcdir)/tools/include
++CFLAGS += -I$(top_srcdir)/arch/riscv/include
+ 
+ TEST_GEN_PROGS := hwprobe cbo
+ 
+diff --git a/tools/testing/selftests/riscv/hwprobe/cbo.c b/tools/testing/selftests/riscv/hwprobe/cbo.c
+index 50a2cc8aef38..b77c48fc73d2 100644
+--- a/tools/testing/selftests/riscv/hwprobe/cbo.c
++++ b/tools/testing/selftests/riscv/hwprobe/cbo.c
+@@ -19,7 +19,7 @@
+ #include "hwprobe.h"
+ #include "../../kselftest.h"
+ 
+-#define MK_CBO(fn) cpu_to_le32((fn) << 20 | 10 << 15 | 2 << 12 | 0 << 7 | 15)
++#define MK_CBO(fn) le32_bswap((uint32_t)(fn) << 20 | 10 << 15 | 2 << 12 | 0 << 7 | 15)
+ 
+ static char mem[4096] __aligned(4096) = { [0 ... 4095] = 0xa5 };
+ 
+@@ -36,16 +36,14 @@ static void sigill_handler(int sig, siginfo_t *info, void *context)
+ 	regs[0] += 4;
+ }
+ 
+-static void cbo_insn(char *base, int fn)
+-{
+-	uint32_t insn = MK_CBO(fn);
+-
+-	asm volatile(
+-	"mv	a0, %0\n"
+-	"li	a1, %1\n"
+-	".4byte	%2\n"
+-	: : "r" (base), "i" (fn), "i" (insn) : "a0", "a1", "memory");
+-}
++#define cbo_insn(base, fn)							\
++({										\
++	asm volatile(								\
++	"mv	a0, %0\n"							\
++	"li	a1, %1\n"							\
++	".4byte	%2\n"								\
++	: : "r" (base), "i" (fn), "i" (MK_CBO(fn)) : "a0", "a1", "memory");	\
++})
+ 
+ static void cbo_inval(char *base) { cbo_insn(base, 0); }
+ static void cbo_clean(char *base) { cbo_insn(base, 1); }
+@@ -97,7 +95,7 @@ static void test_zicboz(void *arg)
+ 	block_size = pair.value;
+ 	ksft_test_result(rc == 0 && pair.key == RISCV_HWPROBE_KEY_ZICBOZ_BLOCK_SIZE &&
+ 			 is_power_of_2(block_size), "Zicboz block size\n");
+-	ksft_print_msg("Zicboz block size: %ld\n", block_size);
++	ksft_print_msg("Zicboz block size: %llu\n", block_size);
+ 
+ 	illegal_insn = false;
+ 	cbo_zero(&mem[block_size]);
+@@ -121,7 +119,7 @@ static void test_zicboz(void *arg)
+ 		for (j = 0; j < block_size; ++j) {
+ 			if (mem[i * block_size + j] != expected) {
+ 				ksft_test_result_fail("cbo.zero check\n");
+-				ksft_print_msg("cbo.zero check: mem[%d] != 0x%x\n",
++				ksft_print_msg("cbo.zero check: mem[%llu] != 0x%x\n",
+ 					       i * block_size + j, expected);
+ 				return;
+ 			}
+@@ -201,7 +199,7 @@ int main(int argc, char **argv)
+ 	pair.key = RISCV_HWPROBE_KEY_IMA_EXT_0;
+ 	rc = riscv_hwprobe(&pair, 1, sizeof(cpu_set_t), (unsigned long *)&cpus, 0);
+ 	if (rc < 0)
+-		ksft_exit_fail_msg("hwprobe() failed with %d\n", rc);
++		ksft_exit_fail_msg("hwprobe() failed with %ld\n", rc);
+ 	assert(rc == 0 && pair.key == RISCV_HWPROBE_KEY_IMA_EXT_0);
+ 
+ 	if (pair.value & RISCV_HWPROBE_EXT_ZICBOZ) {
+@@ -225,4 +223,4 @@ int main(int argc, char **argv)
+ 	}
+ 
+ 	ksft_finished();
+-}
++}
+\ No newline at end of file
+diff --git a/tools/testing/selftests/riscv/hwprobe/hwprobe.c b/tools/testing/selftests/riscv/hwprobe/hwprobe.c
+index c474891df307..b765602255a7 100644
+--- a/tools/testing/selftests/riscv/hwprobe/hwprobe.c
++++ b/tools/testing/selftests/riscv/hwprobe/hwprobe.c
+@@ -29,7 +29,7 @@ int main(int argc, char **argv)
+ 		/* Fail if the kernel claims not to recognize a base key. */
+ 		if ((i < 4) && (pairs[i].key != i))
+ 			ksft_exit_fail_msg("Failed to recognize base key: key != i, "
+-					   "key=%ld, i=%ld\n", pairs[i].key, i);
++					   "key=%lld, i=%ld\n", pairs[i].key, i);
+ 
+ 		if (pairs[i].key != RISCV_HWPROBE_KEY_BASE_BEHAVIOR)
+ 			continue;
+@@ -37,7 +37,7 @@ int main(int argc, char **argv)
+ 		if (pairs[i].value & RISCV_HWPROBE_BASE_BEHAVIOR_IMA)
+ 			continue;
+ 
+-		ksft_exit_fail_msg("Unexpected pair: (%ld, %ld)\n", pairs[i].key, pairs[i].value);
++		ksft_exit_fail_msg("Unexpected pair: (%lld, %llu)\n", pairs[i].key, pairs[i].value);
+ 	}
+ 
+ 	out = riscv_hwprobe(pairs, 8, 0, 0, 0);
+@@ -47,7 +47,7 @@ int main(int argc, char **argv)
+ 	ksft_test_result(out != 0, "Bad CPU set\n");
+ 
+ 	out = riscv_hwprobe(pairs, 8, 1, 0, 0);
+-	ksft_test_result(out != 0, "NULL CPU set with non-zero count\n");
++	ksft_test_result(out != 0, "NULL CPU set with non-zero size\n");
+ 
+ 	pairs[0].key = RISCV_HWPROBE_KEY_BASE_BEHAVIOR;
+ 	out = riscv_hwprobe(pairs, 1, 1, &cpus, 0);
+@@ -63,4 +63,4 @@ int main(int argc, char **argv)
+ 			 "Unknown key overwritten with -1 and doesn't block other elements\n");
+ 
+ 	ksft_finished();
+-}
++}
+\ No newline at end of file
+diff --git a/tools/testing/selftests/riscv/hwprobe/hwprobe.h b/tools/testing/selftests/riscv/hwprobe/hwprobe.h
+index 721b0ce73a56..88321f2a3366 100644
+--- a/tools/testing/selftests/riscv/hwprobe/hwprobe.h
++++ b/tools/testing/selftests/riscv/hwprobe/hwprobe.h
+@@ -4,12 +4,22 @@
+ #include <stddef.h>
+ #include <asm/hwprobe.h>
+ 
++#if __BYTE_ORDER == __BIG_ENDIAN
++# define le32_bswap(_x)				\
++	((((_x) & 0x000000ffU) << 24) |		\
++	 (((_x) & 0x0000ff00U) <<  8) |		\
++	 (((_x) & 0x00ff0000U) >>  8) |		\
++	 (((_x) & 0xff000000U) >> 24))
++#else
++# define le32_bswap(_x) (_x)
++#endif
++
+ /*
+  * Rather than relying on having a new enough libc to define this, just do it
+  * ourselves.  This way we don't need to be coupled to a new-enough libc to
+  * contain the call.
+  */
+ long riscv_hwprobe(struct riscv_hwprobe *pairs, size_t pair_count,
+-		   size_t cpu_count, unsigned long *cpus, unsigned int flags);
++		   size_t cpusetsize, unsigned long *cpus, unsigned int flags);
+ 
+-#endif
++#endif
+\ No newline at end of file
+-- 
+2.25.1
+

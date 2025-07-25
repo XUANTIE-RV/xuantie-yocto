@@ -1,0 +1,39 @@
+
+clint0: clint@c000000 {
+    compatible = "thead,c900-clint";
+    interrupts-extended = <
+        &cpu0_intc  3 &cpu0_intc  7
+        &cpu1_intc  3 &cpu1_intc  7
+        &cpu2_intc  3 &cpu2_intc  7
+        &cpu3_intc  3 &cpu3_intc  7
+        &cpu4_intc  3 &cpu4_intc  7
+        &cpu5_intc  3 &cpu5_intc  7
+        &cpu6_intc  3 &cpu6_intc  7
+        &cpu7_intc  3 &cpu7_intc  7
+        >;
+    reg = <0x0 0x0c000000 0x0 0x04000000>;
+    clint,has-no-64bit-mmio;
+};
+
+intc: interrupt-controller@8000000 {
+    #address-cells = <0>;
+    #interrupt-cells = <2>;
+    compatible = "thead,c900-plic";
+    interrupt-controller;
+    interrupts-extended = <
+        &cpu0_intc  0xffffffff &cpu0_intc  9
+        &cpu1_intc  0xffffffff &cpu1_intc  9
+        &cpu2_intc  0xffffffff &cpu2_intc  9
+        &cpu3_intc  0xffffffff &cpu3_intc  9
+        &cpu4_intc  0xffffffff &cpu4_intc  9
+        &cpu5_intc  0xffffffff &cpu5_intc  9
+        &cpu6_intc  0xffffffff &cpu6_intc  9
+        &cpu7_intc  0xffffffff &cpu7_intc  9
+        >;
+    reg = <0x0 0x08000000 0x0 0x04000000>;
+    reg-names = "control";
+    riscv,max-priority = <7>;
+    riscv,ndev = <80>;
+};
+
+
