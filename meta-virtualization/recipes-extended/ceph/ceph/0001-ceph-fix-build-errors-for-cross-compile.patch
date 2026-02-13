@@ -1,0 +1,184 @@
+From 4712fe18405ffea31405308357a8e7fca358bcce Mon Sep 17 00:00:00 2001
+From: Dengke Du <dengke.du@windriver.com>
+Date: Mon, 11 Mar 2019 09:14:09 +0800
+Subject: [PATCH] ceph: fix build errors for cross compile
+
+1. set the cross compile sysroot to find the rocksdb library
+2. correct the install path for library in Distutils.cmake
+
+Upstream-Status: Inappropriate [oe specific]
+
+Signed-off-by: Dengke Du <dengke.du@windriver.com>
+
+Adjust context for v14.2.3
+
+Signed-off-by: He Zhe <zhe.he@windriver.com>
+Signed-off-by: Sakib Sajal <sakib.sajal@windriver.com>
+---
+ cmake/modules/Distutils.cmake      | 25 +++++--------------------
+ cmake/modules/FindRocksDB.cmake    |  4 ++--
+ src/compressor/zstd/CMakeLists.txt |  2 +-
+ src/pybind/cephfs/setup.py         |  8 --------
+ src/pybind/rados/setup.py          |  8 --------
+ src/pybind/rbd/setup.py            |  8 --------
+ src/pybind/rgw/setup.py            |  8 --------
+ 7 files changed, 8 insertions(+), 55 deletions(-)
+
+diff --git a/cmake/modules/Distutils.cmake b/cmake/modules/Distutils.cmake
+index 5fe929499d..802eb37e32 100644
+--- a/cmake/modules/Distutils.cmake
++++ b/cmake/modules/Distutils.cmake
+@@ -18,17 +18,8 @@ function(distutils_install_module name)
+   cmake_parse_arguments(DU "" "INSTALL_SCRIPT" "" ${ARGN})
+   install(CODE "
+     set(options --prefix=${CMAKE_INSTALL_PREFIX})
+-    if(DEFINED ENV{DESTDIR})
+-      if(EXISTS /etc/debian_version)
+-        list(APPEND options --install-layout=deb)
+-      endif()
+-      list(APPEND options
+-        --root=\$ENV{DESTDIR}
+-        --single-version-externally-managed)
+-      if(NOT \"${DU_INSTALL_SCRIPT}\" STREQUAL \"\")
+-        list(APPEND options --install-script=${DU_INSTALL_SCRIPT})
+-      endif()
+-    endif()
++    list(APPEND options --root=${CMAKE_DESTDIR})
++    list(APPEND options --install-lib=${PYTHON_SITEPACKAGES_DIR})
+     execute_process(
+     COMMAND ${Python3_EXECUTABLE}
+         setup.py install \${options}
+@@ -50,7 +41,7 @@ function(distutils_add_cython_module target name src)
+   # Note: no quotes, otherwise distutils will execute "/usr/bin/ccache gcc"
+   # CMake's implicit conversion between strings and lists is wonderful, isn't it?
+   string(REPLACE " " ";" cflags ${CMAKE_C_FLAGS})
+-  list(APPEND cflags -iquote${CMAKE_SOURCE_DIR}/src/include -w)
++  list(APPEND cflags -iquote${CMAKE_SOURCE_DIR}/src/include -w --sysroot=${CMAKE_SYSROOT})
+   # This little bit of magic wipes out __Pyx_check_single_interpreter()
+   # Note: this is reproduced in distutils_install_cython_module
+   list(APPEND cflags -D'void0=dead_function\(void\)')
+@@ -108,14 +99,8 @@ function(distutils_install_cython_module name)
+     set(ENV{CEPH_LIBDIR} \"${CMAKE_LIBRARY_OUTPUT_DIRECTORY}\")
+ 
+     set(options --prefix=${CMAKE_INSTALL_PREFIX})
+-    if(DEFINED ENV{DESTDIR})
+-      if(EXISTS /etc/debian_version)
+-        list(APPEND options --install-layout=deb)
+-      endif()
+-      list(APPEND options --root=\$ENV{DESTDIR})
+-    else()
+-      list(APPEND options --root=/)
+-    endif()
++    list(APPEND options --root=${CMAKE_DESTDIR})
++    list(APPEND options --install-lib=${PYTHON_SITEPACKAGES_DIR})
+     execute_process(
+        COMMAND
+            ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/setup.py
+diff --git a/cmake/modules/FindRocksDB.cmake b/cmake/modules/FindRocksDB.cmake
+index c5dd3dfaf6..be38597af2 100644
+--- a/cmake/modules/FindRocksDB.cmake
++++ b/cmake/modules/FindRocksDB.cmake
+@@ -9,9 +9,9 @@
+ #  ROCKSDB_VERSION_MINOR
+ #  ROCKSDB_VERSION_PATCH
+ 
+-find_path(ROCKSDB_INCLUDE_DIR rocksdb/db.h)
++find_path(ROCKSDB_INCLUDE_DIR rocksdb/db.h ${CMAKE_SYSROOT})
+ 
+-find_library(ROCKSDB_LIBRARIES rocksdb)
++find_library(ROCKSDB_LIBRARIES rocksdb ${CMAKE_SYSROOT})
+ 
+ if(ROCKSDB_INCLUDE_DIR AND EXISTS "${ROCKSDB_INCLUDE_DIR}/rocksdb/version.h")
+   foreach(ver "MAJOR" "MINOR" "PATCH")
+diff --git a/src/compressor/zstd/CMakeLists.txt b/src/compressor/zstd/CMakeLists.txt
+index a5ebdaf538..a234068150 100644
+--- a/src/compressor/zstd/CMakeLists.txt
++++ b/src/compressor/zstd/CMakeLists.txt
+@@ -9,7 +9,7 @@ ExternalProject_Add(zstd_ext
+   CMAKE_ARGS -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+              -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+              -DCMAKE_C_FLAGS=${ZSTD_C_FLAGS}
+-             -DCMAKE_AR=${CMAKE_AR}
++             -DCMAKE_SYSROOT=${CMAKE_SYSROOT}
+              -DCMAKE_POSITION_INDEPENDENT_CODE=${ENABLE_SHARED}
+              -G${CMAKE_GENERATOR}
+   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/libzstd
+diff --git a/src/pybind/cephfs/setup.py b/src/pybind/cephfs/setup.py
+index 19ae6c329a..c9a25ccfff 100755
+--- a/src/pybind/cephfs/setup.py
++++ b/src/pybind/cephfs/setup.py
+@@ -135,14 +135,6 @@ def check_sanity():
+     finally:
+         shutil.rmtree(tmp_dir)
+ 
+-
+-if 'BUILD_DOC' in os.environ.keys():
+-    pass
+-elif check_sanity():
+-    pass
+-else:
+-    sys.exit(1)
+-
+ cmdclass = {}
+ try:
+     from Cython.Build import cythonize
+diff --git a/src/pybind/rados/setup.py b/src/pybind/rados/setup.py
+index e2c5696404..4e99d26721 100755
+--- a/src/pybind/rados/setup.py
++++ b/src/pybind/rados/setup.py
+@@ -134,14 +134,6 @@ def check_sanity():
+     finally:
+         shutil.rmtree(tmp_dir)
+ 
+-
+-if 'BUILD_DOC' in os.environ.keys():
+-    pass
+-elif check_sanity():
+-    pass
+-else:
+-    sys.exit(1)
+-
+ cmdclass = {}
+ try:
+     from Cython.Build import cythonize
+diff --git a/src/pybind/rbd/setup.py b/src/pybind/rbd/setup.py
+index 634484f140..f5bbbdab4f 100755
+--- a/src/pybind/rbd/setup.py
++++ b/src/pybind/rbd/setup.py
+@@ -133,14 +133,6 @@ def check_sanity():
+     finally:
+         shutil.rmtree(tmp_dir)
+ 
+-
+-if 'BUILD_DOC' in os.environ.keys():
+-    pass
+-elif check_sanity():
+-    pass
+-else:
+-    sys.exit(1)
+-
+ cmdclass = {}
+ try:
+     from Cython.Build import cythonize
+diff --git a/src/pybind/rgw/setup.py b/src/pybind/rgw/setup.py
+index eb1591a460..b9f2428cf9 100755
+--- a/src/pybind/rgw/setup.py
++++ b/src/pybind/rgw/setup.py
+@@ -134,14 +134,6 @@ def check_sanity():
+     finally:
+         shutil.rmtree(tmp_dir)
+ 
+-
+-if 'BUILD_DOC' in os.environ.keys():
+-    pass
+-elif check_sanity():
+-    pass
+-else:
+-    sys.exit(1)
+-
+ cmdclass = {}
+ try:
+     from Cython.Build import cythonize
+-- 
+2.20.1
+

@@ -1,0 +1,75 @@
+From a5e12350cb25b2f9289c0d27e26afc337652d42e Mon Sep 17 00:00:00 2001
+From: Chen Qi <Qi.Chen@windriver.com>
+Date: Fri, 31 Aug 2018 13:33:31 +0800
+Subject: [PATCH] fix compile error of missing headers
+
+Upstream-Status: Pending
+
+Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+---
+ cgi/getcgi.c     |  3 ++-
+ include/shared.h | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/cgi/getcgi.c b/cgi/getcgi.c
+index 37b479f..1f83e11 100644
+--- a/cgi/getcgi.c
++++ b/cgi/getcgi.c
+@@ -7,10 +7,11 @@
+ 
+ #include "../include/config.h"
+ #include "../include/getcgi.h"
++#include "../include/shared.h"
++
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-
+ #undef PARANOID_CGI_INPUT
+ 
+ 
+diff --git a/include/shared.h b/include/shared.h
+index 84836c7..1dfa0c7 100644
+--- a/include/shared.h
++++ b/include/shared.h
+@@ -1,6 +1,37 @@
+ #ifndef NAGIOS_SHARED_H_INCLUDED
+ #define NAGIOS_SHARED_H_INCLUDED
+ 
++#include <stdio.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/socket.h>
++#include <sys/mman.h>
++#include <stdlib.h>
++#include <stddef.h>
++#include <stdlib.h>
++#include <memory.h>
++#include <string.h>
++#include <strings.h>
++#include <inttypes.h>
++#include <stdint.h>
++#include <unistd.h>
++#include <dirent.h>
++#include <math.h>
++#include <fcntl.h>
++#include <regex.h>
++#include <ctype.h>
++#include <sys/prctl.h>
++#include <stdarg.h>
++#include <dlfcn.h>
++#include <getopt.h>
++#include <syslog.h>
++#include <pwd.h>
++#include <grp.h>
++#include <netdb.h>
++#include <wchar.h>
++#include <locale.h>
++#include <limits.h>
++
+ #include <time.h>
+ #include "lib/libnagios.h"
+ 
+-- 
+2.7.4
+

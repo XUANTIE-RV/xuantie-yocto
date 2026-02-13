@@ -33,6 +33,7 @@ SRC_URI = "git://github.com/linux-test-project/ltp.git;branch=master;protocol=ht
            file://0001-scenario_groups-default-remove-connectors.patch \
            file://0001-sched_stress-Use-time_t-instead-of-long-for-type.patch \
            file://0001-skip-msync04-test-over-ntfs.patch \
+           file://0001-ltp-hugemmap15-Enable-__clear_cache-on-riscv.patch \
            "
 
 S = "${WORKDIR}/git"

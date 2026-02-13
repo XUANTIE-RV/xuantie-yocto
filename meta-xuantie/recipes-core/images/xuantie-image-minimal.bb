@@ -13,15 +13,19 @@ python do_rootfs:append:riscv64 () {
 
     srcdir=d.getVar('IMAGE_ROOTFS')
 
-    cmd = 'rm -rf %s/boot/* ' % (srcdir)
-    subprocess.check_call(cmd, shell=True)
-
     imagename = 'IMAGE_BASENAME={0}\n'.format(d.getVar('IMAGE_BASENAME'))
     with open('%s%s/os-release' % (srcdir, d.getVar('nonarch_libdir')), 'a+') as f:
         f.seek(0)
         lines = f.read()
         if imagename.strip() not in lines:
             f.write(imagename)
+
+    # rm /usr/lib/systemd/
+    if 'systemd' not in d.getVar('DISTRO_FEATURES', True).split():
+        systemddir = srcdir + '/usr/lib/systemd/'
+        if systemddir and os.path.exists(systemddir):
+            import shutil
+            shutil.rmtree(systemddir)
 }
 
 DISTRO_FEATURES:remove = " ipv6 pcmcia usbgadget usbhost pci 3g nfc vfat "

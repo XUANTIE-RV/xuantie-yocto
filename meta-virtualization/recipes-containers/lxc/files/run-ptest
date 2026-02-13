@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Network interfaces come up and down and can be quite noisy
+# and since we are often on the console when running ptests
+# let's just quiet things some
+dmesg -n 1
+
+# Blacklisted test will be skipped
+blacklist=""
+# Not applicable
+blacklist="$blacklist lxc-test-apparmor"
+# These currently hang so skip them until someone fixes them up
+blacklist="$blacklist lxc-test-shutdowntest"
+blacklist="$blacklist lxc-test-state-server"
+
+passed=0
+failed=0
+skipped=0
+
+# Create logs dir and clear old logs if any
+mkdir logs 2> /dev/null
+rm -f logs/*
+
+echo "### Starting LXC ptest ###"
+
+for test in ./tests/*
+do
+    if [[ ! $blacklist = *$(basename $test)*  ]]
+    then
+	$test >logs/$(basename $test).log 2>&1
+    else
+	echo "SKIPPED: $(basename $test)"
+	skipped=$((skipped+1))
+	continue
+    fi
+
+    if [ $? -eq 0 ]
+    then
+	echo "PASS: $(basename $test)"
+	passed=$((passed+1))
+    else
+	echo "FAIL: $(basename $test)"
+	failed=$((failed+1))
+    fi
+done
+
+echo ""
+echo "Results:"
+echo "    PASSED = $passed"
+echo "    FAILED = $failed"
+echo "    SKIPPED = $skipped"
+echo "(for details check individual test log in ./logs directory)"
+echo ""
+echo "### LXC ptest complete ###"
+
+# restore dmesg to console
+dmesg -n 6

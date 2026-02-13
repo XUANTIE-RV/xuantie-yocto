@@ -1,0 +1,109 @@
+From 06f23837c757ff7a8aa8db4e5965e25e9ca69f45 Mon Sep 17 00:00:00 2001
+From: "Kaleb S. KEITHLEY" <kkeithle@redhat.com>
+Date: Mon, 23 May 2022 07:41:26 -0400
+Subject: [PATCH 6/6] rocksdb: build with rocksdb-7.y.z
+
+RocksDB 7, specifically 7.2.2 has landed in Fedora 37/rawhide.
+
+https://tracker.ceph.com/issues/55730
+
+Signed-off-by: Kaleb S. KEITHLEY <kkeithle@redhat.com>
+(cherry picked from commit eea10281e6f4078f261b05b6bd9c9c9aec129201)
+
+Upstream-Status: Backport [be3ca10e60ade9dbe7d3e5cb018f32c7cc97e2ed]
+
+Signed-off-by: Sakib Sajal <sakib.sajal@windriver.com>
+---
+ src/kv/RocksDBStore.cc                 | 7 ++-----
+ src/kv/rocksdb_cache/BinnedLRUCache.cc | 2 +-
+ src/kv/rocksdb_cache/BinnedLRUCache.h  | 2 +-
+ src/kv/rocksdb_cache/ShardedCache.cc   | 2 +-
+ src/kv/rocksdb_cache/ShardedCache.h    | 4 ++--
+ 5 files changed, 7 insertions(+), 10 deletions(-)
+
+diff --git a/src/kv/RocksDBStore.cc b/src/kv/RocksDBStore.cc
+index 328277e5..115d28fc 100644
+--- a/src/kv/RocksDBStore.cc
++++ b/src/kv/RocksDBStore.cc
+@@ -728,19 +728,16 @@ int64_t RocksDBStore::estimate_prefix_size(const string& prefix,
+ {
+   auto cf = get_cf_handle(prefix);
+   uint64_t size = 0;
+-  uint8_t flags =
+-    //rocksdb::DB::INCLUDE_MEMTABLES |  // do not include memtables...
+-    rocksdb::DB::INCLUDE_FILES;
+   if (cf) {
+     string start = key_prefix + string(1, '\x00');
+     string limit = key_prefix + string("\xff\xff\xff\xff");
+     rocksdb::Range r(start, limit);
+-    db->GetApproximateSizes(cf, &r, 1, &size, flags);
++    db->GetApproximateSizes(cf, &r, 1, &size);
+   } else {
+     string start = combine_strings(prefix , key_prefix);
+     string limit = combine_strings(prefix , key_prefix + "\xff\xff\xff\xff");
+     rocksdb::Range r(start, limit);
+-    db->GetApproximateSizes(default_cf, &r, 1, &size, flags);
++    db->GetApproximateSizes(default_cf, &r, 1, &size);
+   }
+   return size;
+ }
+diff --git a/src/kv/rocksdb_cache/BinnedLRUCache.cc b/src/kv/rocksdb_cache/BinnedLRUCache.cc
+index 1e6ba7af..c4918355 100644
+--- a/src/kv/rocksdb_cache/BinnedLRUCache.cc
++++ b/src/kv/rocksdb_cache/BinnedLRUCache.cc
+@@ -531,7 +531,7 @@ void BinnedLRUCache::DisownData() {
+ #endif  // !__SANITIZE_ADDRESS__
+ }
+ 
+-#if (ROCKSDB_MAJOR >= 6 && ROCKSDB_MINOR >= 22)
++#if (ROCKSDB_MAJOR >= 7 || (ROCKSDB_MAJOR == 6 && ROCKSDB_MINOR >= 22))
+ DeleterFn BinnedLRUCache::GetDeleter(Handle* handle) const
+ {
+   return reinterpret_cast<const BinnedLRUHandle*>(handle)->deleter;
+diff --git a/src/kv/rocksdb_cache/BinnedLRUCache.h b/src/kv/rocksdb_cache/BinnedLRUCache.h
+index ba0c2720..266667f0 100644
+--- a/src/kv/rocksdb_cache/BinnedLRUCache.h
++++ b/src/kv/rocksdb_cache/BinnedLRUCache.h
+@@ -309,7 +309,7 @@ class BinnedLRUCache : public ShardedCache {
+   virtual size_t GetCharge(Handle* handle) const override;
+   virtual uint32_t GetHash(Handle* handle) const override;
+   virtual void DisownData() override;
+-#if (ROCKSDB_MAJOR >= 6 && ROCKSDB_MINOR >= 22)
++#if (ROCKSDB_MAJOR >= 7 || (ROCKSDB_MAJOR == 6 && ROCKSDB_MINOR >= 22))
+   virtual DeleterFn GetDeleter(Handle* handle) const override;
+ #endif
+   //  Retrieves number of elements in LRU, for unit test purpose only
+diff --git a/src/kv/rocksdb_cache/ShardedCache.cc b/src/kv/rocksdb_cache/ShardedCache.cc
+index 6cbd89ad..7d160f9c 100644
+--- a/src/kv/rocksdb_cache/ShardedCache.cc
++++ b/src/kv/rocksdb_cache/ShardedCache.cc
+@@ -109,7 +109,7 @@ size_t ShardedCache::GetPinnedUsage() const {
+   return usage;
+ }
+ 
+-#if (ROCKSDB_MAJOR >= 6 && ROCKSDB_MINOR >= 22)
++#if (ROCKSDB_MAJOR >= 7 || (ROCKSDB_MAJOR == 6 && ROCKSDB_MINOR >= 22))
+ DeleterFn ShardedCache::GetDeleter(Handle* handle) const
+ {
+   uint32_t hash = GetHash(handle);
+diff --git a/src/kv/rocksdb_cache/ShardedCache.h b/src/kv/rocksdb_cache/ShardedCache.h
+index f98421a0..855912d7 100644
+--- a/src/kv/rocksdb_cache/ShardedCache.h
++++ b/src/kv/rocksdb_cache/ShardedCache.h
+@@ -83,11 +83,11 @@ class ShardedCache : public rocksdb::Cache, public PriorityCache::PriCache {
+   virtual size_t GetUsage(rocksdb::Cache::Handle* handle) const override;
+   virtual size_t GetPinnedUsage() const override;
+   virtual size_t GetCharge(Handle* handle) const = 0;
+-#if (ROCKSDB_MAJOR >= 6 && ROCKSDB_MINOR >= 22)
++#if (ROCKSDB_MAJOR >= 7 || (ROCKSDB_MAJOR == 6 && ROCKSDB_MINOR >= 22))
+   virtual DeleterFn GetDeleter(Handle* handle) const override;
+ #endif
+   virtual void DisownData() override = 0;
+-#if (ROCKSDB_MAJOR >= 6 && ROCKSDB_MINOR >= 22)
++#if (ROCKSDB_MAJOR >= 7 || (ROCKSDB_MAJOR == 6 && ROCKSDB_MINOR >= 22))
+   virtual void ApplyToAllEntries(
+       const std::function<void(const rocksdb::Slice& key, void* value, size_t charge,
+                                DeleterFn deleter)>& callback,
+-- 
+2.33.0
+

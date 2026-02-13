@@ -1,0 +1,39 @@
+From d7a6b8f765e9a08a8811331298e76ebd7a0c7076 Mon Sep 17 00:00:00 2001
+From: Martin Jansa <Martin.Jansa@gmail.com>
+Date: Sat, 7 Nov 2020 15:55:23 +0000
+Subject: [PATCH] setup.py respect udevdir variable
+
+* with usrmerge cloud-init triggers QA error:
+  ERROR: cloud-init-20.3-r0 do_package_qa: QA Issue: cloud-init package is not obeying usrmerge distro feature. /lib should be relocated to /usr. [usrmerge]
+  ERROR: cloud-init-20.3-r0 do_package_qa: QA run found fatal errors. Please consider fixing them.
+  because of:
+  /lib/udev/rules.d/66-azure-ephemeral.rules
+
+Upstream-Status: Pending
+
+Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+---
+ setup.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: git/setup.py
+===================================================================
+--- git.orig/setup.py
++++ git/setup.py
+@@ -159,6 +159,7 @@
+     "sysvinit_deb": "etc/init.d",
+     "sysvinit_openrc": "etc/init.d",
+     "sysvinit_suse": "etc/init.d",
++    'udevdir': pkg_config_read('udev', 'udevdir'),
+     "systemd": pkg_config_read("systemd", "systemdsystemunitdir"),
+     "systemd.generators": pkg_config_read(
+         "systemd", "systemdsystemgeneratordir"
+@@ -307,7 +308,7 @@
+                 ["tools/hook-network-manager"],
+             ),
+             (ETC + "/dhcp/dhclient-exit-hooks.d/", ["tools/hook-dhclient"]),
+-            (LIB + "/udev/rules.d", [f for f in glob("udev/*.rules")]),
++            ('udevdir' + "/rules.d", [f for f in glob("udev/*.rules")]),
+             (
+                 ETC + "/systemd/system/sshd-keygen@.service.d/",
+                 ["systemd/disable-sshd-keygen-if-cloud-init-active.conf"],

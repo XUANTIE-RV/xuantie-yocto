@@ -1,0 +1,52 @@
+fix configure uses host openssl
+
+include/dh.h file is needed to be generated with command:
+
+openssl dhparam -C 512
+
+just do not use openssl from host.
+
+Signed-off-by: Rickard Engberg <rickard.engberg@windriver.com>
+Signed-off-by: Vu Tran <vu.tran@windriver.com>
+
+Index: nrpe-2.15/configure.in
+===================================================================
+--- nrpe-2.15.orig/configure.in	2013-09-06 17:27:13.000000000 +0200
++++ nrpe-2.15/configure.in	2013-11-21 14:09:31.798606782 +0100
+@@ -330,17 +330,6 @@
+ 
+ 			AC_DEFINE_UNQUOTED(HAVE_SSL,[1],[Have SSL support])
+ 			AC_SUBST(HAVE_SSL)
+-	
+-			dnl Generate DH parameters
+-			echo ""
+-			echo "*** Generating DH Parameters for SSL/TLS ***"
+-			if test -f "$ssldir/sbin/openssl"; then
+-				sslbin=$ssldir/sbin/openssl
+-			else
+-				sslbin=$ssldir/bin/openssl
+-			fi
+-			# awk to strip off meta data at bottom of dhparam output
+-			$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > include/dh.h
+ 		fi
+ 	fi
+ 
+Index: nrpe-2.15/configure
+===================================================================
+--- nrpe-2.15.orig/configure	2013-09-06 17:27:13.000000000 +0200
++++ nrpe-2.15/configure	2013-11-21 14:11:45.491269701 +0100
+@@ -6738,14 +6738,6 @@
+ 
+ 
+ 						echo ""
+-			echo "*** Generating DH Parameters for SSL/TLS ***"
+-			if test -f "$ssldir/sbin/openssl"; then
+-				sslbin=$ssldir/sbin/openssl
+-			else
+-				sslbin=$ssldir/bin/openssl
+-			fi
+-			# awk to strip off meta data at bottom of dhparam output
+-			$sslbin dhparam -C 512 | awk '/^-----/ {exit} {print}' > include/dh.h
+ 		fi
+ 	fi
+ 

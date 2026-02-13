@@ -1,0 +1,29 @@
+Build ifdef using BUILD_CC, not CC.
+
+Upstream-Status: Submitted [https://github.com/jbruchon/dev86/pull/22]
+Signed-off-by: Ross Burton <ross.burton@arm.com>
+
+diff --git a/Makefile b/Makefile
+index 8a61b65..99f41de 100644
+--- a/Makefile
++++ b/Makefile
+@@ -22,6 +22,10 @@ CFLAGS=  -O
+ IFDEFNAME= ifdef
+ WD=$(shell pwd)
+ 
++BUILD_CC ?= $(CC)
++BUILD_CFLAGS ?= $(CFLAGS)
++BUILD_LDFLAGS ?= $(LDFLAGS)
++
+ # Some makes take the last of a list as the default ...
+ all: make.fil
+ 	PATH="`pwd`/bin:$$PATH" $(MAKE) -f make.fil VERSION=$(VERSION) TOPDIR=`pwd` $@
+@@ -65,7 +69,7 @@ make.fil: $(IFDEFNAME) makefile.in
+ 	@rm -f tmp.mak tmp.sed
+ 
+ $(IFDEFNAME): ifdef.c
+-	$(CC) $(IFDEFARCH) $(CFLAGS) $(IFDEFFLAGS) $(LDFLAGS) -o $(IFDEFNAME) ifdef.c
++	$(BUILD_CC) $(IFDEFARCH) $(BUILD_CFLAGS) $(IFDEFFLAGS) $(BUILD_LDFLAGS) -o $(IFDEFNAME) ifdef.c
+ 
+ uninstall:
+ 	@echo 'Sorry, no go; it was just wrong.'

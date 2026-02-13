@@ -1,0 +1,29 @@
+From 580c4cb11c6aa7498c6b99573c1d20a1e85c1dfd Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Mon, 16 Dec 2024 11:07:48 +0800
+Subject: [PATCH] add riscv64 option
+
+---
+ configure | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/configure b/configure
+index 78ce2ff..4ba7c89 100755
+--- a/configure
++++ b/configure
+@@ -458,6 +458,12 @@ case $PLATFORM in
+ 		PLATFORM=aarch64
+ 		ENVIRONMENT=64
+ 		;;
++	"riscv64")
++                RTM_ENABLE="CK_MD_RTM_DISABLE"
++                MM="${MM:-"CK_MD_RMO"}"
++                PLATFORM=aarch64
++                ENVIRONMENT=64
++                ;;
+ 	*)
+ 		RTM_ENABLE="CK_MD_RTM_DISABLE"
+ 		PLATFORM=
+-- 
+2.25.1
+

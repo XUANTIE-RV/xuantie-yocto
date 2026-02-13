@@ -9,16 +9,16 @@ do_install() {
     install -d ${D}${libdir}
     install -d ${D}${includedir}
     install -d ${D}${includedir}/cmake/openmp/
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/include/omp.h                              ${D}${includedir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/include/ompt.h                             ${D}${includedir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/include/ompt-multiplex.h                   ${D}${includedir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/include/omp-tools.h                        ${D}${includedir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/include/ompx.h                             ${D}${includedir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/lib/libarcher.so                           ${D}${libdir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/lib/libarcher_static.a                     ${D}${libdir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/lib/libomp.so                              ${D}${libdir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/lib/libompd.so                             ${D}${libdir}
-    cp -rfd ${EXTERNAL_TOOLCHAIN}/lib/cmake/openmp/FindOpenMPTarget.cmake    ${D}${includedir}/cmake/openmp/
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/include/omp.h                              ${D}${includedir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/include/ompt.h                             ${D}${includedir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/include/ompt-multiplex.h                   ${D}${includedir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/include/omp-tools.h                        ${D}${includedir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/include/ompx.h                             ${D}${includedir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/lib/libarcher.so                           ${D}${libdir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/lib/libarcher_static.a                     ${D}${libdir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/lib/libomp.so                              ${D}${libdir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/lib/libompd.so                             ${D}${libdir}
+    cp -rfd ${EXTERNAL_TOOLCHAIN_CLANG}/lib/cmake/openmp/FindOpenMPTarget.cmake    ${D}${includedir}/cmake/openmp/
 }
 
 PACKAGES += "${PN}-libomptarget"

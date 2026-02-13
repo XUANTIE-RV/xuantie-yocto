@@ -1,0 +1,21 @@
+#!/usr/bin/python3
+
+# Example flask application for containerization
+#
+# Copyright (C) 2021 Bruce Ashfield <bruce.ashfield@gmail.com>
+# License: MIT (see COPYING.MIT at the root of the repository for terms)
+
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/yocto/', methods=['GET', 'POST'])
+def welcome():
+    return "Hello from Yocto!"
+
+@app.route('/oe/', methods=['GET', 'POST'])
+def welcometooe():
+    return "Hello from OpenEmbedded!"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=9000)

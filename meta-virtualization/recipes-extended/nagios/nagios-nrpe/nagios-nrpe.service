@@ -1,0 +1,10 @@
+[Unit]
+Description=Nagios nrpe plugin
+After=syslog.target network.target
+
+[Service]
+ExecStart=/usr/bin/nrpe -c /etc/nagios/nrpe.cfg -f
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target

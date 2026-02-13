@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: @NAME@
+spec:
+  selector:
+    matchLabels:
+      app: @APPNAME@
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: @APPNAME@
+    spec:
+      containers:
+      - name: @CONTAINERNAME@
+        image: @CONTAINERIMAGE@
+        ports:
+          - containerPort: @CONTAINERPORT@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yocto-flask-service
+spec:
+  ports:
+  - port: @EXTERNALPORT@
+    targetPort: @CONTAINERPORT@
+    name: http
+  selector:
+    app: @APPNAME@
+

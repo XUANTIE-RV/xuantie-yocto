@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# SPDX-FileCopyrightText: Huawei Inc.
+#
+# SPDX-License-Identifier: MIT
+
+#
+# Podman system tests
+#
+
+# The system tests don't need any go related variables. Dummy-define them to
+# avoid useless warnings/errors.
+GOOS=undefined GO=true BUILDTAGS= make localsystem

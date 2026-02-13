@@ -1,0 +1,27 @@
+From 6f3db6ad3444c75d0bb4603fd1e33d2c95261f20 Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Tue, 17 Dec 2024 19:26:25 +0800
+Subject: [PATCH] disable warnings in c-client/CFLAGS
+
+---
+ src/osdep/unix/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/osdep/unix/Makefile b/src/osdep/unix/Makefile
+index 9031d69..08eda10 100644
+--- a/src/osdep/unix/Makefile
++++ b/src/osdep/unix/Makefile
+@@ -48,8 +48,8 @@ GCCOPTLEVEL= -O2
+ # Try to have some consistency in GCC builds.  We want optimization, but we
+ # also want to be able to debug.
+ 
+-GCCCFLAGS= -g $(GCCOPTLEVEL) -pipe -fno-omit-frame-pointer
+-GCC4CFLAGS= $(GCCCFLAGS) -Wno-pointer-sign
++GCCCFLAGS= -g $(GCCOPTLEVEL) -pipe -fno-omit-frame-pointer -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types
++GCC4CFLAGS= $(GCCCFLAGS) -Wno-pointer-sign -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types
+ 
+ 
+ # Extended flags needed for SSL.  You may need to modify.
+-- 
+2.25.1
+

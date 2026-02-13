@@ -1,0 +1,46 @@
+From f8a33a209498b32b0fc06d80baa071f0902b9a85 Mon Sep 17 00:00:00 2001
+From: Martin Jansa <Martin.Jansa@gmail.com>
+Date: Tue, 30 Nov 2021 06:45:34 -0800
+Subject: [PATCH] vm-support: fix build for kernel's > 5.15
+
+* remove callback was changed to return void instead of int in:
+  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=fc7a6209d5710618eb4f72a77cd81b8d694ecf89
+
+Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+---
+ uxenplatform/platform.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/uxenplatform/platform.c b/uxenplatform/platform.c
+index 99fc76a..5225a00 100644
+--- a/uxenplatform/platform.c
++++ b/uxenplatform/platform.c
+@@ -4,6 +4,7 @@
+ #include <linux/random.h>
+ #include <linux/kthread.h>
+ #include <linux/delay.h>
++#include <linux/version.h>
+ 
+ #include <uxen-hypercall.h>
+ #include <uxen-platform.h>
+@@ -32,14 +33,20 @@ static int bus_probe(struct device *_dev)
+     return drv && drv->probe ? drv->probe(dev) : -ENODEV;
+ }
+ 
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0))
+ static int bus_remove(struct device *_dev)
++#else
++static void bus_remove(struct device *_dev)
++#endif
+ {
+     struct uxen_device *dev = dev_to_uxen(_dev);
+     struct uxen_driver *drv = drv_to_uxen(_dev->driver);
+ 
+     if (dev && drv && drv->remove)
+        drv->remove(dev);
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0))
+     return 0;
++#endif
+ }
+ 
+ static int bus_suspend(struct device *_dev, pm_message_t state)

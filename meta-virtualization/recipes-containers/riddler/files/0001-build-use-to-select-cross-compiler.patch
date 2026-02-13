@@ -1,0 +1,51 @@
+From 8ca4391a5954db168d513ba64c3791f63b044fbf Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Tue, 30 Jun 2020 23:58:22 -0400
+Subject: [PATCH] build: use  to select cross compiler
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ git/Makefile | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git git/Makefile git/Makefile
+index c6976af..f3c8d17 100644
+--- git/Makefile
++++ git/Makefile
+@@ -10,11 +10,11 @@ all: clean build static fmt lint test vet
+ 
+ build:
+ 	@echo "+ $@"
+-	@go build -tags "$(BUILDTAGS) cgo" .
++	@${GO} build ${GOBUILDFLAGS} -tags "$(BUILDTAGS) cgo" .
+ 
+ static:
+ 	@echo "+ $@"
+-	CGO_ENABLED=1 go build -tags "$(BUILDTAGS) cgo static_build" -ldflags "-w -extldflags -static" -o riddler .
++	CGO_ENABLED=1 ${GO} build ${GOBUILDFLAGS} -tags "$(BUILDTAGS) cgo static_build" -ldflags "-w -extldflags -static" -o riddler .
+ 
+ fmt:
+ 	@echo "+ $@"
+@@ -26,11 +26,11 @@ lint:
+ 
+ test: fmt lint vet
+ 	@echo "+ $@"
+-	@go test -v -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v vendor)
++	@${GO} test -v -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v vendor)
+ 
+ vet:
+ 	@echo "+ $@"
+-	@go vet $(shell go list ./... | grep -v vendor)
++	@${GO} vet $(shell go list ./... | grep -v vendor)
+ 
+ clean:
+ 	@echo "+ $@"
+@@ -38,4 +38,4 @@ clean:
+ 
+ install:
+ 	@echo "+ $@"
+-	@go install -v .
++	@${GO} install -v .
+-- 
+2.19.1
+

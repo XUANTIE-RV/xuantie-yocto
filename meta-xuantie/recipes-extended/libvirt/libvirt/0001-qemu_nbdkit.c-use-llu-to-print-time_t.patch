@@ -1,0 +1,76 @@
+From c4636402c06ab5ae436176daf0ef17005346e27d Mon Sep 17 00:00:00 2001
+From: Chen Qi <Qi.Chen@windriver.com>
+Date: Mon, 2 Sep 2024 22:15:51 -0700
+Subject: [PATCH] qemu_nbdkit.c: use %llu to print time_t
+
+Use %lu to print time_t will give use the following error:
+
+  error: format '%lu' expects argument of type 'long unsigned int',
+  but argument 10 has type 'time_t' {aka 'long long int'} [-Werror=format=]
+
+So use %llu to print time_t.
+
+Upstream-Status: Submitted [https://lists.libvirt.org/archives/list/devel@lists.libvirt.org/thread/FQSQMML6VWMHNWBYP67OLCUTJY5LJQST/]
+
+Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+---
+ src/qemu/qemu_nbdkit.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/src/qemu/qemu_nbdkit.c b/src/qemu/qemu_nbdkit.c
+index f099f35e1e..fe660c78e5 100644
+--- a/src/qemu/qemu_nbdkit.c
++++ b/src/qemu/qemu_nbdkit.c
+@@ -544,18 +544,18 @@ qemuNbdkitCapsFormatCache(qemuNbdkitCaps *nbdkitCaps)
+ 
+     virBufferEscapeString(&buf, "<path>%s</path>\n",
+                           nbdkitCaps->path);
+-    virBufferAsprintf(&buf, "<nbdkitctime>%lu</nbdkitctime>\n",
+-                      nbdkitCaps->ctime);
++    virBufferAsprintf(&buf, "<nbdkitctime>%llu</nbdkitctime>\n",
++                      (long long)nbdkitCaps->ctime);
+     virBufferEscapeString(&buf, "<plugindir>%s</plugindir>\n",
+                           nbdkitCaps->pluginDir);
+-    virBufferAsprintf(&buf, "<plugindirmtime>%lu</plugindirmtime>\n",
+-                      nbdkitCaps->pluginDirMtime);
++    virBufferAsprintf(&buf, "<plugindirmtime>%llu</plugindirmtime>\n",
++                      (long long)nbdkitCaps->pluginDirMtime);
+     virBufferEscapeString(&buf, "<filterdir>%s</filterdir>\n",
+                           nbdkitCaps->filterDir);
+-    virBufferAsprintf(&buf, "<filterdirmtime>%lu</filterdirmtime>\n",
+-                      nbdkitCaps->filterDirMtime);
+-    virBufferAsprintf(&buf, "<selfctime>%lu</selfctime>\n",
+-                      nbdkitCaps->libvirtCtime);
++    virBufferAsprintf(&buf, "<filterdirmtime>%llu</filterdirmtime>\n",
++                      (long long)nbdkitCaps->filterDirMtime);
++    virBufferAsprintf(&buf, "<selfctime>%llu</selfctime>\n",
++                      (long long)nbdkitCaps->libvirtCtime);
+     virBufferAsprintf(&buf, "<selfvers>%u</selfvers>\n",
+                       nbdkitCaps->libvirtVersion);
+ 
+@@ -593,10 +593,10 @@ virNbdkitCapsSaveFile(void *data,
+         return -1;
+     }
+ 
+-    VIR_DEBUG("Saved caps '%s' for '%s' with (%lu, %lu)",
++    VIR_DEBUG("Saved caps '%s' for '%s' with (%llu, %llu)",
+               filename, nbdkitCaps->path,
+-              nbdkitCaps->ctime,
+-              nbdkitCaps->libvirtCtime);
++              (long long)nbdkitCaps->ctime,
++              (long long)nbdkitCaps->libvirtCtime);
+ 
+     return 0;
+ }
+@@ -1054,7 +1054,7 @@ qemuNbdkitProcessBuildCommandCurl(qemuNbdkitProcess *proc,
+     }
+ 
+     if (proc->source->timeout > 0) {
+-        g_autofree char *timeout = g_strdup_printf("%llu", proc->source->timeout);
++        g_autofree char *timeout = g_strdup_printf("%llu", (long long)proc->source->timeout);
+         virCommandAddArgPair(cmd, "timeout", timeout);
+     }
+ 
+-- 
+2.25.1
+

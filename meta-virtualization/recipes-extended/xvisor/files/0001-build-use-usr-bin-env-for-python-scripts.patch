@@ -1,0 +1,36 @@
+From eb351ca63a86f53cfb18987284a1445d543dfe56 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Mon, 29 Nov 2021 17:20:00 -0500
+Subject: [PATCH] build: use /usr/bin/env for python scripts
+
+Without this, we break on hosts without /usr/bin/python
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ tools/scripts/d2c.py    | 2 +-
+ tools/scripts/memimg.py | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/scripts/d2c.py b/tools/scripts/d2c.py
+index b46a7bc4..0a6bce08 100755
+--- a/tools/scripts/d2c.py
++++ b/tools/scripts/d2c.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/env python3
+ #/**
+ # Copyright (c) 2013 Anup Patel.
+ # All rights reserved.
+diff --git a/tools/scripts/memimg.py b/tools/scripts/memimg.py
+index 423c9c33..ba2f06cb 100755
+--- a/tools/scripts/memimg.py
++++ b/tools/scripts/memimg.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/env python3
+ #/**
+ # Copyright (c) 2011 Anup Patel.
+ # All rights reserved.
+-- 
+2.19.1
+

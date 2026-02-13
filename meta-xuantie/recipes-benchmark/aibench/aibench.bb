@@ -23,6 +23,7 @@ SRC_URI:append:r908fdv-cp = "${SRC_URI_R908FDV}"
 inherit autotools
 inherit xuantie-set-package-arch-with-mcpu-benchmark
 PACKAGE_ARCH = "${XUANTIE_MCPU}_external"
+INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 
 
 CFLAGS += " -Wno-implicit-function-declaration "

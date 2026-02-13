@@ -1,0 +1,30 @@
+Use the host compiler to build the tools we need at runtime.
+
+Upstream-Status: Pending
+Signed-off-by: Ross Burton <ross.burton@arm.com>
+
+Index: Makefile
+===================================================================
+--- a/Makefile	(revision 298)
++++ b/Makefile	(working copy)
+@@ -5,6 +5,7 @@
+ SHELL = /bin/sh
+ 
+ CC      = gcc
++HOSTCC = gcc
+ CFLAGS  = -g -O2 -Wall -Wstrict-prototypes
+ LDFLAGS = 
+ 
+@@ -79,10 +80,10 @@
+ 	tar czvf ../$(RELEASE).tgz --exclude .svn -C .. $(RELEASE)/
+ 
+ biossums: biossums.c
+-	$(CC) -o biossums biossums.c
++	$(HOSTCC) -o biossums biossums.c
+ 
+ vbetables-gen: vbetables-gen.c
+-	$(CC) -o vbetables-gen vbetables-gen.c
++	$(HOSTCC) -o vbetables-gen vbetables-gen.c
+ 
+ vbetables.h: vbetables-gen
+ 	./vbetables-gen > $@

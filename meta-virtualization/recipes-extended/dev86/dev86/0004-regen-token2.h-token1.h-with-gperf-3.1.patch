@@ -1,0 +1,59 @@
+From ce2b9747d51df2a4c358a037950f0464f3f53fe8 Mon Sep 17 00:00:00 2001
+From: Martin Jansa <Martin.Jansa@gmail.com>
+Date: Fri, 14 May 2021 14:31:50 +0000
+Subject: [PATCH] regen token2.h, token1.h with gperf-3.1
+
+* update cc.h, token1.c, token2.c to be compatible with
+  gperf-3.1 output
+
+Upstream-Status: Pending
+Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+
+Remove regenerated token2.h as we'll force it to regenerate in do_compile.
+---
+ cpp/cc.h     |   4 +-
+ cpp/token1.c |   2 +-
+ cpp/token1.h |  22 ++----
+ cpp/token2.c |   2 +-
+ cpp/token2.h | 211 +++++++++++++++++++++++++++++++--------------------
+ 5 files changed, 140 insertions(+), 101 deletions(-)
+
+diff --git a/cpp/cc.h b/cpp/cc.h
+index 9c298e7..3724543 100644
+--- a/cpp/cc.h
++++ b/cpp/cc.h
+@@ -25,8 +25,8 @@ extern int    dialect;
+ extern int gettok P((void));
+ 
+ struct token_trans { char * name; int token; };
+-struct token_trans * is_ctok P((const char *str, unsigned int len));
+-struct token_trans * is_ckey P((const char *str, unsigned int len));
++struct token_trans * is_ctok P((register const char *str, register size_t len));
++struct token_trans * is_ckey P((register const char *str, register size_t len));
+ 
+ #define WORDSIZE	128
+ #define TK_WSPACE	256
+diff --git a/cpp/token1.c b/cpp/token1.c
+index f3aa420..cc47f3e 100644
+--- a/cpp/token1.c
++++ b/cpp/token1.c
+@@ -6,6 +6,6 @@
+ #ifdef __GNUC__
+ __inline
+ #endif
+-static unsigned int hash1 P((register const char *, register unsigned int));
++static unsigned int hash1 P((register const char *, register size_t));
+ 
+ #include "token1.h"
+diff --git a/cpp/token2.c b/cpp/token2.c
+index b4d22b1..fbc790d 100644
+--- a/cpp/token2.c
++++ b/cpp/token2.c
+@@ -6,6 +6,6 @@
+ #ifdef __GNUC__
+ __inline
+ #endif
+-static unsigned int hash2 P((register const char *, register unsigned int));
++static unsigned int hash2 P((register const char *, register size_t));
+ 
+ #include "token2.h"

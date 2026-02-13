@@ -1,0 +1,41 @@
+From 91b7123682c67ec8b0c50147c9ebd59efa563f26 Mon Sep 17 00:00:00 2001
+From: Stefan Agner <stefan@agner.ch>
+Date: Tue, 6 Sep 2016 11:51:40 -0700
+Subject: [PATCH] kvmtool: add lightweight hypervisor native Linux KVM tool
+
+Upstream-Status: Inappropriate [embedded specific]
+
+This allows OpenEmbedded to pass in cross compiler configuration using
+the default envirnment variables. It is required so that kvmtool can
+be linked against the cross-compiled libfdt library.
+
+---
+ Makefile | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+Index: git/Makefile
+===================================================================
+--- git.orig/Makefile
++++ git/Makefile
+@@ -19,12 +19,6 @@
+ include config/feature-tests.mak
+ -include $(OUTPUT)KVMTOOLS-VERSION-FILE
+ 
+-CC	:= $(CROSS_COMPILE)gcc
+-CFLAGS	:=
+-LD	:= $(CROSS_COMPILE)ld
+-LDFLAGS	:=
+-OBJCOPY	:= $(CROSS_COMPILE)objcopy
+-
+ FIND	:= find
+ CSCOPE	:= cscope
+ TAGS	:= ctags
+@@ -367,7 +361,7 @@
+ 		CFLAGS_DYNOPT	+= -DCONFIG_HAS_LIBFDT
+ 		CFLAGS_STATOPT	+= -DCONFIG_HAS_LIBFDT
+ 		CFLAGS		+= -I $(LIBFDT_DIR)
+-	else ifeq ($(call try-build,$(SOURCE_LIBFDT),$(CFLAGS),-lfdt),y)
++	else ifeq ($(call try-build,$(SOURCE_LIBFDT),$(CPPFLAGS) $(CFLAGS),-lfdt),y)
+ 		LIBFDT_STATIC	:=
+ 		CFLAGS_DYNOPT	+= -DCONFIG_HAS_LIBFDT
+ 		CFLAGS_STATOPT	+= -DCONFIG_HAS_LIBFDT

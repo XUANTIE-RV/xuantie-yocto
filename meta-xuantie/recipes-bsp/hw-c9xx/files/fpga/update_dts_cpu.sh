@@ -26,10 +26,12 @@ default_isa[c908v]="rv64imafdcv_zicbom_zicbop_zicboz_zihintpause_zfh_zba_zbb_zbc
 default_isa[c908_v2]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_sstc_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
 default_isa[c908-cp_v2]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_sstc_sscofpmf_svinval_svnapot_svpbmt_xtheadcmo_xtheadsync_xtheadcf_xtheadcei"
 default_isa[c908v_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sstc_sscofpmf_svinval_svnapot_svpbmt_xtheadc_xtheadvdot"
-default_isa[c908v-cp_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sstc_svinval_svnapot_svpbmt_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+default_isa[c908v-cp_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 default_isa[c908i_v2]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zca_zcb_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc"
 default_isa[c908i-cp_v2]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zca_zcb_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadsync_xtheadcei"
-default_isa[c908v-cp-xt_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+default_isa[c908v-cp-xt_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+default_isa[c908vk-cp_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zkt_zvbb_zvbc_zvkb_zvkg_zvkned_zvknha_zvknhb_zvksed_zvksh_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+default_isa[c908vk-cp-xt_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zkt_zvbb_zvbc_zvkb_zvkg_zvkned_zvknha_zvknhb_zvksed_zvksh_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 
 # C910/C920 v2
 default_isa[c910v2]="rv64imafdc_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zfa_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
@@ -58,18 +60,20 @@ default_isa[r908fd]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihin
 default_isa[r908fdv]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zve32f_zve32x_zve64d_zve64f_zve64x_zvfh_zvl128b_zvl32b_zvl64b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadba_xtheadbb_xtheadbs_xtheadc_xtheadcmo_xtheadcondmov_xtheadfmemidx_xtheadfmv_xtheadfpp_xtheadmac_xtheadmemidx_xtheadmempair_xtheadsync_xtheadvdot"
 default_isa[r908-cp]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcmop_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadfpp_xtheadsync_xtheadcei"
 default_isa[r908fd-cp]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadfpp_xtheadsync_xtheadcf_xtheadcei"
-default_isa[r908fdv-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_zvfh_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadfpp_xtheadsync_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-default_isa[r908fdv-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_zvfh_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadfpp_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+default_isa[r908fd-cp-xt]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadfpp_xtheadcbi_xtheadcei_xtheadcf"
+default_isa[r908fdv-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadfpp_xtheadsync_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+default_isa[r908fdv-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadfpp_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 
 
 # C908X
 default_isa[c908x]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw"
-default_isa[c908x-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sstc_svinval_svnapot_svpbmt_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-default_isa[c908x-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+default_isa[c908x-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+default_isa[c908x-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 
-# zhijiang
-
-default_isa[zhijiang]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ztso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svade_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadcf_xtheadcei_xtheadcv"
+default_isa[xt-c930]="rv64imafdch_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadser"
+default_isa[xt-c930-cp]="rv64imafdch_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadcf_xtheadcei_xtheadser"
+default_isa[xt-c930v]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadser"
+default_isa[xt-c930v-cp]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadcf_xtheadcei_xtheadcv_xtheadser"
 
 function print_help() {
 	echo "Usage:  update_dts_cpu.sh <soc_platform>  <-cpu>  [-layout 1]  [-isa default]"
@@ -87,6 +91,7 @@ function print_help() {
 	echo "[-ntrace false]:   Choose one from [ false | true ] etc."
 	echo "[-memsize 1G]      Input memory size [ 1G, 2G, 3G, 4G ] etc."
 	echo "[-optee false]:    Choose one from [ false | true ] etc."
+	echo "[-pmc false]:      Choose one from [ false | true ] etc."
 	echo "leave the optional args blank, as skip the updates"
 	exit 1
 }
@@ -115,6 +120,17 @@ SV=
 tmp=1
 MEMORY_SIZE=
 OPTEE=false
+PMC=false
+
+
+function update_c930
+{
+	if [[ $CPU =~ .*c930.* ]]; then
+		echo ">> updating c930"
+		GMAC=c930
+		sed -i 's/ctl_enable_2core == 0/ctl_enable_2core == 2/g' gdbinit/zsb.gdbinit
+	fi
+}
 
 function parse_old_args(){
 	if [ $tmp -gt 5 ] ; then
@@ -126,6 +142,7 @@ function parse_old_args(){
 	;;
 	2)
 		CPU=$1
+		update_c930
 	;;
 	3)
 		CORE_LAYOUT=$1
@@ -159,6 +176,7 @@ while [ "$#" -gt 0 ] ; do
 	-cpu)
 		CPU=$2
 		echo "CPU: $CPU"
+		update_c930
 		shift
 	;;
 	-layout)
@@ -204,6 +222,11 @@ while [ "$#" -gt 0 ] ; do
 	-optee)
 		OPTEE=$2
 		echo "OPTEE: $OPTEE"
+		shift
+	;;
+	-pmc)
+		PMC=$2
+		echo "PMC: $PMC"
 		shift
 	;;
 	*)
@@ -275,14 +298,25 @@ function update_dts_mmu
 }
 function update_dts_intc
 {
+	rm -f dts/aplic.dtsi
+	if [[ "$CPU" == *c930* ]]; then
+		echo ">> updating c930 intc"
+		ln -sr dts/aplic_c930.dtsi dts/aplic.dtsi
+	else
+		echo ">> updating rv64 intc"
+		ln -sr dts/aplic_rv64.dtsi dts/aplic.dtsi
+	fi
+
+	rm -f dts/intc.dtsi
 	if [ "${INTC}" = "plic" ] ; then
 		echo ">> updating intc to plic"
-		rm -f dts/intc.dtsi
 		ln -sr dts/plic.dtsi dts/intc.dtsi
 	elif [ "${INTC}" = "aplic" ] ; then
 		echo ">> updating intc to aplic"
-		rm -f dts/intc.dtsi
 		ln -sr dts/aplic.dtsi dts/intc.dtsi
+	elif [ "${INTC}" = "aplic2core" ] ; then
+		echo ">> updating intc to aplic2core"
+		ln -sr dts/aplic_2cores.dtsi dts/intc.dtsi
 	fi
 }
 function update_dts_gmac
@@ -291,6 +325,12 @@ function update_dts_gmac
 		echo ">> updating gmac to h100"
 		rm -f dts/gmac.dtsi
 		ln -sr dts/gmac_haps.dtsi dts/gmac.dtsi
+		sed -i "s/set \$net_mode = .*/set \$net_mode = 0/g" gdbinit/zsb_socinit.gdbinit
+	elif [ "${GMAC}" = "c930" ] ; then
+		echo ">> updating gmac to c930"
+		rm -f dts/gmac.dtsi
+		ln -sr dts/gmac_c930.dtsi dts/gmac.dtsi
+		sed -i "s/set \$net_mode = .*/set \$net_mode = 1/g" gdbinit/zsb_socinit.gdbinit
 	elif [ "${GMAC}" = "pro" ] ; then
 		echo ">> updating gmac to pro"
 		rm -f dts/gmac.dtsi
@@ -438,9 +478,9 @@ function update_dts_core_layout
 		if [ $CORE_LAYOUT -eq 1 ];then
 			sed -i '/^\s*set\s*\*0x18030000 = .*/s/^\(\s*\)\(set\)/\1# \2/' ${ZSB_GDBINIT}
 		elif [ ${#CORE_LAYOUT} -gt 8 ];then
-			sed -i "s/.*set \*0x18030000 = .*/set \*0x18030000 = 0xffffffff/g" ${ZSB_GDBINIT}
+			sed -i "s/.*set \*0x18030000 = .*/	set \*0x18030000 = 0xffffffff/g" ${ZSB_GDBINIT}
 		else
-			sed -i "s/.*set \*0x18030000 = .*/set \*0x18030000 = 0x7f/g" ${ZSB_GDBINIT}
+			sed -i "s/.*set \*0x18030000 = .*/	set \*0x18030000 = 0x7f/g" ${ZSB_GDBINIT}
 		fi
 		echo ">> updating core layout to $CORE_LAYOUT"
 		decimal=$((2#$CORE_LAYOUT))
@@ -499,11 +539,33 @@ function update_dts_memory_size() {
 	HEX_LOW=$(printf "0x%X" $LOW)
 
 	# Use sed to update the 'reg' field in the DTS file
-	sed -i "s/\(reg = <0x[[:xdigit:]]\+[[:space:]]\+0x60000000[[:space:]]\+\).*/\1${HEX_HIGH} ${HEX_LOW}>;/g" "$TMP_DTS"
+	sed -i "s/\(reg = <0x[[:xdigit:]]\+[[:space:]]\+0x60000000[[:space:]]\+\).*/\1${HEX_HIGH} ${HEX_LOW}>;/g" ${TMP_DTS}
 
 	echo ">> updating memory size to ${MEMORY_SIZE}"
 }
 
+function update_dts_pmc() {
+	if [ "${PMC}" = "true" ] ; then
+		sed -i 's/status = "[^"]*"/status = "okay"/g' dts/pmc.dtsi
+		sed -i "s/set \$pmc_init = .*/set \$pmc_init = 1/g" gdbinit/zsb_socinit.gdbinit
+	else
+		sed -i 's/status = "[^"]*"/status = "skip"/g' dts/pmc.dtsi
+		sed -i "s/set \$pmc_init = .*/set \$pmc_init = 0/g" gdbinit/zsb_socinit.gdbinit
+	fi
+}
+function update_dts_pmu
+{
+	rm -f dts/pmu.dtsi
+	if [[ "$CPU" == *c930* ]]; then
+		echo ">> updating c930 pmu"
+		ln -sr dts/pmu_c930.dtsi dts/pmu.dtsi
+	else
+		echo ">> updating rv64 pmu"
+		ln -sr dts/pmu_rv64.dtsi dts/pmu.dtsi
+	fi
+}
+
+# update origin dts file
 update_cpu_socinit
 update_gdbinit_cp
 update_dts_time_freq
@@ -514,6 +576,10 @@ update_dts_gmac
 update_dts_ntrace
 update_dts_mmu
 update_dts_support_32cores
+update_dts_pmc
+update_dts_pmu
+
+# update $TMP_DTS file
 ./dtc -I dts -O dts $DTS > $TMP_DTS
 update_dts_core_layout
 update_dts_isa

@@ -1,4 +1,7 @@
 image_path="../images"
+if [[ ${params_array["rva_profile"]} == "rva23" ]]; then
+	image_path="../images-rva23"
+fi
 
 # get zsb image
 if [[ ${params_array["abi_mode"]} == "rv64_std" ]]; then
@@ -25,6 +28,12 @@ if [[ ${params_array["abi_mode"]} == "rv64_std" ]]; then
 		images_array["image_opensbi"]=$image_path/opensbi/fw_dynamic-v1.3-rv64.bin
 	elif [[ ${params_array["opensbi_ver"]} == "0.9" ]]; then
 		images_array["image_opensbi"]=$image_path/opensbi/fw_dynamic-v0.9-rv64.bin
+	elif [[ ${params_array["opensbi_ver"]} == "1.5" ]]; then
+		images_array["image_opensbi"]=$image_path/opensbi/fw_dynamic-v1.5-rv64.bin
+	elif [[ ${params_array["opensbi_ver"]} == "1.6" ]]; then
+		images_array["image_opensbi"]=$image_path/opensbi/fw_dynamic-v1.6-rv64.bin
+	elif [[ ${params_array["opensbi_ver"]} == "1.7" ]]; then
+		images_array["image_opensbi"]=$image_path/opensbi/fw_dynamic-v1.7-rv64.bin
 	else
 		echo "Error: not supported abi_mode:${params_array["abi_mode"]}"
 		exit 1
@@ -34,13 +43,13 @@ elif [[ ${params_array["abi_mode"]} == "rv32_std" ]]; then
 		images_array["image_opensbi"]=$image_path/opensbi/fw_dynamic-v1.3-rv32.bin
 	elif [[ ${params_array["opensbi_ver"]} == "0.9" ]]; then
 		images_array["image_opensbi"]=$image_path/opensbi/fw_dynamic-v0.9-rv32.bin
+	elif [[ ${params_array["opensbi_ver"]} == "1.7" ]]; then
+		images_array["image_opensbi"]=$image_path/opensbi/fw_dynamic-v1.7-rv32.bin
 	else
 		echo "Error: not supported abi_mode:'${params_array["abi_mode"]}'"
 		exit 1
 	fi
 fi
-
-# get optee image, fixme!!!
 
 # get kernel image
 if [[ ${params_array["abi_mode"]} == "rv64_std" ]]; then
@@ -124,7 +133,19 @@ fi
 # get rootfs image
 if [[ ${params_array["kernel_ver"]} == "6.6" ]]; then
 	if [[ ${params_array["abi_mode"]} == "rv64_std" ]]; then
-		images_array["image_rootfs"]=$image_path/rootfs/rootfs.xuantie-image-rv64-6.6-lite.cpio.gz
+		if [[ ${params_array["rootfs_type"]} == "lite" ]]; then
+			images_array["image_rootfs"]=$image_path/rootfs/rootfs.xuantie-image-rv64-6.6-lite.cpio.gz
+		elif [[ ${params_array["rootfs_type"]} == "dev" ]]; then
+			images_array["image_rootfs"]=$image_path/rootfs/rootfs.xuantie-image-rv64-6.6-dev.cpio.gz
+		elif [[ ${params_array["rootfs_type"]} == "rva23-lite" ]]; then
+			images_array["image_rootfs"]=$image_path/rootfs/rootfs.xuantie-image-rva23-6.6-lite.cpio.gz
+		else
+			echo "Error[$LINENO]: not supported rootfs with:" \
+			     "abi_mode=${params_array["abi_mode"]}," \
+				 "kernel_ver=${params_array["kernel_ver"]}," \
+				 "rootfs_type=${params_array["rootfs_type"]}"
+			exit 1
+		fi
 	elif [[ ${params_array["abi_mode"]} == "rv32_std" ]]; then
 		images_array["image_rootfs"]=$image_path/rootfs/rootfs.xuantie-image-rv32-6.6-lite.cpio.gz
 	fi

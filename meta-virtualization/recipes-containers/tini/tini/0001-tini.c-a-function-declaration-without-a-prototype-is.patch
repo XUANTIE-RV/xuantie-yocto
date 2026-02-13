@@ -1,0 +1,74 @@
+From 66d0b5fd94fafe1e15bf21a1b73618ca23de078f Mon Sep 17 00:00:00 2001
+From: Jose Quaresma <jose.quaresma@foundries.io>
+Date: Fri, 23 Sep 2022 16:31:33 +0000
+Subject: [PATCH] tini.c: a function declaration without a prototype is
+ deprecated in all versions of C
+
+| /srv/oe/build/tmp-lmp/work/corei7-64-lmp-linux/tini/0.19.0-r0/git/src/tini.c:150:18: error: a function declaration without a prototype is deprecated in all versions of C [-Werror,-Wstrict-prototypes]
+| int isolate_child() {
+|                  ^
+|                   void
+| /srv/oe/build/tmp-lmp/work/corei7-64-lmp-linux/tini/0.19.0-r0/git/src/tini.c:395:14: error: a function declaration without a prototype is deprecated in all versions of C [-Werror,-Wstrict-prototypes]
+| int parse_env() {
+|              ^
+|               void
+| /srv/oe/build/tmp-lmp/work/corei7-64-lmp-linux/tini/0.19.0-r0/git/src/tini.c:416:24: error: a function declaration without a prototype is deprecated in all versions of C [-Werror,-Wstrict-prototypes]
+| int register_subreaper () {
+|                        ^
+|                         void
+| /srv/oe/build/tmp-lmp/work/corei7-64-lmp-linux/tini/0.19.0-r0/git/src/tini.c:434:19: error: a function declaration without a prototype is deprecated in all versions of C [-Werror,-Wstrict-prototypes]
+| void reaper_check () {
+|                   ^
+|                    void
+| 4 errors generated.
+
+:Upstream-Status: Submitted [https://github.com/krallin/tini/pull/198]
+
+Signed-off-by: Jose Quaresma <jose.quaresma@foundries.io>
+---
+ src/tini.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/tini.c b/src/tini.c
+index 2c873f9..7914d3a 100644
+--- a/src/tini.c
++++ b/src/tini.c
+@@ -147,7 +147,7 @@ int restore_signals(const signal_configuration_t* const sigconf_ptr) {
+ 	return 0;
+ }
+ 
+-int isolate_child() {
++int isolate_child(void) {
+ 	// Put the child into a new process group.
+ 	if (setpgid(0, 0) < 0) {
+ 		PRINT_FATAL("setpgid failed: %s", strerror(errno));
+@@ -392,7 +392,7 @@ int parse_args(const int argc, char* const argv[], char* (**child_args_ptr_ptr)[
+ 	return 0;
+ }
+ 
+-int parse_env() {
++int parse_env(void) {
+ #if HAS_SUBREAPER
+ 	if (getenv(SUBREAPER_ENV_VAR) != NULL) {
+ 		subreaper++;
+@@ -413,7 +413,7 @@ int parse_env() {
+ 
+ 
+ #if HAS_SUBREAPER
+-int register_subreaper () {
++int register_subreaper (void) {
+ 	if (subreaper > 0) {
+ 		if (prctl(PR_SET_CHILD_SUBREAPER, 1)) {
+ 			if (errno == EINVAL) {
+@@ -431,7 +431,7 @@ int register_subreaper () {
+ #endif
+ 
+ 
+-void reaper_check () {
++void reaper_check (void) {
+ 	/* Check that we can properly reap zombies */
+ #if HAS_SUBREAPER
+ 	int bit = 0;
+-- 
+2.34.1
+

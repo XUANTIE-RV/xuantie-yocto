@@ -1,0 +1,34 @@
+From 022c885d077dce6fad3eca5fd2f54b2070c375d2 Mon Sep 17 00:00:00 2001
+From: Alistair Francis <alistair.francis@wdc.com>
+Date: Fri, 17 May 2019 14:21:44 -0700
+Subject: [PATCH] TESTS: Don't specify mabi or march for RISC-V
+
+To avoid
+    can't link double-float modules with soft-float modules
+errors when building 32-bit baremetal guests don't specify mabi
+or march.
+
+Upstream-Status: Inappropriate [Fixes a 32-bit Yocto flow bug]
+Signed-off-by: Alistair Francis <alistair.francis@wdc.com>
+---
+ tests/riscv/common/basic/Makefile.inc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tests/riscv/common/basic/Makefile.inc b/tests/riscv/common/basic/Makefile.inc
+index 9fa5abed..f3ff1864 100644
+--- a/tests/riscv/common/basic/Makefile.inc
++++ b/tests/riscv/common/basic/Makefile.inc
+@@ -24,8 +24,8 @@
+ ARCH_CPPFLAGS=$(board_cppflags) -DFIRMWARE_BOOT
+ ARCH_CPPFLAGS+=-DTEXT_START=$(board_text_start)
+ ifeq ($(board_32bit),y)
+-ARCH_CFLAGS=$(board_cflags) -fno-omit-frame-pointer -fno-optimize-sibling-calls -mno-save-restore -mstrict-align -mabi=ilp32 -march=rv32imafdc -mcmodel=medany
+-ARCH_ASFLAGS=$(board_asflags) -fno-omit-frame-pointer -fno-optimize-sibling-calls -mno-save-restore -mstrict-align -mabi=ilp32 -march=rv32imafdc -mcmodel=medany
++ARCH_CFLAGS=$(board_cflags) -fno-omit-frame-pointer -fno-optimize-sibling-calls -mno-save-restore -mstrict-align -mcmodel=medany
++ARCH_ASFLAGS=$(board_asflags) -fno-omit-frame-pointer -fno-optimize-sibling-calls -mno-save-restore -mstrict-align -mcmodel=medany
+ else
+ ARCH_CFLAGS=$(board_cflags) -fno-omit-frame-pointer -fno-optimize-sibling-calls -mno-save-restore -mstrict-align -mabi=lp64 -march=rv64imafdc -mcmodel=medany
+ ARCH_ASFLAGS=$(board_asflags) -fno-omit-frame-pointer -fno-optimize-sibling-calls -mno-save-restore -mstrict-align -mabi=lp64 -march=rv64imafdc -mcmodel=medany
+-- 
+2.21.0
+

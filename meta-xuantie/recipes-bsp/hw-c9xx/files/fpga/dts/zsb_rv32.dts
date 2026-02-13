@@ -1,7 +1,7 @@
 /dts-v1/;
 / {
 	model = "T-HEAD C9XX";
-	compatible = "thead,c9xx";
+	compatible = "xuantie,dummy";
 	#address-cells = <2>;
 	#size-cells = <2>;
 

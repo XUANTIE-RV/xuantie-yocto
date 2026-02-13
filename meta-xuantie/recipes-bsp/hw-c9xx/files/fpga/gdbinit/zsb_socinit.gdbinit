@@ -4,15 +4,27 @@ set confirm off
 
 
 # GMAC configuration
-set *(0x1900e01c)=0x0
-set *(0x1900e004)=0x2000
-set *(0x1900e008)=0x2000
-set *(0x1900e000)=0x7e
-set *(0x1900e00c)=0x4
-
-set *(0x1900e00c)=0x80000004
+set $net_mode = 0
+if ($net_mode == 0)
+	set *(0x1900e01c)=0x0
+	set *(0x1900e004)=0x2000
+	set *(0x1900e008)=0x2000
+	set *(0x1900e000)=0x7e
+	set *(0x1900e00c)=0x4
+	set *(0x1900e00c)=0x80000004
+end
+if ($net_mode == 1)
+	set *(0x1900e01c)=0x1
+	set *(0x1900e004)=0x2000
+	set *(0x1900e008)=0x2200
+	set *(0x1900e000)=0x7e
+	set *(0x1900e00c)=0x4
+	set *(0x1900e020)=0x1
+	set *(0x1900e00c)=0x80000004
+end
 
 set $link_mode = 1
+set $pmc_init = 0
 
 if ($link_mode == 1)
 	printf "Link Mode : %d,  Use NCore\n", $link_mode
@@ -60,6 +72,26 @@ if ($link_mode == 2)
 	#
 end
 
+printf "PMC init : %d\n", $pmc_init
+if ($pmc_init == 1)
+	# IPMC configuration(If no SBA)s
+
+	## Release Core0
+	set *0x26900100 = 0x18
+	set *0x26900104 = 0x11
+
+	## Release Core1
+	set *0x26901100 = 0x18
+	set *0x26901104 = 0x11
+
+	## Release Core2
+	set *0x26902100 = 0x18
+	set *0x26902104 = 0x11
+
+	## Release Core3
+	set *0x26903100 = 0x18
+	set *0x26903104 = 0x11
+end
 
 shell $(sleep 2)
 echo Finished SOCINIT\n\n

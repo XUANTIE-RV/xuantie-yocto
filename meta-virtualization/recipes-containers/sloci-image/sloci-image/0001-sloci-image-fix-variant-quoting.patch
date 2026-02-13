@@ -1,0 +1,42 @@
+From 55aebd87ee81f851d088beea8688e3e599c2bced Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Fri, 17 Jul 2020 14:40:12 -0400
+Subject: [PATCH] sloci-image: fix variant quoting
+
+Bash doesn't deal very well with the quoted "variant" in the
+output of the oci-image-index. We can calculate the string at
+the top of the function, and just use it as a whole to avoid
+needing to figure out the quote escaping.
+
+No changes in the output, except a properly quoted "variant"
+when a variant is defined.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ sloci-image | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/sloci-image b/sloci-image
+index be8e79a..e0dc469 100755
+--- a/sloci-image
++++ b/sloci-image
+@@ -298,6 +298,7 @@ oci_image_config() {
+ # $1: digest of the image manifest json (must be in blobs directory)
+ oci_image_index() {
+ 	local manifest_digest="$1"
++	local variant_string="        \"variant\": $(json_string "$CFG_ARCH_VARIANT"),"
+ 
+ 	cat <<-EOF
+ 	{
+@@ -309,7 +310,7 @@ oci_image_index() {
+ 	      "digest": "$manifest_digest",
+ 	      "platform": {
+ 	        "architecture": "$(oci_arch $CFG_ARCH)",
+-	        ${CFG_ARCH_VARIANT:+"\"variant\": $(json_string "$CFG_ARCH_VARIANT"),"}
++		${CFG_ARCH_VARIANT:+$variant_string}
+ 	        "os": "$CFG_OS"
+ 	      },
+ 	      "annotations": {
+-- 
+2.19.1
+

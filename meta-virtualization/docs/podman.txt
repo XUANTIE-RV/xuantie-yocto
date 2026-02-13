@@ -1,0 +1,14 @@
+Podman
+======
+
+Rootless mode
+-------------
+
+Podman is a daemonless container engine that has as one of its features the
+ability to run in rootless mode. This requires a set of configurations and
+additional components. The OE/Yocto integration configures podman with this
+support disabled by default. This can be changed via configuration files
+(distro, local.conf, etc.) or bbappends using the `PACKAGECONFIG` variable.
+
+To enable rootless support, add `rootless` to the `PACKAGECONFIG` podman
+recipe variable.

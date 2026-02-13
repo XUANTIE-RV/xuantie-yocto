@@ -1,0 +1,38 @@
+From 05ef0d41895a355601333b5caa413754272fce03 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Tue, 9 Jul 2024 23:06:39 +0000
+Subject: [PATCH] tests/meson: clear absolute directory paths
+
+Ensure that the abs_* directory definitions are cleared, so
+they'll be consistent with the top level definitions and so
+we won't hav QA warnings due to tmpdir references in the
+resulting binaries.
+
+Upstream-Status: Inappropriate [oe specific]
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ tests/meson.build | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/tests/meson.build b/tests/meson.build
+index 2f1eda1f95..6fa8308385 100644
+--- a/tests/meson.build
++++ b/tests/meson.build
+@@ -1,9 +1,9 @@
+ tests_dep = declare_dependency(
+   compile_args: [
+-    '-Dabs_builddir="@0@"'.format(meson.current_build_dir()),
+-    '-Dabs_top_builddir="@0@"'.format(meson.project_build_root()),
+-    '-Dabs_srcdir="@0@"'.format(meson.current_source_dir()),
+-    '-Dabs_top_srcdir="@0@"'.format(meson.project_source_root()),
++    '-Dabs_builddir="@0@"'.format(' '),
++    '-Dabs_top_builddir="@0@"'.format(' '),
++    '-Dabs_srcdir="@0@"'.format(' '),
++    '-Dabs_top_srcdir="@0@"'.format(' '),
+   ] + coverage_flags + cc_flags_relaxed_frame_limit,
+   dependencies: [
+     apparmor_dep,
+-- 
+2.39.2
+

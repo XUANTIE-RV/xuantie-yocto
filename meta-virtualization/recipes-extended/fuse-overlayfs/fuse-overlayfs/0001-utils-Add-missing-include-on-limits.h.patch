@@ -1,0 +1,36 @@
+From b48e958aaecfdfc3bb48db082a548a09d6487181 Mon Sep 17 00:00:00 2001
+From: Andrei Gherzan <andrei.gherzan@huawei.com>
+Date: Wed, 13 Jul 2022 12:05:07 +0200
+Subject: [PATCH] utils: Add missing include on limits.h
+
+This happens to not be an issue with glibc because it gets indirectly
+included via dirent.h:
+
+.. /usr/include/dirent.h
+[...]
+..... /usr/include/linux/limits.h
+
+When using the musl libc implementation, that is not the case anymore
+and the build fails.
+
+Signed-off-by: Andrei Gherzan <andrei.gherzan@huawei.com>
+Upstream-Status: Submitted [https://github.com/containers/fuse-overlayfs/pull/362]
+---
+ utils.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/utils.h b/utils.h
+index 13a177e..6fbc328 100644
+--- a/utils.h
++++ b/utils.h
+@@ -32,6 +32,7 @@
+ # include <sys/types.h>
+ # include <fcntl.h>
+ # include "fuse-overlayfs.h"
++# include <limits.h>
+ 
+ # define XATTR_OVERRIDE_STAT "user.fuseoverlayfs.override_stat"
+ # define XATTR_PRIVILEGED_OVERRIDE_STAT "security.fuseoverlayfs.override_stat"
+-- 
+2.25.1
+

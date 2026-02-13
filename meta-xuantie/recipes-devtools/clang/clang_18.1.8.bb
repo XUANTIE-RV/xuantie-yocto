@@ -3,13 +3,21 @@ HOMEPAGE = "https://clang.llvm.org/"
 DESCRIPTION = "Clang is a compiler for the C language family, providing fast compilation and highly useful diagnostics. It aims to deliver a modern and expressive programming environment."
 LICENSE = "CLOSED"
 
-XUANTIE_CLANG_SRC_URI_PATH ?= "ftp://11.122.129.163/Test/Test/Toolschain/llvm-riscv/V2.1.0"
-SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
-    '${XUANTIE_CLANG_SRC_URI_PATH}/clang_18.1.8_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=a8d3518c54f60ea6119310b0a7479c80a80929db035d7b45fa6ee296f25527c4;subdir=${BP}', \
-    '${XUANTIE_CLANG_SRC_URI_PATH}/clang_18.1.8_riscv64-6.6.0-rv64gc-lp64d.deb;sha256sum=89cf4a541deef037c78cb29124d0acd059cd66fb674ee4873e251366902a33b9;subdir=${BP}', d)}"
-SRC_URI:riscv32 = "${XUANTIE_CLANG_SRC_URI_PATH}/clang_18.1.8_riscv32-6.6.0-rv32gc-ilp32d.deb;sha256sum=4bbe452d0202dc96ff139bb55d59a9c19a1fd52c08afdab232cf936683d3f82b;subdir=${BP}"
+FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/clang_18.1.8_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=a4a9c90f0546a41c5924611264fb84a433c941d95df793b38b9cb848f4a0bc8a"
+FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/clang_18.1.8_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=f44862ae6f74c92249f8b7d00ebf319d389873af951b97d52d0d32472183b484"
+FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/clang_18.1.8_riscv32-5.10.4-rv32gc-ilp32d.deb;sha256sum=91c36414f4d11af1e5d1e0791a213568100183666db8bd636dd6f30d02808cfc"
+FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/clang_18.1.8_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=7f86bf9bd246d33805f37600a14aef3637450b1c0bc2f3cbdd7ee323673f1064"
 
-PR = "r5"
+SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
+    '${FILE_RV64_510};subdir=${BP}', \
+    '${FILE_RV64_66};subdir=${BP}', d)}"
+
+SRC_URI:riscv32 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
+    '${FILE_RV32_510};subdir=${BP}', \
+    '${FILE_RV32_66};subdir=${BP}', d)}"
+
+PR = "r14"
+
 INSANE_SKIP:${PN} += " file-rdeps dev-so staticdev already-stripped installed-vs-shipped dev-deps"
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"

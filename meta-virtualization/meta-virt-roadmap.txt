@@ -1,0 +1,87 @@
+The roadmap items are broken into the following broad categories:
+
+  - container runtimes
+  - hypervisor base support
+  - build system / workflow
+  - container stacks / management
+  - container images / applications / artifacts
+  - container base / support components (tools, plugins, etc)
+
+The numbers in () are timeframes for the work to be completed.
+
+Container base packages / support:
+
+  - package refresh (6)
+
+Container "Stacks", with integrated unit or system level testing in meta-virt:
+
+  - base stacks: docker, containerd, podman
+  - reference "full" stacks: k8s, k3s
+
+  - containerd (nearly done, 6 months)
+  - docker (done)
+  - podman (nearly done, 6 months)
+  - k8s (6-12 months)
+  - k3s / micro k8s (12 months)
+  - cri-o (6)
+
+Container Images / Reference Platforms:
+
+  - OverC / Oryx / Other reference platforms for small footprint testing (6-12)
+     - Reference container boot / initramfs (OverC) (6)
+
+  - Reference container base images (6)
+     - small (aka alpine-like)
+     - medium (aka debian)
+     - large (aka ubuntu)
+     - system (aka multiprocess)
+
+  - Container registry base / sample containers (12-18)
+
+  - rootless / unpriv containers (6)
+
+Container runtimes:
+
+  - runx (6)
+  - kata containers (12)
+  - runc (done)
+  - crun (done)
+  - pflask (done)
+
+Hypervisor base support:
+
+  - xen refresh (community)
+  - KVM (done)
+  - jailhouse (roadmap: community. 12-18)
+
+Container support components:
+
+  - CNI refresh (6)
+      - CNI multus (6-12)
+  - Additional Container networking plugins (roadmap)
+
+  - h/w accelerated containers (12)
+      - fpga / pci / other
+
+Build system / workflow:
+
+  - Binary reference package feed integration / container extension (12)
+      - Decoupled container update
+      - "Docker build" type functionality
+
+  - OCI container image backend
+      - sloci (done)
+      - skopeo (6)
+      - buildah (6-12)
+      - ...
+
+  - Host side (builder) container installer (12)
+      - skopeo ....
+
+  - SDK based container update (12)
+
+  - devtool / recipe / manual: build -> deploy (k8s, other) (12)
+      - local / build host deploy and test (6)
+
+  - microservice reference workflow / container base
+

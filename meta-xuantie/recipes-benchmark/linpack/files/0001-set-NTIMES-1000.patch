@@ -1,0 +1,13 @@
+diff --git a/linpack.c b/linpack.c
+index 4a1a0a5..d18bacc 100644
+--- a/linpack.c
++++ b/linpack.c
+@@ -39,7 +39,7 @@ You must specify one of -DROLL or -DUNROLL to compile correctly.
+ #define PREC "Double "
+ #endif
+ 
+-#define NTIMES 10
++#define NTIMES 1000
+ 
+ #ifdef ROLL
+ #define ROLLING "Rolled "

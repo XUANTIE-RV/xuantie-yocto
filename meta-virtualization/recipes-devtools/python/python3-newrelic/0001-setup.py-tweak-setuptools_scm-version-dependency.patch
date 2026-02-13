@@ -1,0 +1,32 @@
+From a61cea5053730f8180eb1fc8b4cb0f94ff4fc176 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Tue, 9 Feb 2021 21:31:19 -0500
+Subject: [PATCH] setup.py: tweak setuptools_scm version dependency
+
+The version dependency of <4 isn't showing any issues in builds.
+The oe-core version is 5+, and carrying a secondary version is
+not trivial or something we want to do.
+
+So we tweak the version to accept what we have in oe-core.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ setup.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/setup.py b/setup.py
+index ade43a9..889a74f 100644
+--- a/setup.py
++++ b/setup.py
+@@ -132,7 +132,7 @@ kwargs = dict(
+             "git_describe_command": "git describe --dirty --tags --long --match *.*.*.*",
+             "write_to": "newrelic/version.txt",
+         },
+-        setup_requires=["setuptools_scm>=3.2,<4"],
++        setup_requires=["setuptools_scm>=3.2"],
+         description = "New Relic Python Agent",
+         long_description = open(readme_file).read(),
+         url = "https://newrelic.com/docs/python/new-relic-for-python",
+-- 
+2.19.1
+

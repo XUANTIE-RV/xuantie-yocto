@@ -1,0 +1,21 @@
+From 8227e720438ff0bdfe45d7307de85f660e491d49 Mon Sep 17 00:00:00 2001
+From: Bogdan Purcareata <bogdan.purcareata@freescale.com>
+Date: Mon, 8 Apr 2013 18:30:19 +0300
+Subject: [PATCH] lxc-0.9.0-disable-udhcp-from-busybox-template
+
+---
+ templates/lxc-busybox.in | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/templates/lxc-busybox.in b/templates/lxc-busybox.in
+index 1a8618b..8ba7cfe 100644
+--- a/templates/lxc-busybox.in
++++ b/templates/lxc-busybox.in
+@@ -120,7 +120,6 @@ EOF
+ #!/bin/sh
+ /bin/syslogd
+ /bin/mount -a
+-/bin/udhcpc
+ EOF
+ 
+   # executable

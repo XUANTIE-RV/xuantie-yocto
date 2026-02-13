@@ -1,0 +1,26 @@
+# Derived from the k3s install.sh's create_systemd_service_file() function
+[Unit]
+Description=Lightweight Kubernetes Agent
+Documentation=https://k3s.io
+Requires=containerd.service
+After=containerd.service
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=notify
+KillMode=control-group
+Delegate=yes
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+TimeoutStartSec=0
+Restart=always
+RestartSec=5s
+ExecStartPre=-/sbin/modprobe br_netfilter
+ExecStartPre=-/sbin/modprobe overlay
+ExecStart=/usr/local/bin/k3s agent
+ExecStopPost=/usr/local/bin/k3s-clean
+

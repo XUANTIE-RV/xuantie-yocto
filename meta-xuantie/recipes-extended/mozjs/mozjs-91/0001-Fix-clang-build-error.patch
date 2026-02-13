@@ -1,0 +1,28 @@
+From 5798fc642fa898c588e0512486b031ab39ae28dc Mon Sep 17 00:00:00 2001
+From: From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Fri, 6 Jun 2025 17:49:30 +0800
+Subject: [PATCH] Fix clang build error
+
+---
+ build/moz.configure/flags.configure | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/build/moz.configure/flags.configure b/build/moz.configure/flags.configure
+index cc8ca1e..76c9030 100644
+--- a/build/moz.configure/flags.configure
++++ b/build/moz.configure/flags.configure
+@@ -53,11 +53,6 @@ def new_pass_manager_flags(enabled, compiler, host, target, pgo, enable_fuzzing,
+         # Clang 10.0.0 hangs with some ubsan-inserted code constructs.
+         # This was fixed in 10.0.1 (https://llvm.org/pr45835)
+         return None
+-    if enabled and compiler.version >= "9.0.0":
+-        if compiler.type == "clang":
+-            return ["-fexperimental-new-pass-manager"]
+-        elif compiler.type == "clang-cl":
+-            return ["-Xclang", "-fexperimental-new-pass-manager"]
+ 
+ 
+ set_config("MOZ_NEW_PASS_MANAGER_FLAGS", new_pass_manager_flags)
+-- 
+2.25.1
+

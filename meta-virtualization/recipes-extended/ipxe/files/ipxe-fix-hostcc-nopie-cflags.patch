@@ -1,0 +1,22 @@
+diff --git a/src/Makefile.housekeeping b/src/Makefile.housekeeping
+index 1dd1479..13f44dd 100644
+--- a/Makefile.housekeeping
++++ b/Makefile.housekeeping
+@@ -454,7 +454,7 @@ endif
+ CFLAGS		+= $(WORKAROUND_CFLAGS) $(EXTRA_CFLAGS)
+ ASFLAGS		+= $(WORKAROUND_ASFLAGS) $(EXTRA_ASFLAGS)
+ LDFLAGS		+= $(WORKAROUND_LDFLAGS) $(EXTRA_LDFLAGS)
+-HOST_CFLAGS	+= -O2 -g
++HOST_CFLAGS	+= -O2 -g $(EXTRA_HOST_CFLAGS)
+ 
+ # Inhibit -Werror if NO_WERROR is specified on make command line
+ #
+@@ -1379,7 +1379,7 @@ endif # defined(BIN)
+ # The compression utilities
+ #
+ 
+-ZBIN_LDFLAGS := -llzma
++ZBIN_LDFLAGS := -llzma $(EXTRA_HOST_LDFLAGS)
+ 
+ $(ZBIN) : util/zbin.c $(MAKEDEPS)
+ 	$(QM)$(ECHO) "  [HOSTCC] $@"

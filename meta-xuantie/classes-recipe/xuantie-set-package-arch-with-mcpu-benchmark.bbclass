@@ -1,12 +1,10 @@
-PACKAGE_ARCH = "${XUANTIE_MCPU}"
-XUANTIE_PACKAGE_ARCH_SET = "YES"
+inherit xuantie-set-package-arch-with-mcpu
 
-XUANTIE_TUNE_CCARGS_GENERIC ?= " ${XUANTIE_TUNE_CCARGS}"
 
-XUANTIE_MCPU_GENERIC:riscv32 ?= "c9xx-riscv32"
-XUANTIE_MCPU_GENERIC:riscv64 ?= "c9xx-riscv64"
-
-CC = "riscv64-linux-gcc"
+CC  = "${CCACHE}${HOST_PREFIX}gcc"
+CXX = "${CCACHE}${HOST_PREFIX}g++"
+CC:toolchain-clang  = "${CCACHE}${HOST_PREFIX}clang"
+CXX:toolchain-clang = "${CCACHE}${HOST_PREFIX}clang++"
 CFLAGS = " -O2 "
 CFLAGS += " -Wno-implicit-int -Wno-deprecated-non-prototype -Wno-implicit-function-declaration -Wno-return-type -Wno-return-mismatch "
 LDFLAGS = " -O2 -static"
@@ -14,8 +12,11 @@ FULL_OPTIMIZATION = ""
 
 # Extend cpu configuration for different xuantie cpu
 python () {
-    if d.getVar('XUANTIE_MCPU') and d.getVar('XUANTIE_MCPU') != "c9xx-riscv32" and d.getVar('XUANTIE_MCPU') != "c9xx-riscv64":
+    if d.getVar('XUANTIE_TUNE_CCARGS_USE_MCPU') != 'NO':
         d.setVar('CC', d.getVar('CC') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
         d.setVar('CXX', d.getVar('CXX') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
+    else:
+        d.setVar('CC', d.getVar('CC') + " " + d.getVar('XUANTIE_TUNE_CCARGS_GENERIC'))
+        d.setVar('CXX', d.getVar('CXX') + " " + d.getVar('XUANTIE_TUNE_CCARGS_GENERIC'))
 }
 

@@ -1,0 +1,37 @@
+From 019d727990d41b5d7911895b75bcb021e4cca3c6 Mon Sep 17 00:00:00 2001
+From: Markus Volk <f_l_k@t-online.de>
+Date: Mon, 21 Aug 2023 10:23:08 +0200
+Subject: [PATCH] meson.build: allow crosscompiling gir and doc
+
+Upstream-Status: Inappropriate [oe specific]
+
+Signed-off-by: Markus Volk <f_l_k@t-online.de>
+---
+ meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 134feb6..a089f42 100644
+--- a/meson.build
++++ b/meson.build
+@@ -58,7 +58,7 @@ includedir = join_paths(prefix, get_option('includedir'))
+ 
+ # gobject introspection
+ gir = find_program('g-ir-scanner', required: get_option('introspection'))
+-enable_introspection = gir.found() and not meson.is_cross_build()
++enable_introspection = gir.found()
+ 
+ # vala
+ vapi_opt = get_option('vapi')
+@@ -73,7 +73,7 @@ endif
+ # gtk-doc
+ if not get_option('docs').disabled()
+   gtk_doc = find_program('gtkdoc-scan', required: get_option('docs'))
+-  enable_doc = gtk_doc.found() and not meson.is_cross_build()
++  enable_doc = gtk_doc.found()
+ else
+   enable_doc = false
+ endif
+-- 
+2.41.0
+

@@ -8,6 +8,9 @@ wrap_bin () {
     done >>"$script"
     printf 'exec $EXTERNAL_TOOLCHAIN_EXPORT_GCC/bin/riscv64-unknown-linux-gnu-%s "$@"\n' "$bin" >>"$script"
     chmod +x "$script"
+    if [ "${TARGET_PREFIX}" != "riscv64-linux-" ]; then
+        cp -rfd "$script" "${D}${bindir}/riscv64-linux-$bin"
+    fi
 }
 
 do_install () {

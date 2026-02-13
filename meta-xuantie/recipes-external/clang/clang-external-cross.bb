@@ -6,7 +6,7 @@ LICENSE = "CLOSED"
 
 clang_binaries = "clang clang++ clang-tidy ld.lld lld llvm-addr2line \
     llvm-ar llvm-as llvm-cov llvm-dwp llvm-nm llvm-objcopy llvm-objdump \
-    llvm-profdata llvm-ranlib llvm-readelf llvm-size llvm-strings llvm-strip"
+    llvm-profdata llvm-ranlib llvm-readelf llvm-size llvm-strings llvm-strip flang-new"
 
 
 inherit external-toolchain-cross

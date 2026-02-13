@@ -1,0 +1,29 @@
+From 9b7fb1346702d59af67435487254ef35940bc16a Mon Sep 17 00:00:00 2001
+From: "Hongzhi.Song" <hongzhi.song@windriver.com>
+Date: Wed, 23 Jan 2019 03:41:30 -0500
+Subject: [PATCH] datapatch/linux: Specify install path for kernel module
+
+Signed-off-by: Amy Fong <amy.fong@windriver.com>
+Signed-off-by: Hongzhi.Song <hongzhi.song@windriver.com>
+---
+ datapath/linux/Makefile.main.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/datapath/linux/Makefile.main.in b/datapath/linux/Makefile.main.in
+index 328bbfb..6dcc8d0 100644
+--- a/datapath/linux/Makefile.main.in
++++ b/datapath/linux/Makefile.main.in
+@@ -71,8 +71,8 @@ default:
+ 	$(MAKE) -C $(KSRC) $(if @KARCH@,ARCH=@KARCH@) M=$(builddir) modules
+ 
+ modules_install:
+-	$(MAKE) -C $(KSRC) $(if @KARCH@,ARCH=@KARCH@) M=$(builddir) modules_install
+-	/sbin/depmod `sed -n 's/#define UTS_RELEASE "\([^"]*\)"/\1/p' $(KSRC)/include/generated/utsrelease.h`
++	$(MAKE) -C $(KSRC) $(if @KARCH@,ARCH=@KARCH@) M=$(builddir) modules_install INSTALL_MOD_PATH=${INSTALL_MOD_PATH}
++	#/sbin/depmod `sed -n 's/#define UTS_RELEASE "\([^"]*\)"/\1/p' $(KSRC)/include/generated/utsrelease.h`
+ endif
+ 
+ # Much of the kernel build system in this file is derived from Intel's
+-- 
+2.8.1
+

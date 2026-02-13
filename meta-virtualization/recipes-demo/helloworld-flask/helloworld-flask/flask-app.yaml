@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+   name: @NAME@
+spec:
+   containers:
+   - name: @CONTAINERNAME@
+     image: @CONTAINERIMAGE@
+     ports:
+     - containerPort: @CONTAINERPORT@
+
+

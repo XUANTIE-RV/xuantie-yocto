@@ -1,0 +1,8 @@
+#!/bin/sh
+if test -c /dev/"$2"
+then
+     exec /sbin/getty $*
+else
+     exec sleep 3600d
+fi
+

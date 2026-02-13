@@ -1,6 +1,6 @@
 SUMMARY = "chromium"
 DESCRIPTION = "chromium"
-HOMEPAGE = "https://codeup.aliyun.com/t-head_linux_sdk/th1520_linux_sdk_private/"
+HOMEPAGE = "https://gitee.com/xuantie-yocto/"
 LICENSE = "CLOSED"
 #LIC_FILES_CHKSUM = ""
 

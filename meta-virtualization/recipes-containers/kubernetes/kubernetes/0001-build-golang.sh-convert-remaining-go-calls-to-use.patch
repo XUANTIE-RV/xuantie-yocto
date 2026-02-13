@@ -1,0 +1,48 @@
+From 9973a66665992c49593595ae1eb70848907ea6a9 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Wed, 12 Aug 2020 16:01:49 +0000
+Subject: [PATCH] build/golang.sh: convert remaining 'go' calls to use
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ hack/lib/golang.sh | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Index: kubernetes-v1.24.0+git8b1b4db3834ddf7cf1b97137180f413cb9e2186f/hack/lib/golang.sh
+===================================================================
+--- kubernetes-v1.24.0+git8b1b4db3834ddf7cf1b97137180f413cb9e2186f.orig/hack/lib/golang.sh
++++ kubernetes-v1.24.0+git8b1b4db3834ddf7cf1b97137180f413cb9e2186f/hack/lib/golang.sh
+@@ -652,7 +652,7 @@
+         kube::golang::create_coverage_dummy_test "${package}"
+         kube::util::trap_add "kube::golang::delete_coverage_dummy_test \"${package}\"" EXIT
+ 
+-        go test -c -o "$(kube::golang::outfile_for_binary "${package}" "${platform}")" \
++        $GO test -c -o "$(kube::golang::outfile_for_binary "${package}" "${platform}")" \
+           -covermode count \
+           -coverpkg k8s.io/...,k8s.io/kubernetes/vendor/k8s.io/... \
+           "${build_args[@]}" \
+@@ -664,13 +664,13 @@
+     done
+     if [[ "${#uncovered[@]}" != 0 ]]; then
+       V=2 kube::log::info "Building ${uncovered[*]} without coverage..."
+-      go install "${build_args[@]}" "${uncovered[@]}"
++      $GO install "${build_args[@]}" "${uncovered[@]}"
+     else
+       V=2 kube::log::info "Nothing to build without coverage."
+      fi
+    else
+     V=2 kube::log::info "Coverage is disabled."
+-    go install "${build_args[@]}" "$@"
++    $GO install "${build_args[@]}" "$@"
+    fi
+ }
+ 
+@@ -729,7 +729,7 @@
+     testpkg=$(dirname "${test}")
+ 
+     mkdir -p "$(dirname "${outfile}")"
+-    go test -c \
++    $GO test -c \
+       ${goflags:+"${goflags[@]}"} \
+       -gcflags="${gogcflags}" \
+       -asmflags="${goasmflags}" \

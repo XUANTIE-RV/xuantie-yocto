@@ -1,0 +1,73 @@
+change eventhandlers nagioscmd path
+
+Modify nagios.cmd path to the right location
+at "/var/nagios/rw/nagios.cmd"
+
+Signed-off-by: Rickard Engberg <rickard.engberg@windriver.com>
+Signed-off-by: Vu Tran <vu.tran@windriver.com>
+
+diff --git a/contrib/eventhandlers/disable_active_service_checks b/contrib/eventhandlers/disable_active_service_checks
+index c01f2be..2c2880b 100755
+--- a/contrib/eventhandlers/disable_active_service_checks
++++ b/contrib/eventhandlers/disable_active_service_checks
+@@ -16,7 +16,7 @@
+ 
+ printfcmd="/usr/bin/printf"
+ 
+-CommandFile="/usr/local/nagios/var/rw/nagios.cmd"
++CommandFile="/var/nagios/rw/nagios.cmd"
+ 
+ # get the current date/time in seconds since UNIX epoch
+ datetime=`date +%s`
+diff --git a/contrib/eventhandlers/disable_notifications b/contrib/eventhandlers/disable_notifications
+index a92bb7a..b2c9c06 100755
+--- a/contrib/eventhandlers/disable_notifications
++++ b/contrib/eventhandlers/disable_notifications
+@@ -14,7 +14,7 @@
+ 
+ printfcmd="/usr/bin/printf"
+ 
+-CommandFile="/usr/local/nagios/var/rw/nagios.cmd"
++CommandFile="/var/nagios/rw/nagios.cmd"
+ 
+ # get the current date/time in seconds since UNIX epoch
+ datetime=`date +%s`
+diff --git a/contrib/eventhandlers/enable_active_service_checks b/contrib/eventhandlers/enable_active_service_checks
+index 423c8d9..631fa00 100755
+--- a/contrib/eventhandlers/enable_active_service_checks
++++ b/contrib/eventhandlers/enable_active_service_checks
+@@ -16,7 +16,7 @@
+ 
+ printfcmd="/usr/bin/printf"
+ 
+-CommandFile="/usr/local/nagios/var/rw/nagios.cmd"
++CommandFile="/var/nagios/rw/nagios.cmd"
+ 
+ # get the current date/time in seconds since UNIX epoch
+ datetime=`date +%s`
+diff --git a/contrib/eventhandlers/enable_notifications b/contrib/eventhandlers/enable_notifications
+index 0d3f13d..2cc0b47 100755
+--- a/contrib/eventhandlers/enable_notifications
++++ b/contrib/eventhandlers/enable_notifications
+@@ -14,7 +14,7 @@
+ 
+ printfcmd="/usr/bin/printf"
+ 
+-CommandFile="/usr/local/nagios/var/rw/nagios.cmd"
++CommandFile="/var/nagios/rw/nagios.cmd"
+ 
+ # get the current date/time in seconds since UNIX epoch
+ datetime=`date +%s`
+diff --git a/contrib/eventhandlers/submit_check_result b/contrib/eventhandlers/submit_check_result
+index 5d89f31..790a988 100755
+--- a/contrib/eventhandlers/submit_check_result
++++ b/contrib/eventhandlers/submit_check_result
+@@ -24,7 +24,7 @@
+  
+ echocmd="/bin/echo"
+  
+-CommandFile="/usr/local/nagios/var/rw/nagios.cmd"
++CommandFile="/var/nagios/rw/nagios.cmd"
+  
+ # get the current date/time in seconds since UNIX epoch
+ datetime=`date +%s`

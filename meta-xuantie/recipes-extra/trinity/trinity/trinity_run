@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Check if the user executing the script is the root user
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Please execute this script with root user privileges."
+  exit 1
+fi
+
+print_help() {
+    echo "Usage: $0 [test_group]"
+    echo "test_group can be one of: { FS | IO | THREAD | MEMORY | DEVICE | SIGNAL }"
+    echo "ERROR! Missing Args !ERROR"
+    exit 1
+}
+
+case $1 in
+  FS)
+    GROUP=fs
+    TESTLIST="setxattr lsetxattr fsetxattr getxattr lgetxattr fgetxattr listxattr llistxattr flistxattr removexattr lremovexattr fremovexattr openat \
+    readlinkat symlinkat linkat mknodat mkdirat unlinkat renameat2 getcwd chdir fchdir chroot dup dup3 fcntl flock pipe2 inotify_init1 inotify_add_watch inotify_rm_watch \
+    statfs fstatfs fstat newfstat newfstatat fchmod fchmodat fchownat fchown faccessat truncate ftruncate fallocate umask fadvise64_64"
+    ;;
+  IO)
+    GROUP=io
+    TESTLIST="io_setup io_destroy io_submit io_cancel io_getevents eventfd2 inotify_init1 inotify_add_watch inotify_rm_watch timerfd_create timerfd_settime timerfd_gettime \
+    timer_create timer_gettime timer_settime timer_getoverrun timer_delete clock_settime clock_gettime clock_getres clock_nanosleep \
+    signalfd4 rt_sigaction rt_sigprocmask rt_sigpending rt_sigtimedwait rt_sigsuspend"
+    ;;
+  THREAD)
+    GROUP=thread
+    TESTLIST="fork clone execve execveat exit exit_group wait4 waitid getpid getppid gettid \
+    set_tid_address futex set_robust_list get_robust_list sched_setparam sched_setscheduler sched_getscheduler sched_getparam sched_setaffinity sched_getaffinity sched_yield unshare setns capget capset \
+    setgid setuid setpgid getpgid getppid getpgrp setsid getsid setgroups getgroups setregid setreuid setresuid getresuid setresgid getresgid "
+    ;;
+  MEMORY)
+    GROUP=memory
+    TESTLIST="mmap munmap mremap brk mprotect msync mlock munlock mlockall munlockall shmget shmat shmdt \
+    remap_file_pages mbind get_mempolicy set_mempolicy migrate_pages move_pages"
+    ;;
+  DEVICE)
+    GROUP=device
+    TESTLIST="ioctl ioprio_set ioprio_get swapon swapoff mount umount pivot_root setrlimit getrlimit adjtimex capget capset prlimit64"
+    ;;
+  SIGNAL)
+    GROUP=signal
+    TESTLIST="socket bind listen accept connect sendmsg recvmsg setsockopt getsockopt getsockname getpeername shutdown \
+    mq_open mq_unlink mq_timedsend mq_timedreceive mq_notify mq_getsetattr semget semctl semtimedop semop shmctl shmdt shmget"
+    ;;
+  *)
+    print_help
+    ;;
+esac
+
+NEWUSER="newuser"
+USERID="1001"
+GROUPID="100"
+USERGROUP="users"
+HOMEDIR="/home/$NEWUSER"
+SHELL="/bin/bash"
+
+# Create user home directory
+mkdir -p $HOMEDIR
+
+# Create users, add them to the users group, and set user information
+echo "$NEWUSER:x:$USERID:$GROUPID::${HOMEDIR}:${SHELL}" >> /etc/passwd
+
+# Set User Password
+echo "$NEWUSER::::::::" >> /etc/shadow
+
+# Add the user to the users group
+if grep -q "^$USERGROUP:" /etc/group; then
+  # The group already exists, add the user to the group
+  sed -i "/^$USERGROUP:/ s/$/,$NEWUSER/" /etc/group
+else
+  # The group does not exist, create the group and add the user
+  echo "$USERGROUP:x:$GROUPID:$NEWUSER" >> /etc/group
+fi
+
+# Set the owner and permissions of the home directory
+chown $NEWUSER:$USERGROUP $HOMEDIR
+chmod 700 $HOMEDIR
+
+# Create default bash configuration files and set permissions
+echo "# .bash_profile" > ${HOMEDIR}/.bash_profile
+echo "if [ -f ~/.bashrc ]; then" >> ${HOMEDIR}/.bash_profile
+echo "    . ~/.bashrc" >> ${HOMEDIR}/.bash_profile
+echo "fi" >> ${HOMEDIR}/.bash_profile
+
+# Add trinity commands to .bashrc
+echo "# .bashrc" > ${HOMEDIR}/.bashrc
+
+read -r -a test_array <<< "$TESTLIST"
+for test in "${test_array[@]}"; do
+  echo "trinity -c $test -N 10000" >> ${HOMEDIR}/.bashrc
+done
+
+# Set file ownership and permissions
+chown $NEWUSER:$USERGROUP ${HOMEDIR}/.bash_profile ${HOMEDIR}/.bashrc
+chmod 644 ${HOMEDIR}/.bash_profile ${HOMEDIR}/.bashrc
+
+# Confirm the permissions of the /home directory
+chmod 755 /home
+
+# Try to switch to the new user
+echo "Steps completed. Now trying to log in as the $NEWUSER user:"
+su - $NEWUSER

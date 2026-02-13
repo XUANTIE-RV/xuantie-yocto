@@ -1,0 +1,24 @@
+From 89bf4b64e810e174068e7861490e6d6ab2d14854 Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <mark.asselstine@windriver.com>
+Date: Mon, 10 Sep 2018 15:01:54 -0400
+Subject: [PATCH] systemd: ensure /var/lib/lxcfs exists
+
+If the directory doesn't exist the service will fail to start.
+
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+---
+ config/init/systemd/lxcfs.service | 1 +
+ 1 file changed, 1 insertion(+)
+
+Index: lxcfs-4.0.7/config/init/systemd/lxcfs.service
+===================================================================
+--- lxcfs-4.0.7.orig/config/init/systemd/lxcfs.service
++++ lxcfs-4.0.7/config/init/systemd/lxcfs.service
+@@ -5,6 +5,7 @@
+ Documentation=man:lxcfs(1)
+ 
+ [Service]
++ExecStartPre=-/bin/mkdir /var/lib/lxcfs
+ ExecStart=/usr/bin/lxcfs /usr/local/var/lib/lxcfs
+ KillMode=process
+ Restart=on-failure

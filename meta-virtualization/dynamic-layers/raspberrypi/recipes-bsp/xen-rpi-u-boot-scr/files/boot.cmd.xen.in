@@ -1,0 +1,58 @@
+# Set the fdt address to what came from the GPU, so we can edit it
+fdt addr ${fdt_addr}
+
+# Pull the bootargs that the GPU has edited
+fdt get value bootargs /chosen bootargs
+
+# Set module load addresses
+setenv xen_loadaddr     "0x00200000"
+setenv kernel_loadaddr  "0x00400000"
+
+# Add some space to the fdt so we can edit it
+fdt resize 0x1000
+echo Add boot arguments for Xen
+fdt set /chosen xen,xen-bootargs "console=dtuart dtuart=/soc/serial@7e215040 dom0_mem='@@RPI_DOM0_MEM@@' @@RPI_DEBUG_XEN_ARGS@@"
+
+echo Add a dom0 node to chosen to put Linux boot information in
+fdt mknode /chosen dom0
+
+echo Set this for the Linux boot command
+fdt set /chosen/dom0 compatible "multiboot,module"
+
+# Tell Xen where PCI is
+fdt set /scb/pcie@7d500000 device_type "pci"
+# Workaround to fix:
+# "Unable to retrieve address 0 for /scb/pcie@7d500000/pci@1,0/usb@1,0"
+fdt rm /scb/pcie@7d500000/pci@1,0/usb@1,0
+
+echo Delay to allow the MMC card to be ready
+sleep 1
+
+# Retrieve PARTUUID for the rootfs partition of the sdcard
+part uuid mmc 1:2 rootfs_partuuid
+
+echo Add boot arguments for dom0
+setenv dom0_bootargs "console=hvc0 earlycon=xenboot debug root=PARTUUID=${rootfs_partuuid} rootwait"
+fdt set /chosen xen,dom0-bootargs \"${dom0_bootargs}\"
+
+echo Load Xen into memory
+fatload mmc 1:1 ${xen_loadaddr} xen
+echo Xen loaded, size: 0x$filesize
+
+echo Load Linux kernel into memory
+fatload mmc 1:1 ${kernel_loadaddr} Image
+setenv kernel_size 0x$filesize
+echo Linux loaded, size: 0x$filesize
+
+echo Set the address and size for the Linux kernel so Xen can pick it up
+fdt set /chosen/dom0 reg <${kernel_loadaddr} ${kernel_size}>
+
+# Define the size and address cells
+fdt set /chosen '#size-cells' <1>
+fdt set /chosen '#address-cells' <1>
+
+# Display the chosen fdt section - can be important for debugging
+fdt print /chosen
+
+echo Boot Xen
+booti ${xen_loadaddr} - ${fdt_addr}

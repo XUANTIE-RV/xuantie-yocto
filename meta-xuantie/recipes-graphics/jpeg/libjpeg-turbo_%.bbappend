@@ -1,0 +1,1 @@
+inherit xuantie-prebuilt-src

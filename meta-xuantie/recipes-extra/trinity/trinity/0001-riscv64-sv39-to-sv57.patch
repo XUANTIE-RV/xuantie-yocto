@@ -1,0 +1,25 @@
+From 76070b3d648f0c9fd247a9121ee26560c6799663 Mon Sep 17 00:00:00 2001
+From: ruiyuan.sw <ruiyuan.sw@alibaba-inc.com>
+Date: Tue, 10 Dec 2024 14:20:31 +0000
+Subject: [PATCH] sv39 -> sv57
+
+---
+ include/arch-riscv64.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/arch-riscv64.h b/include/arch-riscv64.h
+index b1a87805..466fc32a 100644
+--- a/include/arch-riscv64.h
++++ b/include/arch-riscv64.h
+@@ -1,7 +1,7 @@
+ #pragma once
+ 
+ #define PAGE_OFFSET		0xffffffc000000000UL
+-#define TASK_SIZE		(1UL << 39)
++#define TASK_SIZE		(1UL << 57)
+ #define MODULE_ADDR		(PAGE_OFFSET - 0x04000000)
+ #define KERNEL_ADDR		(PAGE_OFFSET + 0x80000)
+ 
+-- 
+2.25.1
+

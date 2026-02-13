@@ -1,0 +1,29 @@
+From 9c27a12dc0bc62b95d7ecf003e7d241b36c3f2e6 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Tue, 30 Jun 2020 23:35:05 -0400
+Subject: [PATCH] build: use  to use cross go compiler
+
+We shouldn't be invoking 'go' as the compiler, but instead use
+${GO} which tracks our cross build go compiler for the architecture.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 4635c6ec..a95e860e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -88,7 +88,7 @@ FORCE:
+ # Build a binary from a cmd.
+ bin/%: cmd/% FORCE
+ 	@echo "$(WHALE) $@${BINARY_SUFFIX}"
+-	@go build ${GO_GCFLAGS} ${GO_BUILD_FLAGS} -o $@${BINARY_SUFFIX} ${GO_LDFLAGS} ${GO_TAGS}  ./$<
++	@${GO} build ${GO_GCFLAGS} ${GO_BUILD_FLAGS} -o $@${BINARY_SUFFIX} ${GO_LDFLAGS} ${GO_TAGS}  ./$<
+ 
+ binaries: $(BINARIES) ## build binaries
+ 	@echo "$(WHALE) $@"
+-- 
+2.19.1
+

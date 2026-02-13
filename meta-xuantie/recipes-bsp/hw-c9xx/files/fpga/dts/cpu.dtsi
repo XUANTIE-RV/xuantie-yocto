@@ -12,6 +12,7 @@
 			riscv,isa = "rv64imacsu";
 			mmu-type = "riscv,sv39";
 			riscv,cbom-block-size = <64>;
+			riscv,cboz-block-size = <64>;
 			cpu0_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -26,6 +27,7 @@
 			riscv,isa = "rv64imacsu";
 			mmu-type = "riscv,sv39";
 			riscv,cbom-block-size = <64>;
+			riscv,cboz-block-size = <64>;
 			cpu1_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -40,6 +42,7 @@
 			riscv,isa = "rv64imacsu";
 			mmu-type = "riscv,sv39";
 			riscv,cbom-block-size = <64>;
+			riscv,cboz-block-size = <64>;
 			cpu2_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -54,6 +57,7 @@
 			riscv,isa = "rv64imacsu";
 			mmu-type = "riscv,sv39";
 			riscv,cbom-block-size = <64>;
+			riscv,cboz-block-size = <64>;
 			cpu3_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -68,6 +72,7 @@
 			riscv,isa = "rv64imacsu";
 			mmu-type = "riscv,sv39";
 			riscv,cbom-block-size = <64>;
+			riscv,cboz-block-size = <64>;
 			cpu4_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -82,6 +87,7 @@
 			riscv,isa = "rv64imacsu";
 			mmu-type = "riscv,sv39";
 			riscv,cbom-block-size = <64>;
+			riscv,cboz-block-size = <64>;
 			cpu5_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -96,6 +102,7 @@
 			riscv,isa = "rv64imacsu";
 			mmu-type = "riscv,sv39";
 			riscv,cbom-block-size = <64>;
+			riscv,cboz-block-size = <64>;
 			cpu6_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -110,6 +117,7 @@
 			riscv,isa = "rv64imacsu";
 			mmu-type = "riscv,sv39";
 			riscv,cbom-block-size = <64>;
+			riscv,cboz-block-size = <64>;
 			cpu7_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";

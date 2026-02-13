@@ -1,0 +1,101 @@
+From 29f1e556c1e7c5ab195983552387e1410e0b5b6c Mon Sep 17 00:00:00 2001
+From: Kefu Chai <kchai@redhat.com>
+Date: Tue, 17 Aug 2021 16:25:32 +0800
+Subject: [PATCH 3/6] kv/rocksdb_cache: define DeleterFn function pointer type
+
+this paves the road to rocksdb v6.22.1 compatible implementation
+
+Signed-off-by: Kefu Chai <kchai@redhat.com>
+
+Upstream-Status: Backport [c7a6c74b62dfcc96f676eb6d8844852c4705b66f]
+
+Signed-off-by: Sakib Sajal <sakib.sajal@windriver.com>
+---
+ src/kv/rocksdb_cache/BinnedLRUCache.cc | 2 +-
+ src/kv/rocksdb_cache/BinnedLRUCache.h  | 4 ++--
+ src/kv/rocksdb_cache/ShardedCache.cc   | 2 +-
+ src/kv/rocksdb_cache/ShardedCache.h    | 6 ++++--
+ 4 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/src/kv/rocksdb_cache/BinnedLRUCache.cc b/src/kv/rocksdb_cache/BinnedLRUCache.cc
+index 2391a7f6..4e5f4dd4 100644
+--- a/src/kv/rocksdb_cache/BinnedLRUCache.cc
++++ b/src/kv/rocksdb_cache/BinnedLRUCache.cc
+@@ -344,7 +344,7 @@ bool BinnedLRUCacheShard::Release(rocksdb::Cache::Handle* handle, bool force_era
+ 
+ rocksdb::Status BinnedLRUCacheShard::Insert(const rocksdb::Slice& key, uint32_t hash, void* value,
+                              size_t charge,
+-                             void (*deleter)(const rocksdb::Slice& key, void* value),
++                             DeleterFn deleter,
+                              rocksdb::Cache::Handle** handle, rocksdb::Cache::Priority priority) {
+   auto e = new BinnedLRUHandle();
+   rocksdb::Status s;
+diff --git a/src/kv/rocksdb_cache/BinnedLRUCache.h b/src/kv/rocksdb_cache/BinnedLRUCache.h
+index 96023ce2..b0fb7148 100644
+--- a/src/kv/rocksdb_cache/BinnedLRUCache.h
++++ b/src/kv/rocksdb_cache/BinnedLRUCache.h
+@@ -56,7 +56,7 @@ std::shared_ptr<rocksdb::Cache> NewBinnedLRUCache(
+ 
+ struct BinnedLRUHandle {
+   void* value;
+-  void (*deleter)(const rocksdb::Slice&, void* value);
++  DeleterFn deleter;
+   BinnedLRUHandle* next_hash;
+   BinnedLRUHandle* next;
+   BinnedLRUHandle* prev;
+@@ -189,7 +189,7 @@ class alignas(CACHE_LINE_SIZE) BinnedLRUCacheShard : public CacheShard {
+   // Like Cache methods, but with an extra "hash" parameter.
+   virtual rocksdb::Status Insert(const rocksdb::Slice& key, uint32_t hash, void* value,
+                         size_t charge,
+-                        void (*deleter)(const rocksdb::Slice& key, void* value),
++                        DeleterFn deleter,
+                         rocksdb::Cache::Handle** handle,
+                         rocksdb::Cache::Priority priority) override;
+   virtual rocksdb::Cache::Handle* Lookup(const rocksdb::Slice& key, uint32_t hash) override;
+diff --git a/src/kv/rocksdb_cache/ShardedCache.cc b/src/kv/rocksdb_cache/ShardedCache.cc
+index 8e08deb8..ef3b3b98 100644
+--- a/src/kv/rocksdb_cache/ShardedCache.cc
++++ b/src/kv/rocksdb_cache/ShardedCache.cc
+@@ -44,7 +44,7 @@ void ShardedCache::SetStrictCapacityLimit(bool strict_capacity_limit) {
+ }
+ 
+ rocksdb::Status ShardedCache::Insert(const rocksdb::Slice& key, void* value, size_t charge,
+-                            void (*deleter)(const rocksdb::Slice& key, void* value),
++                            DeleterFn deleter,
+                             rocksdb::Cache::Handle** handle, Priority priority) {
+   uint32_t hash = HashSlice(key);
+   return GetShard(Shard(hash))
+diff --git a/src/kv/rocksdb_cache/ShardedCache.h b/src/kv/rocksdb_cache/ShardedCache.h
+index a16cf561..674e5322 100644
+--- a/src/kv/rocksdb_cache/ShardedCache.h
++++ b/src/kv/rocksdb_cache/ShardedCache.h
+@@ -25,6 +25,8 @@
+ 
+ namespace rocksdb_cache {
+ 
++using DeleterFn = void (*)(const rocksdb::Slice& key, void* value);
++
+ // Single cache shard interface.
+ class CacheShard {
+  public:
+@@ -33,7 +35,7 @@ class CacheShard {
+ 
+   virtual rocksdb::Status Insert(const rocksdb::Slice& key, uint32_t hash, void* value,
+                                  size_t charge,
+-                                 void (*deleter)(const rocksdb::Slice& key, void* value),
++                                 DeleterFn deleter,
+                                  rocksdb::Cache::Handle** handle, rocksdb::Cache::Priority priority) = 0;
+   virtual rocksdb::Cache::Handle* Lookup(const rocksdb::Slice& key, uint32_t hash) = 0;
+   virtual bool Ref(rocksdb::Cache::Handle* handle) = 0;
+@@ -59,7 +61,7 @@ class ShardedCache : public rocksdb::Cache, public PriorityCache::PriCache {
+   // rocksdb::Cache
+   virtual const char* Name() const override = 0;
+   virtual rocksdb::Status Insert(const rocksdb::Slice& key, void* value, size_t charge,
+-                                 void (*deleter)(const rocksdb::Slice& key, void* value),
++                                 DeleterFn,
+                                  rocksdb::Cache::Handle** handle, Priority priority) override;
+   virtual rocksdb::Cache::Handle* Lookup(const rocksdb::Slice& key, rocksdb::Statistics* stats) override;
+   virtual bool Ref(rocksdb::Cache::Handle* handle) override;
+-- 
+2.33.0
+

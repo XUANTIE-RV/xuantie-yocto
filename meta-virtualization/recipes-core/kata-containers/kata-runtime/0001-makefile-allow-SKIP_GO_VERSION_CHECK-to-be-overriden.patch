@@ -1,0 +1,26 @@
+From 224fedda76bb1b741d09a129a5b43a85cb9ce182 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Wed, 7 Oct 2020 23:29:52 -0400
+Subject: [PATCH] makefile: allow SKIP_GO_VERSION_CHECK to be overriden
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 669c1bd1..4c40278a 100644
+--- a/src/github.com/kata-containers/runtime/Makefile
++++ b/src/github.com/kata-containers/runtime/Makefile
+@@ -12,7 +12,7 @@ for file in /etc/os-release /usr/lib/os-release; do \
+     fi \
+ done)
+ 
+-SKIP_GO_VERSION_CHECK=
++#SKIP_GO_VERSION_CHECK=
+ include golang.mk
+ 
+ #Get ARCH.
+-- 
+2.19.1
+

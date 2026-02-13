@@ -1,0 +1,49 @@
+From a79bf6caf915d2a00a52a73033b1c903f2df894f Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <mark.asselstine@windriver.com>
+Date: Wed, 10 Mar 2021 11:17:37 +0800
+Subject: [PATCH 1/2] systemd: update tool paths
+
+We are using the rhel files but we install our tools in a slightly
+different path, update accordingly.
+
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+---
+ rhel/usr_lib_systemd_system_ovs-vswitchd.service.in | 4 ++--
+ rhel/usr_lib_systemd_system_ovsdb-server.service    | 8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+Index: git/rhel/usr_lib_systemd_system_ovs-vswitchd.service.in
+===================================================================
+--- git.orig/rhel/usr_lib_systemd_system_ovs-vswitchd.service.in
++++ git/rhel/usr_lib_systemd_system_ovs-vswitchd.service.in
+@@ -17,8 +17,8 @@
+ EnvironmentFile=-/run/openvswitch.useropts
+ LimitSTACK=2M
+ @begin_dpdk@
+-ExecStartPre=-/bin/sh -c '/usr/bin/chown :$${OVS_USER_ID##*:} /dev/hugepages'
+-ExecStartPre=-/usr/bin/chmod 0775 /dev/hugepages
++ExecStartPre=-/bin/sh -c '/bin/chown :$${OVS_USER_ID##*:} /dev/hugepages'
++ExecStartPre=-/bin/chmod 0775 /dev/hugepages
+ @end_dpdk@
+ ExecStart=/usr/share/openvswitch/scripts/ovs-ctl \
+           --no-ovsdb-server --no-monitor --system-id=random \
+Index: git/rhel/usr_lib_systemd_system_ovsdb-server.service
+===================================================================
+--- git.orig/rhel/usr_lib_systemd_system_ovsdb-server.service
++++ git/rhel/usr_lib_systemd_system_ovsdb-server.service
+@@ -16,11 +16,11 @@
+ # Environment is reloaded for each Exec*, make sure to
+ # remove openvswitch.useropts first to reload a fresh
+ # OVS_USER_ID from default.conf or sysconfig.
+-ExecStartPre=/usr/bin/rm -f /run/openvswitch.useropts
++ExecStartPre=/bin/rm -f /run/openvswitch.useropts
+ 
+-ExecStartPre=-/usr/bin/chown ${OVS_USER_ID} /run/openvswitch /var/log/openvswitch
+-ExecStartPre=/bin/sh -c '/usr/bin/echo "OVS_USER_ID=${OVS_USER_ID}" > /run/openvswitch.useropts'
+-ExecStartPre=/bin/sh -c 'if [ "$${OVS_USER_ID/:*/}" != "root" ]; then /usr/bin/echo "OVS_USER_OPT=--ovs-user=${OVS_USER_ID}" >> /run/openvswitch.useropts; fi'
++ExecStartPre=-/bin/chown ${OVS_USER_ID} /run/openvswitch /var/log/openvswitch
++ExecStartPre=/bin/sh -c '/bin/echo "OVS_USER_ID=${OVS_USER_ID}" > /run/openvswitch.useropts'
++ExecStartPre=/bin/sh -c 'if [ "$${OVS_USER_ID/:*/}" != "root" ]; then /bin/echo "OVS_USER_OPT=--ovs-user=${OVS_USER_ID}" >> /run/openvswitch.useropts; fi'
+ ExecStart=/usr/share/openvswitch/scripts/ovs-ctl \
+           --no-ovs-vswitchd --no-monitor --system-id=random \
+           ${OVS_USER_OPT} \

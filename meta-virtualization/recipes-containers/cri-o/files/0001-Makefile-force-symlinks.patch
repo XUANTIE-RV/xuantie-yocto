@@ -1,0 +1,26 @@
+From 52fd70ae7d82dfa0db46ff7ba67cfb4868074368 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Tue, 7 Jun 2022 15:42:22 -0400
+Subject: [PATCH] Makefile: force symlinks
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/import/Makefile b/src/import/Makefile
+index 8abc8619d..d1a98f3d3 100644
+--- a/src/import/Makefile
++++ b/src/import/Makefile
+@@ -141,7 +141,7 @@ help:
+ .gopathok:
+ ifeq ("$(wildcard $(GOPKGDIR))","")
+ 	mkdir -p "$(GOPKGBASEDIR)"
+-	ln -s "$(CURDIR)" "$(GOPKGDIR)"
++	ln -sf "$(CURDIR)" "$(GOPKGDIR)"
+ endif
+ 	if [ ! -d "$(GOPATH)" ]; then mkdir -p $(GOPATH); fi
+ 	touch "$(GOPATH)/.gopathok"
+-- 
+2.19.1
+

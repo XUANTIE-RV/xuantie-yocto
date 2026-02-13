@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+cd $(dirname "$(realpath "$0")")
+
+for test_file in $(ls tests/* | sort); do
+    if [ -f "$test_file" ] && [ -x "$test_file" ]; then
+        echo "run: $test_file"
+        "$test_file"
+    fi
+done
+echo "PASS: isa-l"

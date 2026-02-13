@@ -1,0 +1,23 @@
+From 12f3a54801e15f3bdd5222ca1487f2fe36141c5d Mon Sep 17 00:00:00 2001
+From: Martin Jansa <Martin.Jansa@gmail.com>
+Date: Fri, 14 May 2021 06:30:18 -0700
+Subject: [PATCH] cpp/Makefile: respect LDFLAGS when building bcc-cpp
+
+Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+---
+ cpp/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cpp/Makefile b/cpp/Makefile
+index 0ea43cc..303b43c 100644
+--- a/cpp/Makefile
++++ b/cpp/Makefile
+@@ -3,7 +3,7 @@ CFLAGS=-Wall -Wstrict-prototypes
+ all: bcc-cpp
+ 
+ bcc-cpp: main.o cpp.o hash.o token1.o token2.o
+-	$(CC) $(CFLAGS) -o bcc-cpp main.o cpp.o hash.o token1.o token2.o
++	$(CC) $(CFLAGS) $(LDFLAGS) -o bcc-cpp main.o cpp.o hash.o token1.o token2.o
+ 
+ clean realclean:
+ 	rm -f bcc-cpp main.o cpp.o hash.o token1.o token2.o tmp.h

@@ -19,34 +19,38 @@ if [ "$#" -eq 0 ] || \
 	echo "Usage:  $0 <--target_remote=target_ip:port> [OPTION...]"
 	echo ""
 	echo "Examples:"
-	echo "  run_fpga.sh --target_remote=192.168.0.1:1025"
-	echo "  run_fpga.sh --target_remote=192.168.0.2:1025 \\"
+	echo "  run_fpga.sh --target_remote=127.0.0.1:1025"
+	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 \\"
+	echo "              --rva_profile=rva20  \\"
 	echo "              --abi_mode=rv64_std  \\"
 	echo "              --enable_uboot=true \\"
-#	echo "              --enable_optee=false \\"
-	echo "              --opensbi_ver=1.3  \\"
+	echo "              --opensbi_ver=1.7  \\"
 	echo "              --kernel_ver=6.6 \\"
 	echo "              --kernel_cfg=debug \\"
 	echo "              --rootfs_type=lite \\"
-#	echo "              --restore_base_addr=0x60000000"
-	echo "  run_fpga.sh --target_remote=192.168.0.1:1025 --system=xuantie_rv64_std_kernel6_6_kcdefault"
+	echo "  eg: for rva23 profile(C930), we like to use  -  "
+	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 --system=xuantie_rva23_std_kernel6_6_kcdefault"
+	echo "  eg: for rva20 profile(C920/C908/C907/C906 RV64 series), we like to use  -  "
+	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 --system=xuantie_rv64_std_kernel6_6_kcdefault"
 	echo ""
 	echo "[OPTION] format is: [--KEY=VALUE] defines below, the 1st value is DEFAULT."
 	echo "     --target_remote      value: 192.168.0.1:1234"
-	echo "     --abi_mode           value: rv64_std | rv32_std | rv32_comptible | rv32_new"
+	echo "     --rva_profile        value: rva23 | rva20"
+	echo "     --abi_mode           value: rv64_std | rv32_std "
 	echo "     --enable_uboot       value: false | true"
-#	echo "     --enable_optee     value: false | true"
-	echo "     --opensbi_ver        value: 1.3 | 0.9"
+	echo "     --enable_2core       value: false | true"
+	echo "     --opensbi_ver        value: 1.7 | 1.6 | 1.5 | 1.3 | 0.9"
 	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c906fdv"
 	echo "     --kernel_cfg         value: debug | default"
 	echo "     --rootfs_type        value: lite"
 	echo "     --skip_load_image    value: false | true"
-#	echo "     --restore_base_addr  value: 0x60000000"
 	echo "     --system             value: see below list"
 	for item in "${system_alias[@]}"
 	do
 		echo "                                 $item"
 	done
+	echo "     --enable_load_image_backdoor  value: false | true"
+	echo "     --haps_sn            value: K080000 | etc."
 	echo "     --simulate_run       value: false | true"
 	echo ""
 	exit 0
@@ -59,16 +63,18 @@ declare -a params_order
 
 # set default values
 params_array["target_remote"]="192.168.0.1:1025"; params_order+=("target_remote")
+params_array["rva_profile"]="rva20";              params_order+=("rva_profile")
 params_array["abi_mode"]="rv64_std";              params_order+=("abi_mode")
 params_array["enable_uboot"]="false";             params_order+=("enable_uboot")
-#params_array["enable_optee"]="false";           params_order+=("enable_optee")
-params_array["opensbi_ver"]="1.3";                params_order+=("opensbi_ver")
+params_array["enable_2core"]="false";             params_order+=("enable_2core")
+params_array["opensbi_ver"]="1.7";                params_order+=("opensbi_ver")
 params_array["kernel_ver"]="6.6";                 params_order+=("kernel_ver")
 params_array["kernel_cfg"]="debug";               params_order+=("kernel_cfg")
 params_array["rootfs_type"]="lite";               params_order+=("rootfs_type")
-params_array["restore_base_addr"]="0x60000000";   params_order+=("restore_base_addr")
 params_array["skip_load_image"]="false";          params_order+=("skip_load_image")
 params_array["system"]="";                        params_order+=("system")
+params_array["enable_load_image_backdoor"]="false"; params_order+=("enable_load_image_backdoor")
+params_array["haps_sn"]=K080000;                  params_order+=("haps_sn")
 params_array["simulate_run"]="false";             params_order+=("simulate_run")
 
 function is_valid_param() {
@@ -153,10 +159,17 @@ images_array["image_zsb"]="";       images_order+=("image_zsb")
 images_array["image_dtb"]="hw.dtb"; images_order+=("image_dtb")
 images_array["image_uboot"]="";     images_order+=("image_uboot")
 images_array["image_opensbi"]="";   images_order+=("image_opensbi")
-images_array["image_optee"]="";     images_order+=("image_optee")
 images_array["image_kernel"]="";    images_order+=("image_kernel")
 images_array["image_rootfs"]="";    images_order+=("image_rootfs")
 source script/get_images.sh
+cpio_gz_file=${images_array["image_rootfs"]}
+if [ ${params_array["enable_load_image_backdoor"]} == "true" ]; then
+	cpio_file="${cpio_gz_file%.gz}"
+	if [ ! -f "$cpio_file" ]; then
+		zcat $cpio_gz_file > $cpio_file
+	fi
+	images_array["image_rootfs"]="$cpio_file"
+fi
 
 # print all params_array items and export to environment
 echo ">> input params:"
@@ -170,12 +183,21 @@ done
 ###############################################################################
 # declare control_array for gdb
 declare -A gdb_control_array
+gdb_control_array["rva23_profile"]=0
+gdb_control_array["rva20_profile"]=0
 gdb_control_array["rv64_std"]=0
 gdb_control_array["rv32_std"]=0
 gdb_control_array["skip_load_image"]=0
 gdb_control_array["simulate_run"]=0
 gdb_control_array["ctl_enable_uboot"]=0
+gdb_control_array["ctl_enable_2core"]=0
 gdb_control_array["opensbi_0_9_with_kernel_5_10"]=0
+
+if [ ${params_array["rva_profile"]} == "rva23" ]; then
+	gdb_control_array["rva23_profile"]=1
+elif [ ${params_array["rva_profile"]} == "rva20" ]; then
+	gdb_control_array["rva20_profile"]=1
+fi
 
 if [ ${params_array["abi_mode"]} == "rv64_std" ]; then
 	gdb_control_array["rv64_std"]=1
@@ -197,6 +219,15 @@ elif [ ${params_array["enable_uboot"]} == "false" ]; then
 	gdb_control_array["ctl_enable_uboot"]=0
 else
 	echo "ERROR[$LINENO]: not supported uboot mode:'${params_array["enable_uboot"]}'"
+	exit 1
+fi
+
+if [ ${params_array["enable_2core"]} == "true" ]; then
+	gdb_control_array["ctl_enable_2core"]=1
+elif [ ${params_array["enable_2core"]} == "false" ]; then
+	gdb_control_array["ctl_enable_2core"]=0
+else
+	echo "ERROR[$LINENO]: not supported 2core mode:'${params_array["enable_2core"]}'"
 	exit 1
 fi
 
@@ -265,11 +296,28 @@ done
 echo ""
 echo "=============================="
 
+
+if [ ${params_array["enable_load_image_backdoor"]} == "false" ]; then
+	sed -i '/#\s*restore_xt \$image_kernel   binary \$vmlinux_addr/s/#\s*//' $GDBINIT
+	sed -i '/#\s*restore_xt \$image_rootfs   binary \$rootfs_addr/s/#\s*//' $GDBINIT
+else
+	sed -i '/^\s*restore_xt \$image_kernel   binary \$vmlinux_addr/s/^\(\s*\)\(restore_xt\)/\1# \2/' $GDBINIT
+	sed -i '/^\s*restore_xt \$image_rootfs   binary \$rootfs_addr/s/^\(\s*\)\(restore_xt\)/\1# \2/' $GDBINIT
+fi
+
 if [ ${params_array["simulate_run"]} == "false" ]; then
+	if [ ${params_array["enable_load_image_backdoor"]} == "true" ]; then
+		csh load_image.csh ${params_array["haps_sn"]} ${images_array["image_kernel"]} ${images_array["image_rootfs"]}
+	fi
 	# SoC related initialization and  boot linux with gdbinit
-	if [ ${params_array["abi_mode"]} == "rv32-std" ]; then
+	if [ ${params_array["abi_mode"]} == "rv32_std" ]; then
 		./riscv64-linux-gdb -q -ex "set architecture riscv:rv32" -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
 	else
+		if [ ${params_array["enable_2core"]} == "true" ]; then
+			ipport=${params_array["target_remote"]}
+			./riscv64-linux-gdb -q -ex "tar remote ${ipport/1025/1026}" -x gdbinit/zsb.gdbinit_core1 &
+			sleep 4s
+		fi
 		./riscv64-linux-gdb -q -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
 	fi
 else

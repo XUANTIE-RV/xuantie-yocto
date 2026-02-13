@@ -1,0 +1,2 @@
+${sysconfdir}/nagios                       0755    nagios    nagios    false - - -
+${libdir}/nagios/plugins                   0755    nagios    nagios    true 0644 nagios nagios

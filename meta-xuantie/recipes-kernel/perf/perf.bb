@@ -12,6 +12,7 @@ LICENSE = "GPL-2.0-only"
 PR = "r1"
 
 PACKAGECONFIG ??= "python tui libtraceevent jevents"
+PACKAGECONFIG:append = " bfd"
 PACKAGECONFIG[perl] = ",NO_LIBPERL=1,perl"
 PACKAGECONFIG[python] = ",NO_LIBPYTHON=1,python3 python3-setuptools-native"
 # gui support was added with kernel 3.6.35
@@ -43,7 +44,6 @@ RDEPENDS:${PN} += "numactl \
                    binutils \
                    libatomic \
                    libcap-ng \
-                   libbfd \
                    libopcodes \
 "
 

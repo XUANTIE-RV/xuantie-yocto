@@ -1,0 +1,43 @@
+From d69c856f90c752637b33e59fbbcfa31f619e2285 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Sun, 14 Aug 2022 22:44:24 -0400
+Subject: [PATCH] download: don't try compatbility index
+
+This is being mistaken for a valid, non compat index .. and we never
+try for the one that exists (the index without a compatibility
+extension). So we just drop the compat try for now.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ templates/lxc-download.in | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/templates/lxc-download.in b/templates/lxc-download.in
+index 9a3290fbc..216e4dda7 100755
+--- a/templates/lxc-download.in
++++ b/templates/lxc-download.in
+@@ -234,9 +234,7 @@ if [ "${DOWNLOAD_LIST_IMAGES}" = "true" ] || [ "${DOWNLOAD_INTERACTIVE}" = "true
+   DOWNLOAD_INDEX_PATH="/meta/1.0/index-${DOWNLOAD_MODE}"
+ 
+   echo "Downloading the image index"
+-  if ! download_file "${DOWNLOAD_INDEX_PATH}.${DOWNLOAD_COMPAT_LEVEL}" "${DOWNLOAD_TEMP}/index" noexit; then
+-    download_file "${DOWNLOAD_INDEX_PATH}" "${DOWNLOAD_TEMP}/index" normal
+-  fi
++  download_file "${DOWNLOAD_INDEX_PATH}" "${DOWNLOAD_TEMP}/index" normal
+ 
+   # Parse it
+   echo ""
+@@ -316,9 +314,7 @@ if [ "${DOWNLOAD_USE_CACHE}" = "false" ]; then
+   DOWNLOAD_INDEX_PATH="/meta/1.0/index-${DOWNLOAD_MODE}"
+ 
+   echo "Downloading the image index"
+-  if ! download_file "${DOWNLOAD_INDEX_PATH}.${DOWNLOAD_COMPAT_LEVEL}" "${DOWNLOAD_TEMP}/index" noexit; then
+-    download_file "${DOWNLOAD_INDEX_PATH}" "${DOWNLOAD_TEMP}/index" normal
+-  fi
++  download_file "${DOWNLOAD_INDEX_PATH}" "${DOWNLOAD_TEMP}/index" normal
+ 
+   # Parse it
+   while IFS=';' read -r f1 f2 f3 f4 f5 f6; do
+-- 
+2.25.1
+

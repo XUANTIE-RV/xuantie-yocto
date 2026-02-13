@@ -1,0 +1,28 @@
+From 485e957a4c3289d105dd6203af31c0e4e1438ac6 Mon Sep 17 00:00:00 2001
+From: Jianchuan Wang <jianchuan.wang@windriver.com>
+Date: Tue, 16 Aug 2016 09:42:24 +0800
+Subject: [PATCH 1/3] criu: Skip documentation install
+
+asciidoc is needed to generate CRIU documentation, so skip it in install.
+
+Signed-off-by: Jianchuan Wang <jianchuan.wang@windriver.com>
+---
+ Makefile.install | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.install b/Makefile.install
+index aafb95469..1b02b70af 100644
+--- a/Makefile.install
++++ b/Makefile.install
+@@ -30,7 +30,7 @@ export PREFIX BINDIR SBINDIR MANDIR RUNDIR
+ export LIBDIR INCLUDEDIR LIBEXECDIR PLUGINDIR
+ 
+ install-man:
+-	$(Q) $(MAKE) -C Documentation install
++#	$(Q) $(MAKE) -C Documentation install
+ .PHONY: install-man
+ 
+ install-lib: lib
+-- 
+2.25.1
+

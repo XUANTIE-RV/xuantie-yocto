@@ -1,0 +1,32 @@
+From 59986e91d807591f05dfbd57b459ba71670874f9 Mon Sep 17 00:00:00 2001
+From: Martin Jansa <Martin.Jansa@gmail.com>
+Date: Tue, 30 Nov 2021 15:04:31 +0000
+Subject: [PATCH] vm-support: fix build for kernel's > 5.14
+
+* remove set_driver_byte call
+* not sure if it's still necessary here, but set_driver_byte as well as DRIVER_SENSE was killed in 5.14 with:
+  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=464a00c9e0ad45e3f42ff6ea705491a356df818e
+
+  in some cases it was replaced with set_status_byte(sc, SAM_STAT_CHECK_CONDITION), but I didn't
+  read the implementation carefully enough to decide if this is still needed, I was only interested
+  in fixing the build failure (and I don't use this at all to test it in runtime)
+
+Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+---
+ uxenstor/stor.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/uxenstor/stor.c b/uxenstor/stor.c
+index e07b08e..6bf2184 100644
+--- a/uxenstor/stor.c
++++ b/uxenstor/stor.c
+@@ -109,7 +109,9 @@ static void uxenstor_softirq(unsigned long opaque)
+                                          sc->sense_buffer,
+                                          sizeof(hdr) + hdr.sense_size,
+                                          0, sizeof(hdr));
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,14,0))
+                 set_driver_byte(sc, DRIVER_SENSE);
++#endif
+             }
+ 
+             set_host_byte(sc, DID_ERROR);

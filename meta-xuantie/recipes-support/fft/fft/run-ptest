@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+cd $(dirname "$(realpath "$0")")
+
+./openfft_fp32_tests
+./openfft_fp64_tests
+
+echo "PASS: fft"

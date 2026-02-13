@@ -7,5 +7,6 @@ SRC_URI = " \
     file://0001-xuantie-pmu-riscv32-Support-cycles-instructions-over.patch \
 "
 
-# tag v1.3
-SRCREV = "a9994daf2474e51df3c8ec83065ca556180eb203"
+# Commits on Aug 14, 2025
+# commit info: platform: Add xuantie_pmc for PMC test
+SRCREV = "f94bfb85500a00051b74d68d6a02c2ed77fa9f29"

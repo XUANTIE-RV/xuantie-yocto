@@ -1,0 +1,36 @@
+This file contains a list of maintainers for the meta-virtualization layer.
+
+See the README file in this layer for patch send details.
+
+You may also contact the maintainers directly.
+
+Descriptions of section entries:
+
+        M: Mail patches to: FullName <address@domain>
+        F: Files and directories with wildcard patterns.
+           A trailing slash includes all files and subdirectory files.
+           F: recipes-devtools/    all files in and below recipes-devtools
+           F: recipes-selinux/*    all files in recipes-selinux, but not below
+           One pattern per line.  Multiple F: lines acceptable.
+
+Please keep this list in alphabetical order.
+
+Maintainers List (try to look for most precise areas first)
+
+COMMON
+M:      Bruce Ashfield <bruce.ashfield@gmail.com>
+L:      meta-virtualization@lists.yoctoproject.org
+S:      Maintained
+F:      conf/
+F:      classes/
+F:      docs/
+F:      files/
+F:      recipes-*
+
+XEN
+M:      Christopher Clark <christopher.w.clark@gmail.com>
+F:      recipes-extended/xen/
+F:      recipes-extended/uxen/
+F:      recipes-extended/images/*xen*.bb
+F:      recipes-extended/images/xtf*.bb
+F:      dynamic-layers/raspberrypi/

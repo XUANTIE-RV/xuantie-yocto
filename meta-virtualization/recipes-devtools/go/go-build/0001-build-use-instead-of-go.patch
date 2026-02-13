@@ -1,0 +1,30 @@
+From 4db28c98481056c41097f808335c37e8517fe485 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Fri, 7 Aug 2020 23:39:18 -0400
+Subject: [PATCH] build: use  instead of 'go'
+
+While we can get away with 'go' if the host/target arch match, the
+new go-binary toolchain blows up in a cross compile situation.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ gobuild/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: git/src/import/gobuild/Makefile
+===================================================================
+--- git.orig/src/import/gobuild/Makefile
++++ git/src/import/gobuild/Makefile
+@@ -19,10 +19,10 @@
+ 
+ ${GODEPPATHS}:
+ 	mkdir -p ${GOSRC}
+-	GOPATH=${GOPATH} go get -d $(subst ${GOSRC}/,,$@)
++	GOPATH=${GOPATH} ${GO} get -d $(subst ${GOSRC}/,,$@)
+ 
+ ${BIN}: ${GODEPPATHS} $(filter %/$@.go, ${MAIN})
+-	GOPATH=${GOPATH} ${ARCH} go build $(filter %/$@.go, ${MAIN})
++	GOPATH=${GOPATH} ${ARCH} ${GO} build -trimpath $(filter %/$@.go, ${MAIN})
+ 
+ clean:
+ 	rm -f   ${BIN}

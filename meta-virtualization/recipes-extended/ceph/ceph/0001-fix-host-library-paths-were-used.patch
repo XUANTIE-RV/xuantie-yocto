@@ -1,0 +1,96 @@
+From bbf1cba8feb0e43492a1f6a6b31d024117cad262 Mon Sep 17 00:00:00 2001
+From: Hongxu Jia <hongxu.jia@windriver.com>
+Date: Mon, 13 Apr 2020 23:35:41 -0700
+Subject: [PATCH] fix host library paths were used
+
+Test the existence of recipe-sysrooot, add it back if lost
+
+Upstream-Status: Inappropriate [oe specific]
+
+Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+---
+ src/pybind/cephfs/setup.py | 6 +++++-
+ src/pybind/rados/setup.py  | 6 +++++-
+ src/pybind/rbd/setup.py    | 6 +++++-
+ src/pybind/rgw/setup.py    | 6 +++++-
+ 4 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/src/pybind/cephfs/setup.py b/src/pybind/cephfs/setup.py
+index c9a25ccf..972f936c 100755
+--- a/src/pybind/cephfs/setup.py
++++ b/src/pybind/cephfs/setup.py
+@@ -63,9 +63,13 @@ def get_python_flags(libs):
+                    distutils.sysconfig.get_config_vars('LIBS', 'SYSLIBS')), [])
+     compiler = new_compiler()
+     distutils.sysconfig.customize_compiler(compiler)
++    libpl = distutils.sysconfig.get_config_var('LIBPL')
++    sysroot = os.environ.get('STAGING_DIR_HOST')
++    if not libpl.startswith(sysroot):
++        libpl = sysroot + libpl
+     return dict(
+         include_dirs=[distutils.sysconfig.get_python_inc()],
+-        library_dirs=distutils.sysconfig.get_config_vars('LIBDIR', 'LIBPL'),
++        library_dirs=[distutils.sysconfig.get_config_var('LIBDIR'), libpl],
+         libraries=libs + [lib.replace('-l', '') for lib in py_libs],
+         extra_compile_args=filter_unsupported_flags(
+             compiler.compiler[0],
+diff --git a/src/pybind/rados/setup.py b/src/pybind/rados/setup.py
+index 4e99d267..de24f766 100755
+--- a/src/pybind/rados/setup.py
++++ b/src/pybind/rados/setup.py
+@@ -66,9 +66,13 @@ def get_python_flags(libs):
+                    distutils.sysconfig.get_config_vars('LIBS', 'SYSLIBS')), [])
+     compiler = new_compiler()
+     distutils.sysconfig.customize_compiler(compiler)
++    libpl = distutils.sysconfig.get_config_var('LIBPL')
++    sysroot = os.environ.get('STAGING_DIR_HOST')
++    if not libpl.startswith(sysroot):
++        libpl = sysroot + libpl
+     return dict(
+         include_dirs=[distutils.sysconfig.get_python_inc()],
+-        library_dirs=distutils.sysconfig.get_config_vars('LIBDIR', 'LIBPL'),
++        library_dirs=[distutils.sysconfig.get_config_var('LIBDIR'), libpl],
+         libraries=libs + [lib.replace('-l', '') for lib in py_libs],
+         extra_compile_args=filter_unsupported_flags(
+             compiler.compiler[0],
+diff --git a/src/pybind/rbd/setup.py b/src/pybind/rbd/setup.py
+index f5bbbdab..a1f70e1d 100755
+--- a/src/pybind/rbd/setup.py
++++ b/src/pybind/rbd/setup.py
+@@ -63,9 +63,13 @@ def get_python_flags(libs):
+                    distutils.sysconfig.get_config_vars('LIBS', 'SYSLIBS')), [])
+     compiler = new_compiler()
+     distutils.sysconfig.customize_compiler(compiler)
++    libpl = distutils.sysconfig.get_config_var('LIBPL')
++    sysroot = os.environ.get('STAGING_DIR_HOST')
++    if not libpl.startswith(sysroot):
++        libpl = sysroot + libpl
+     return dict(
+         include_dirs=[distutils.sysconfig.get_python_inc()],
+-        library_dirs=distutils.sysconfig.get_config_vars('LIBDIR', 'LIBPL'),
++        library_dirs=[distutils.sysconfig.get_config_var('LIBDIR'), libpl],
+         libraries=libs + [lib.replace('-l', '') for lib in py_libs],
+         extra_compile_args=filter_unsupported_flags(
+             compiler.compiler[0],
+diff --git a/src/pybind/rgw/setup.py b/src/pybind/rgw/setup.py
+index b9f2428c..f5119f73 100755
+--- a/src/pybind/rgw/setup.py
++++ b/src/pybind/rgw/setup.py
+@@ -64,9 +64,13 @@ def get_python_flags(libs):
+                    distutils.sysconfig.get_config_vars('LIBS', 'SYSLIBS')), [])
+     compiler = new_compiler()
+     distutils.sysconfig.customize_compiler(compiler)
++    libpl = distutils.sysconfig.get_config_var('LIBPL')
++    sysroot = os.environ.get('STAGING_DIR_HOST')
++    if not libpl.startswith(sysroot):
++        libpl = sysroot + libpl
+     return dict(
+         include_dirs=[distutils.sysconfig.get_python_inc()],
+-        library_dirs=distutils.sysconfig.get_config_vars('LIBDIR', 'LIBPL'),
++        library_dirs=[distutils.sysconfig.get_config_var('LIBDIR'), libpl],
+         libraries=libs + [lib.replace('-l', '') for lib in py_libs],
+         extra_compile_args=filter_unsupported_flags(
+             compiler.compiler[0],
+-- 
+2.21.0
+

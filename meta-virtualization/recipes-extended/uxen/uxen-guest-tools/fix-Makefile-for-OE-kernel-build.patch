@@ -1,0 +1,36 @@
+# OpenEmbedded uses KERNEL_SRC instead of KDIR
+# and enable the modules_install target.
+# Signed-off-by: Christopher Clark <christopher.clark6@baesystems.com>
+diff --git a/Makefile b/Makefile
+index 3fd3075..80cf0fe 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,10 +1,13 @@
+ ifneq ($(KERNELRELEASE),)
+ # kbuild part of makefile
+-else
++include Kbuild
+ 
+-KVERSION ?= $(shell uname -r)
+-KDIR := /lib/modules/${KVERSION}/build
++else
++#normal makefile
++KERNEL_VERSION ?= $(shell uname -r)
++KERNEL_SRC ?= /lib/modules/${KERNEL_VERSION}/build
+ UXENDIR ?= $(shell pwd)/include/uxen
++INSTALL_HDR_PATH ?= /usr
+ 
+ LX_TARGET_FLAGS= -DLX_TARGET_STANDARDVM
+ LX_TARGET_ATTOVM=n
+@@ -19,7 +22,9 @@ EXTRA_CFLAGS=$(LX_TARGET_FLAGS) -g -Wall
+ NOSTDINC_FLAGS=-I$(shell pwd)/include/ -I$(UXENDIR) -I$(UXENDIR)/xen
+ 
+ all:
+-	make -C $(KDIR) $(LX_TARGET) M=$(shell pwd) EXTRA_CFLAGS="$(EXTRA_CFLAGS)" NOSTDINC_FLAGS="$(NOSTDINC_FLAGS)"
++	make -C $(KERNEL_SRC) $(LX_TARGET) M=$(shell pwd) EXTRA_CFLAGS="$(EXTRA_CFLAGS)" NOSTDINC_FLAGS="$(NOSTDINC_FLAGS)"
+ clean:
+-	make -C $(KDIR) $(LX_TARGET) M=$(shell pwd) clean
++	make -C $(KERNEL_SRC) $(LX_TARGET) M=$(shell pwd) clean
++modules_install:
++	make -C $(KERNEL_SRC) $(LX_TARGET) M=$(shell pwd) modules_install
+ endif

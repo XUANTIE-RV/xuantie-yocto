@@ -22,6 +22,13 @@ SRC_URI = "http://download.redis.io/releases/${BP}.tar.gz \
 SRC_URI[sha256sum] = "67054cc37b58c125df93bd78000261ec0ef4436a26b40f38262c780e56315cc3"
 
 inherit autotools-brokensep update-rc.d systemd useradd
+inherit xuantie-set-package-arch-with-mcpu
+
+# Extend cpu configuration for different xuantie cpu
+python () {
+    if d.getVar('XUANTIE_MCPU') and d.getVar('XUANTIE_MCPU') != "c9xx-riscv64" and d.getVar('XUANTIE_MCPU') != "c9xx-riscv32":
+        d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
+}
 
 FINAL_LIBS:x86:toolchain-clang = "-latomic"
 FINAL_LIBS:riscv32:toolchain-clang = "-latomic"

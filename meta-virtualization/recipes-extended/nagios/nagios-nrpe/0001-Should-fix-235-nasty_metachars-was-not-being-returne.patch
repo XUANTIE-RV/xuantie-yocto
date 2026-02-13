@@ -1,0 +1,30 @@
+From 4f7dd1199f1f3f72f9197e8565da339a4a2490b7 Mon Sep 17 00:00:00 2001
+From: madlohe <swolf@nagios.com>
+Date: Thu, 23 Apr 2020 15:33:18 -0500
+Subject: [PATCH] Should fix #235 (nasty_metachars was not being returned when
+ specified in cfg file
+
+CVE: CVE-2020-6581
+Upstream Status: Backport [4f7dd1199f1f3f72f9197e8565da339a4a2490b7]
+
+Signed-off-by: Sakib Sajal <sakib.sajal@windriver.com>
+---
+ src/nrpe.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/nrpe.c b/src/nrpe.c
+index 01fbd1d..bf64963 100644
+--- a/src/nrpe.c
++++ b/src/nrpe.c
+@@ -823,6 +823,8 @@ char* process_metachars(const char* input)
+ 		}
+ 	}
+ 	copy[j] = '\0';
++
++	return copy;
+ }
+ 
+ /* read in the configuration file */
+-- 
+2.20.1
+

@@ -1,0 +1,25 @@
+From ee9f45eb65c82eb7babf0bc432395ac266d6ac76 Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Mon, 21 Apr 2025 13:49:51 +0800
+Subject: [PATCH] update uart0 compatible in uart0_init_fdt
+
+---
+ lib/riscv/io.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/riscv/io.c b/lib/riscv/io.c
+index b3f587bb..6c1cb1b0 100644
+--- a/lib/riscv/io.c
++++ b/lib/riscv/io.c
+@@ -26,7 +26,7 @@ static struct spinlock uart_lock;
+ 
+ static void uart0_init_fdt(void)
+ {
+-	const char *compatible[] = {"ns16550a"};
++	const char *compatible[] = {"snps,dw-apb-uart"};
+ 	struct dt_pbus_reg base;
+ 	int i, ret;
+ 
+-- 
+2.25.1
+

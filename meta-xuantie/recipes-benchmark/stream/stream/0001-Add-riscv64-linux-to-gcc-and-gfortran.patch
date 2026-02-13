@@ -1,0 +1,26 @@
+From 05624ad9c2f0fea1827ac3c9720f8fdaad89e7ff Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
+Date: Wed, 22 Jan 2025 15:26:12 +0800
+Subject: [PATCH] Add riscv64-linux- to gcc and gfortran
+
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 7746d86..09c7349 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+-CC = gcc
++CC = ${CC}
+ CFLAGS = -O2 -fopenmp
+ 
+-FC = gfortran
++FC = ${FC}
+ FFLAGS = -O2 -fopenmp
+ 
+ all: stream_f.exe stream_c.exe
+-- 
+2.25.1
+

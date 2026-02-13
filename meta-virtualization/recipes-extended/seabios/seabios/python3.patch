@@ -1,0 +1,13 @@
+diff --git a/Makefile b/Makefile
+index 516cb38..7f6acaa 100644
+--- a/Makefile
++++ b/Makefile
+@@ -22,7 +22,7 @@ LD=$(CROSS_PREFIX)ld
+ OBJCOPY=$(CROSS_PREFIX)objcopy
+ OBJDUMP=$(CROSS_PREFIX)objdump
+ STRIP=$(CROSS_PREFIX)strip
+-PYTHON=python
++PYTHON=python3
+ CPP=$(CROSS_PREFIX)cpp
+ IASL:=iasl
+ LD32BIT_FLAG:=-melf_i386

@@ -4,8 +4,13 @@ LICENSE = "CLOSED"
 
 inherit packagegroup
 RDEPENDS:${PN} += " \
-    glibc \
-    gcc \
-    make \
+    clang \
     dpkg \
+    gcc \
+    gdb \
+    glibc \
+    libc6-dev \
+    libstdc++-dev \
+    make \
 "
+INSANE_SKIP:${PN} += "dev-deps"

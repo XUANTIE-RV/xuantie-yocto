@@ -1,0 +1,27 @@
+From 97ebe36cce20acf3194bd6068091091d50f9f3ff Mon Sep 17 00:00:00 2001
+From: Chen Pei <cp0613@linux.alibaba.com>
+Date: Thu, 24 Jul 2025 15:55:42 +0800
+Subject: [PATCH] ltp: hugemmap15: Enable __clear_cache on riscv
+
+Signed-off-by: Chen Pei <cp0613@linux.alibaba.com>
+---
+ testcases/kernel/mem/hugetlb/hugemmap/hugemmap15.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/testcases/kernel/mem/hugetlb/hugemmap/hugemmap15.c b/testcases/kernel/mem/hugetlb/hugemmap/hugemmap15.c
+index 4d1984070..613e6c389 100644
+--- a/testcases/kernel/mem/hugetlb/hugemmap/hugemmap15.c
++++ b/testcases/kernel/mem/hugetlb/hugemmap/hugemmap15.c
+@@ -47,7 +47,8 @@ static void cacheflush(void *p)
+ {
+ #if defined(__powerpc__)
+ 	asm volatile("dcbst 0,%0; sync; icbi 0,%0; isync" : : "r"(p));
+-#elif defined(__arm__) || defined(__aarch64__)
++#elif defined(__arm__) || defined(__aarch64__) || \
++	  (defined(__riscv) && __riscv_xlen == 64)
+ 	__clear_cache(p, p + COPY_SIZE);
+ #else
+ 	(void)p;
+-- 
+2.49.0
+

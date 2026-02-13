@@ -1,5 +1,9 @@
-PACKAGE_ARCH = "${XUANTIE_MCPU}"
+PACKAGE_ARCH = "${XUANTIE_MCPU_PACKAGE_ARCH}"
 XUANTIE_PACKAGE_ARCH_SET = "YES"
+
+XUANTIE_NATIVE_TUNE_CCARGS = " -march=${XUANTIE_NATIVE_MARCH} -mabi=${XUANTIE_MABI} -mtune=${XUANTIE_NATIVE_MTUNE}"
+# requires '-menable-experimental-extensions' for experimental extension 'zfbfmin zvfbfmin zvfbfwma'
+XUANTIE_NATIVE_TUNE_CCARGS:append:toolchain-clang = " -menable-experimental-extensions"
 
 XUANTIE_TUNE_CCARGS_GENERIC ?= " ${XUANTIE_TUNE_CCARGS}"
 

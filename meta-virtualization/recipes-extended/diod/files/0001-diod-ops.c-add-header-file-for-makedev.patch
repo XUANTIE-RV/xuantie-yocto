@@ -1,0 +1,40 @@
+From f75836731d6051d85e6317eb4c12465bafb4973e Mon Sep 17 00:00:00 2001
+From: "Hongzhi.Song" <hongzhi.song@windriver.com>
+Date: Fri, 31 Aug 2018 05:47:02 -0400
+Subject: [PATCH] diod/ops.c: add header file for makedev
+
+Error:
+diod/ops.c:845: undefined reference to `makedev'
+
+Fixed:
+Glibc removes sys/sysmacros.h which defines makedev from sys/types.h
+since v2.28. [Commit ID: e16deca62e16f]
+
+And then glibc suggestions us to include <sys/sysmacros.h> directly if
+code needs it.
+
+Upstream-Status: Submitted 
+[diod:
+mail: v9fs-developer@lists.sourceforge.net
+author: hongzhi.song@windriver.com]
+
+Signed-off-by: Hongzhi.Song <hongzhi.song@windriver.com>
+---
+ diod/ops.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/diod/ops.c b/diod/ops.c
+index c6c8291..469a502 100644
+--- a/diod/ops.c
++++ b/diod/ops.c
+@@ -74,6 +74,7 @@
+ #include <pthread.h>
+ #include <errno.h>
+ #include <sys/types.h>
++#include <sys/sysmacros.h>
+ 
+ #ifdef __FreeBSD__
+ #if !__BSD_VISIBLE
+-- 
+2.8.1
+

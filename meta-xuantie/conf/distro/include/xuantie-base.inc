@@ -2,29 +2,32 @@ require conf/machine/include/riscv/tune-riscv.inc
 require xuantie-clang.inc
 
 DISTRO_NAME = "xuantie C9xx Release Distro"
-DISTRO_VERSION = "1.1.1"
-XUANTIE_LINUX_TAG = "XuanTie_V1.1.1"
+DISTRO_VERSION = "1.2.0"
+
+XUANTIE_LINUX_TAG = "XuanTie_V1.2.0"
 
 EXTERNAL_TOOLCHAIN ?= "${TOPDIR}/../../riscv-toolchain"
 TCMODE = "external"
-TARGET_PREFIX = "riscv64-linux-"
 TARGET_OS = "linux"
 EXTERNAL_TOOLCHAIN_SYSROOT ?= "${EXTERNAL_TOOLCHAIN}/sysroot"
 
-export EXTERNAL_TOOLCHAIN_EXPORT ?= "${EXTERNAL_TOOLCHAIN}"
+_EXTERNAL_TOOLCHAIN = "${EXTERNAL_TOOLCHAIN_GCC}"
+_EXTERNAL_TOOLCHAIN:toolchain-clang = "${EXTERNAL_TOOLCHAIN_CLANG}"
+export EXTERNAL_TOOLCHAIN_EXPORT ?= "${_EXTERNAL_TOOLCHAIN}"
 BB_BASEHASH_IGNORE_VARS:append = " EXTERNAL_TOOLCHAIN_BIN EXTERNAL_TOOLCHAIN_LIBROOT \
     EXTERNAL_TOOLCHAIN_SYSROOT EXTERNAL_HEADERS_MULTILIB_SUFFIX \
     TOOLCHAIN_DIR EXTERNAL_TOOLCHAIN_EXPORT BUILD_ROOT RV_TOOLCHAIN "
-
 INSANE_SKIP:${PN} += "glibc-so gobject-introspection-so glibc-external"
 
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-xuantie"
 KBUILD_DEFCONFIG ?= "defconfig"
 
 PREFERRED_VERSION_op-tee ?= "0.1"
-PREFERRED_VERSION_opensbi ?= "1.3"
+PREFERRED_VERSION_opensbi ?= "1.7"
 PREFERRED_VERSION_libjpeg-turbo-native ?= "2.1.4"
-
+PREFERRED_VERSION_qemu-native ?= "8.2.94"
+PREFERRED_VERSION_kexec-tools ?= "2.0.22"
+PREFERRED_VERSION_openssl ?= "3.4.0"
 
 KERNEL_IMAGETYPE = "Image"
 
@@ -63,25 +66,29 @@ python() {
     d.setVar('BSP_VERSION_LIMIT', version_limit)
 }
 
-PACKAGE_FEED_URIS ?= "http://114.55.254.174/xuantie/deb/release/1.1/${XUANTIE_KERNEL_VERSION}/${TUNE_ARCH}"
+XUANTIE_PACKAGE_FEED_ARCH ??= "${TUNE_ARCH}"
+PACKAGE_FEED_URIS ?= "http://114.55.254.174/xuantie/deb/dev/1.2/${XUANTIE_KERNEL_VERSION}/${XUANTIE_PACKAGE_FEED_ARCH}"
 PACKAGE_FEED_ARCHS = "common"
 
 INHERIT += "own-mirrors"
 SOURCE_MIRROR_URL ?= "http://114.55.254.174/xuantie/downloads-mirror/1.x/release"
-SSTATE_MIRRORS ?= "file://.* http://114.55.254.174/xuantie/sstate-cache/1.1/release/${XUANTIE_LINUX_TAG}/${XUANTIE_KERNEL_VERSION}/PATH;downloadfilename=PATH"
+SSTATE_MIRRORS ?= "file://.* http://114.55.254.174/xuantie/sstate-cache/1.1/dev/${XUANTIE_LINUX_TAG}/${XUANTIE_KERNEL_VERSION}/PATH;downloadfilename=PATH"
 
-PYTHON_PIP_URL ?= "http://114.55.254.174/xuantie/python3/release/simple/"
-
-PREFERRED_VERSION_opencv ?= "4.5.4"
+PYTHON_PIP_URL ?= "http://114.55.254.174/th1520/python3/release/simple/"
 
 IMAGE_FSTYPES += "cpio.gz ext4"
 
+XUANTIE_MCPU_PACKAGE_ARCH ??= "${XUANTIE_MCPU}"
 XUANTIE_PACKAGE_ARCH_SET ?= "NO"
+XUANTIE_TUNE_CCARGS_USE_MCPU ??= "NO"
 
 XUANTIE_TUNE_CCARGS ?= "-march=${XUANTIE_MARCH} -mabi=${XUANTIE_MABI}"
 TUNE_CCARGS:append = "${@bb.utils.contains('XUANTIE_PACKAGE_ARCH_SET', 'NO', " ${XUANTIE_TUNE_CCARGS}", ' ', d)}"
 
 EXTERNAL_TOOLCHAIN_ABI_DIR_NAME ?= "${XUANTIE_MABI}"
+EXTERNAL_TOOLCHAIN_LIB_DIR_NAME_DEFAULT ?= "lib64xthead"
+# EXTERNAL_TOOLCHAIN_LIB_DIR_NAME_DEFAULT ?= "lib64"
+EXTERNAL_TOOLCHAIN_ABI_DIR_NAME_DEFAULT ?= "lp64d"
 
 # mirrors
 XUANTIE_GIT ?= "git://git@gitee.com/xuantie-yocto"
@@ -95,5 +102,35 @@ MIRRORS += "\
 ${XUANTIE_GITSM} gitsm://git@github.com/XUANTIE-RV \
 ${XUANTIE_GITSM} gitsm://git@github.com/ruyisdk/ \
 "
+PREFERRED_VERSION_opencv ?= "4.12.0"
+PREFERRED_VERSION_libvirt ?= "v11.1.0+git"
+# PREFERRED_VERSION_openmpbench ?= "3.1"
+PREFERRED_VERSION_openmpbench ?= "4.0"
+PREFERRED_VERSION_openblas ?= "0.3.30"
+# PREFERRED_VERSION_sysbench ?= "0.5"
+PREFERRED_VERSION_sysbench ?= "1.0.20"
+PREFERRED_VERSION_bcc ?= "0.27.0"
+PREFERRED_VERSION_bpftrace ?= "0.16.0"
+# PREFERRED_VERSION_ffmpeg ?= "7.0"
+PREFERRED_VERSION_ffmpeg ?= "7.1"
+
+## according to arch to select version
+## 1.1 for prebuild; 1.2 for source code
+PREFERRED_VERSION_spec2006 ?= "1.2"
+PREFERRED_VERSION_spec2017 ?= "1.0.5"
+PREFERRED_VERSION_lmbench ?= "3.0-a9"
+
+# build static librarie
+DISABLE_STATIC:pn-libarchive = ""
+DISABLE_STATIC:pn-xz = ""
+DISABLE_STATIC:pn-elfutils = ""
+DISABLE_STATIC:pn-libtirpc = ""
+DISABLE_STATIC:pn-libunwind = ""
+DISABLE_STATIC:pn-cunit = ""
+DISABLE_STATIC:pn-flex = ""
+
+LD_LIBXTSTRING ?= ""
+
+ROOT_HOME ?= "/root"
 
 require xuantie-proprietary.inc

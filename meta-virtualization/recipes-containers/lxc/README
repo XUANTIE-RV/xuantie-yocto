@@ -1,0 +1,23 @@
+install:
+--------
+
+ Install the following packages to your image:
+
+   IMAGE_INSTALL:append = "lxc lxc-networking kernel-modules"
+
+ These will put the core lxc application and networking onto your image.
+ No other configuration is required for a basic system.
+
+ Note: has only been tested with systemd, sysvinit patches are welcome
+
+ Note: Partially conflicts with packages such as k3s, networking will fail to
+       start.
+
+sample test:
+-----------
+
+ % lxc-create -n test -t download -- --server us.lxd.images.canonical.com -d alpine -r 3.16 -a amd64
+ % lxc-start test
+ % lxc-console test
+
+

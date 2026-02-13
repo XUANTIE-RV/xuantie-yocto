@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=8ca43cbc842c2336e835926c2166c28b \
                     file://COPYING-2;md5=8e9aee2ccc75d61d107e43794a25cdf9"
 
 inherit autotools-brokensep update-alternatives
-inherit xuantie-set-package-arch-with-mcpu
+
 DEPENDS += "libtirpc"
 CFLAGS += "-I${STAGING_INCDIR}/tirpc"
 
@@ -39,13 +39,6 @@ UPSTREAM_CHECK_REGEX = "lmbench-(?P<pver>\d+(\.\d+)+-[a-z]+\d+)"
 
 export OS = "${TARGET_SYS}"
 export TARGET = "${TARGET_OS}"
-
-PACKAGE_ARCH = "${MACHINE_ARCH}"
-# Extend cpu configuration for different xuantie cpu
-python () {
-    if d.getVar('XUANTIE_MCPU'):
-        d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
-}
 
 EXTRA_OEMAKE = 'CC="${CC}" AR="${AR}" RANLIB="${RANLIB}" CFLAGS="${CFLAGS}" \
                 LDFLAGS="${LDFLAGS}" LD="${LD}" OS="${TARGET_SYS}" \

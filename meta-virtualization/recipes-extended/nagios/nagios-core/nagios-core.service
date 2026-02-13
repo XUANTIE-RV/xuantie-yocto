@@ -1,0 +1,18 @@
+[Unit]
+Description=Nagios core
+After=network.target local-fs.target
+
+[Service]
+Type=forking
+User=nagios
+Group=nagios
+PIDFile=/run/nagios/nagios.pid
+# Verify Nagios config before start as upstream suggested
+ExecStartPre=/usr/bin/nagios -v /etc/nagios/nagios.cfg
+ExecStart=/usr/bin/nagios -d /etc/nagios/nagios.cfg
+ExecStop=/bin/kill -TERM ${MAINPID}
+ExecStopPost=/bin/rm -f /var/spool/nagios/cmd/nagios.cmd
+ExecReload=/bin/kill -HUP ${MAINPID}
+
+[Install]
+WantedBy=multi-user.target

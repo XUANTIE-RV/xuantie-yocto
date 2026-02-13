@@ -1,0 +1,16 @@
+Simple setup for starting Xvisor on RISC-V QEMU
+===============================================
+
+This is a simple starting point for running Xvisor on RISC-V QEMU.
+
+Currently meta-virtualisation supports running Xvisor on QEMU using the v0.5.0 RISC-V Hypervisor extensions.
+
+Support is still experimental.
+
+Build the images
+================
+$ MACHINE=qemuriscv64 bitbake xvisor-image-minimal
+
+Run the images
+==============
+$ MACHINE=qemuriscv64 runqemu xvisor-image-minimal slirp nographic

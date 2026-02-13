@@ -1,0 +1,12 @@
+[Unit]
+Description=Nagios nsca plugin
+After=syslog.target network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/nsca -s -c /etc/nagios/nsca.cfg
+PIDFile=/run/nsca.pid
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target

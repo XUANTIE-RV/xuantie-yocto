@@ -1,0 +1,26 @@
+libvirt default connection mode between client(where for example virsh runs) and
+server(where libvirtd runs) is tls which requires keys and certificates for
+certificate authority, client and server to be properly generated and deployed.
+Otherwise, servers and clients cannot be connected.
+
+recipes-extended/libvirt/libvirt/gnutls-help.py is provided to help generate
+required keys and certificates.
+
+Usage:
+gnutls-help.py [-a|--ca-info] <ca.info> [-b|--server-info] <server.info> [-c|--client-info] <client.info>
+If ca.info or server.info or client.info is not provided, a corresponding sample file will be generated.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! "ip_address" field of server.info must be IP address of the server. !!
+!! For more details, please refer to:                                  !!
+!! https://libvirt.org/remote.html#Remote_certificates                 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Please deploy cacert.pem     to CA and server and client /etc/pki/CA/cacert.pem
+Please deploy serverkey.pem  to server /etc/pki/libvirt/private/serverkey.pem
+Please deploy servercert.pem to server /etc/pki/libvirt/servercert.pem
+Please deploy clientkey.pem  to client /etc/pki/libvirt/private/clientkey.pem
+Please deploy clientcert.pem to client /etc/pki/libvirt/clientcert.pem"
+
+For more details please refer to libvirt official document,
+https://libvirt.org/remote.html#Remote_certificates

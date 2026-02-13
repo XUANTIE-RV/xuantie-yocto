@@ -1,0 +1,76 @@
+From fb7a1493c7d4a30ae930d8cb7dcb84c83c0cacce Mon Sep 17 00:00:00 2001
+From: He Zhe <zhe.he@windriver.com>
+Date: Wed, 13 Apr 2022 09:26:01 +0000
+Subject: [PATCH] Build vbd only when xen is enabled
+
+vbd was added for xen based VMs since
+bdee00fac9b4 ("Disk reading interface for Xen based VMs and example")
+and should be built only when xen is enabled, otherwise there would not be
+necessary xen headers and cause the following failure.
+
+xen_private.h:38:10: fatal error: xenctrl.h: No such file or directory
+
+Upstream-Status: Pending
+
+Signed-off-by: He Zhe <zhe.he@windriver.com>
+---
+ Makefile.am           | 8 ++++----
+ libvmi/CMakeLists.txt | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 097c23c..c560a1d 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -17,8 +17,7 @@ h_private = \
+     libvmi/os/os_interface.h \
+     libvmi/driver/driver_interface.h \
+     libvmi/driver/driver_wrapper.h \
+-    libvmi/driver/memory_cache.h \
+-    libvmi/disk/vbd_private.h
++    libvmi/driver/memory_cache.h
+ 
+ c_sources = \
+     libvmi/accessors.c \
+@@ -39,8 +38,7 @@ c_sources = \
+     libvmi/arch/ept.c \
+     libvmi/driver/driver_interface.c \
+     libvmi/driver/memory_cache.c \
+-    libvmi/os/os_interface.c \
+-    libvmi/disk/vbd.c
++    libvmi/os/os_interface.c
+ 
+ if ENABLE_ADDRESS_CACHE
+     c_sources   += libvmi/cache.c
+@@ -104,6 +102,8 @@ if WITH_XEN
+                    libvmi/driver/xen/libxc_wrapper.h \
+                    libvmi/driver/xen/libxs_wrapper.c \
+                    libvmi/driver/xen/libxs_wrapper.h
++    h_private   += libvmi/disk/vbd_private.h
++    c_sources   += libvmi/disk/vbd.c
+ endif
+ 
+ if WITH_BAREFLANK
+diff --git a/libvmi/CMakeLists.txt b/libvmi/CMakeLists.txt
+index ac57d79..7e87751 100644
+--- a/libvmi/CMakeLists.txt
++++ b/libvmi/CMakeLists.txt
+@@ -18,7 +18,6 @@ set(libvmi_src
+     driver/driver_interface.c
+     driver/memory_cache.c
+     os/os_interface.c
+-    disk/vbd.c
+ )
+ 
+ add_library(vmi OBJECT ${libvmi_src})
+@@ -169,6 +168,7 @@ add_subdirectory(os)
+ 
+ 
+ if (ENABLE_XEN)
++    list(APPEND libvmi_src disk/vbd.c)
+     find_package(Xen REQUIRED)
+     list(APPEND VMI_PUBLIC_HEADERS events.h)
+     # CMAKE_DL_LIBS -> dlopen* lib
+-- 
+2.32.0
+

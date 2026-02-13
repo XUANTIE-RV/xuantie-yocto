@@ -1,0 +1,51 @@
+From 365159534b1981dfe291ecc05d2455f32652a166 Mon Sep 17 00:00:00 2001
+From: Changqing Li <changqing.li@windriver.com>
+Date: Mon, 26 Aug 2019 18:00:39 +0800
+Subject: [PATCH] drod: add option to config systemddir
+
+Upstream-Status: Pending
+
+Not need to send upstream, since upstream have refactor
+related code, but not released. and this version release 
+4 years ago, not proper to just backport one or more
+commits, this patch maybe could be dropped after upgrade.
+
+Signed-off-by: Changqing Li <changqing.li@windriver.com>
+---
+ configure.ac        | 9 +++++++++
+ scripts/Makefile.am | 2 +-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 1cb8579..3e4a5ec 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -25,6 +25,15 @@ AC_DEFINE([_GNU_SOURCE], 1,
+           [Define _GNU_SOURCE so that we get all necessary prototypes])
+ 
+ ##
++#Add option to config systemddir
++##
++AC_ARG_WITH([systemddir],
++  [AS_HELP_STRING([--with-systemddir=DIR], [systemd dir])],
++  [systemddir=$withval],
++  [systemddir="/lib/systemd/system"])
++AC_SUBST([systemddir], [$systemddir])
++
++##
+ # Checks for programs
+ ##
+ AC_PROG_CC
+diff --git a/scripts/Makefile.am b/scripts/Makefile.am
+index 2aba728..40822b7 100644
+--- a/scripts/Makefile.am
++++ b/scripts/Makefile.am
+@@ -1,4 +1,4 @@
+-systemddir=/lib/systemd/system
++systemddir=@systemddir@
+ 
+ install-data-local:
+ 	$(top_srcdir)/config/install-sh -m 755 ./auto.diod \
+-- 
+2.7.4
+

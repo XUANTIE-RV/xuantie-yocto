@@ -6,6 +6,8 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 TOP_DIR=$(cd "$SCRIPT_DIR/../../../.." && pwd)
 DOWNLOAD_DIR="$TOP_DIR/xuantie-build/downloads"
 
+$TOP_DIR/meta-xuantie/conf/distro/toolchain/toolchain_updater.py
+
 # Function to create symbolic links
 create_link() {
     cd "$TOOLCHAIN_DIR/sysroot/usr/$1"
@@ -19,33 +21,33 @@ create_link() {
     ln -sf ../../${1}/librt.so.1 librt.so.1
 }
 
-# GCC-specific symbolic link handling
-handle_gcc_specific() {
+# specific symbolic link handling
+handle_multilib() {
     cd "$TOOLCHAIN_DIR/bin"
     for file in ./*; do
         if [ -f "$file" ]; then
             base_name=$(basename -- "$file")
-            new_base_name="${base_name/riscv64-unknown-linux-gnu/riscv64-linux}"
-            ln -s "$file" "$new_base_name"
+
+            case "$base_name" in
+                riscv64-unknown-linux-gnu-*) 
+                    new_base_name="${base_name/riscv64-unknown-linux-gnu/riscv64-linux}" ;;
+                riscv32-unknown-linux-gnu-*) 
+                    new_base_name="${base_name/riscv32-unknown-linux-gnu/riscv64-linux}" ;;
+                *) continue ;;
+            esac
+            ln -sf "$file" "$new_base_name"
         fi
     done
 
-    create_link lib64/lp64
-    create_link lib64/lp64d
-    create_link lib64xthead/lp64
-    create_link lib64xthead/lp64d
-    create_link lib32/ilp32
-    create_link lib32/ilp32d
-    create_link lib32xthead/ilp32
-    create_link lib32xthead/ilp32d
+    if [ ! -d "$TOOLCHAIN_DIR/sysroot/usr/lib32xthead/" ] && \
+        [ ! -d "$TOOLCHAIN_DIR/sysroot/usr/lib64xthead/" ]; then
+        return
+    fi
 
     cd "$TOOLCHAIN_DIR/sysroot/"
+    mkdir -p lib usr/lib
     cp -rfd lib64xthead/lp64d/* lib
-    ln -srf lib/ld-2.33.so lib/ld-linux-riscv64-lp64d.so.1
-    mv usr/lib64xthead/lp64d usr/lib
-    ln -srf usr/lib usr/lib64xthead/lp64d
-    mkdir -p usr/libexec32/getconf
-    mv usr/libexec/getconf/*32* usr/libexec32/getconf
+    cp -rfd usr/lib64xthead/lp64d/* usr/lib
 }
 
 # Setup environment and configuration
@@ -56,7 +58,7 @@ setup_environment() {
 
     # Rename old config file
     if [ -f "$CONFIG_FILE" ]; then
-        mv "$CONFIG_FILE" "$HIDDEN_CONFIG"
+        cp "$CONFIG_FILE" "$HIDDEN_CONFIG"
     fi
 
     # Check if hidden config exists
@@ -130,6 +132,14 @@ for TOOLCHAIN_TYPE in gcc clang; do
     CONFIG_FILE="$TOOLCHAIN_DIR/config"
     HIDDEN_CONFIG="$TOOLCHAIN_DIR/.config"
 
+    if [ -n "${XUANTIE_TOOLCHAIN_CONFIG}" ]; then
+        CONFIG_FILE="${SCRIPT_DIR}/config-${TOOLCHAIN_TYPE}-${XUANTIE_TOOLCHAIN_CONFIG}"
+        if [ ! -f "$CONFIG_FILE" ]; then
+            echo "error: No file '$CONFIG_FILE'"
+            exit 1
+        fi
+    fi
+
     # Setup environment
     setup_environment || continue
 
@@ -155,10 +165,7 @@ for TOOLCHAIN_TYPE in gcc clang; do
     # Extract toolchain
     extract_toolchain "$TOOLCHAIN_PATH" "$TOOLCHAIN_DIR"
 
-    # Apply GCC-specific handling
-    if [ "$TOOLCHAIN_TYPE" = "gcc" ]; then
-        handle_gcc_specific
-    fi
+    handle_multilib
 
     # Update marker
     update_version_marker "$MARKER_FILE" "$TOOLCHAIN_NAME"

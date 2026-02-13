@@ -1,21 +1,27 @@
 SUMMARY = "Just-In-Time Compiler for Lua"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=23d6278200de9b48fd1439f80507cba8"
+LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=d421a5e2a24207f5e260537399a9a38b"
 HOMEPAGE = "http://luajit.org"
 
-SRC_URI = "git://luajit.org/git/luajit-2.0.git;protocol=http;branch=v2.1 \
-           file://0001-Do-not-strip-automatically-this-leaves-the-stripping.patch \
-           file://clang.patch \
-           file://0001-Use-builtin-for-clear_cache.patch \
-           "
+SRC_URI = "git://github.com/ruyisdk/LuaJIT.git;protocol=http;branch=riscv64-v2.1-branch"
 
-# Set PV to a version tag and date (YYMMDD) associated with SRCREV if it is later.
-PV = "2.1.0~beta3-210112"
-SRCREV = "43ebb949a249a16c49d232ad24dc9127cc4302bb"
+PV = "2.1"
+PR = "r1"
+
+# commit Date: Fri Jun 21 13:12:42 2024 +0800
+# commit info: riscv: add README for patchset release
+SRCREV = "d7286888852ddac7f8b2fc269b4853a4ef5044a4"
 
 S = "${WORKDIR}/git"
 
 inherit pkgconfig binconfig siteinfo
+inherit xuantie-set-package-arch-with-mcpu
+
+# Extend cpu configuration for different xuantie cpu
+python () {
+    if d.getVar('XUANTIE_MCPU') and d.getVar('XUANTIE_MCPU') != "c9xx-riscv64" and d.getVar('XUANTIE_MCPU') != "c9xx-riscv32":
+        d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
+}
 
 BBCLASSEXTEND = "native"
 
@@ -93,11 +99,9 @@ FILES:${PN}-dev += "${libdir}/libluajit-5.1.a \
 "
 FILES:luajit-common = "${datadir}/${BPN}-${PV}"
 
-# mips64/ppc/ppc64/riscv64/riscv32 is not supported in this release
+# mips64/ppc/ppc64 is not supported in this release
 COMPATIBLE_HOST:mipsarchn32 = "null"
 COMPATIBLE_HOST:mipsarchn64 = "null"
 COMPATIBLE_HOST:powerpc = "null"
 COMPATIBLE_HOST:powerpc64 = "null"
 COMPATIBLE_HOST:powerpc64le = "null"
-COMPATIBLE_HOST:riscv64 = "null"
-COMPATIBLE_HOST:riscv32 = "null"

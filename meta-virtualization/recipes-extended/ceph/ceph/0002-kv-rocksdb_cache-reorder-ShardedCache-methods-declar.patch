@@ -1,0 +1,70 @@
+From 6cdb1387a713fad765b5193d5acf4504f206a66f Mon Sep 17 00:00:00 2001
+From: Kefu Chai <kchai@redhat.com>
+Date: Tue, 17 Aug 2021 15:39:00 +0800
+Subject: [PATCH 2/6] kv/rocksdb_cache: reorder ShardedCache methods
+ declarations
+
+in the exact order in which rocksdb::Cache declare its public virtual
+methods.
+
+Signed-off-by: Kefu Chai <kchai@redhat.com>
+
+Upstream-Status: Backport [633656f8ade2c1d67a66f8b7ca3aa0a2ae82e6b1]
+
+Signed-off-by: Sakib Sajal <sakib.sajal@windriver.com>
+---
+ src/kv/rocksdb_cache/ShardedCache.h | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/src/kv/rocksdb_cache/ShardedCache.h b/src/kv/rocksdb_cache/ShardedCache.h
+index 8ab2587b..a16cf561 100644
+--- a/src/kv/rocksdb_cache/ShardedCache.h
++++ b/src/kv/rocksdb_cache/ShardedCache.h
+@@ -56,34 +56,33 @@ class ShardedCache : public rocksdb::Cache, public PriorityCache::PriCache {
+  public:
+   ShardedCache(size_t capacity, int num_shard_bits, bool strict_capacity_limit);
+   virtual ~ShardedCache() = default;
++  // rocksdb::Cache
+   virtual const char* Name() const override = 0;
+-  virtual CacheShard* GetShard(int shard) = 0;
+-  virtual const CacheShard* GetShard(int shard) const = 0;
+-  virtual void* Value(Handle* handle) override = 0;
+-  virtual size_t GetCharge(Handle* handle) const = 0;
+-  virtual uint32_t GetHash(Handle* handle) const = 0;
+-  virtual void DisownData() override = 0;
+-
+-  virtual void SetCapacity(size_t capacity) override;
+-  virtual void SetStrictCapacityLimit(bool strict_capacity_limit) override;
+-
+   virtual rocksdb::Status Insert(const rocksdb::Slice& key, void* value, size_t charge,
+                                  void (*deleter)(const rocksdb::Slice& key, void* value),
+                                  rocksdb::Cache::Handle** handle, Priority priority) override;
+   virtual rocksdb::Cache::Handle* Lookup(const rocksdb::Slice& key, rocksdb::Statistics* stats) override;
+   virtual bool Ref(rocksdb::Cache::Handle* handle) override;
+   virtual bool Release(rocksdb::Cache::Handle* handle, bool force_erase = false) override;
++  virtual void* Value(Handle* handle) override = 0;
+   virtual void Erase(const rocksdb::Slice& key) override;
+   virtual uint64_t NewId() override;
+-  virtual size_t GetCapacity() const override;
++  virtual void SetCapacity(size_t capacity) override;
++  virtual void SetStrictCapacityLimit(bool strict_capacity_limit) override;
+   virtual bool HasStrictCapacityLimit() const override;
++  virtual size_t GetCapacity() const override;
+   virtual size_t GetUsage() const override;
+   virtual size_t GetUsage(rocksdb::Cache::Handle* handle) const override;
+   virtual size_t GetPinnedUsage() const override;
++  virtual size_t GetCharge(Handle* handle) const = 0;
++  virtual void DisownData() override = 0;
+   virtual void ApplyToAllCacheEntries(void (*callback)(void*, size_t),
+                                       bool thread_safe) override;
+   virtual void EraseUnRefEntries() override;
+   virtual std::string GetPrintableOptions() const override;
++  virtual CacheShard* GetShard(int shard) = 0;
++  virtual const CacheShard* GetShard(int shard) const = 0;
++  virtual uint32_t GetHash(Handle* handle) const = 0;
+ 
+   int GetNumShardBits() const { return num_shard_bits_; }
+ 
+-- 
+2.33.0
+

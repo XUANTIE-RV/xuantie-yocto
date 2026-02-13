@@ -1,0 +1,58 @@
+From 96bf043ec0ed93613036c324174c149655cf52be Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <mark.asselstine@windriver.com>
+Date: Thu, 31 May 2018 11:44:44 -0400
+Subject: [PATCH] template: make busybox template compatible with
+
+ core-image-minimal
+
+The busybox template makes a lot of assumptions about how the busybox
+binary found on the host was configured. Building core-image-minimal
+"out of the box" does not configure busybox's 'passwd' or 'init'
+applets so we need to work around this.
+
+Chances are if you attempt to use the busybox template with a host
+which is note core-image-minimal it will fail but we are making these
+changes here to at least have the template work with
+core-image-minimal to be able to demonstrate that it can work as well
+as to have it available for the ptests.
+
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+
+---
+ templates/lxc-busybox.in | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/templates/lxc-busybox.in b/templates/lxc-busybox.in
+index 8ba7cfe..effdb73 100644
+--- a/templates/lxc-busybox.in
++++ b/templates/lxc-busybox.in
+@@ -194,6 +194,19 @@ configure_busybox()
+     return 1
+   fi
+ 
++  # copy host passwd
++  if ! cp "$(which passwd)" "${rootfs}/bin"; then
++      echo "ERROR: Failed to copy passwd binary"
++      return 1
++  fi
++
++  # copy bash binary as the container init
++  if ! cp "$(which bash)" "${rootfs}/sbin/init"; then
++      echo "ERROR: Failed to copy bash binary"
++      return 1
++  fi
++
++
+   # symlink busybox for the commands it supports
+   # it would be nice to just use "chroot $rootfs busybox --install -s /bin"
+   # but that only works right in a chroot with busybox >= 1.19.0
+@@ -202,9 +215,6 @@ configure_busybox()
+     ./busybox --list | grep -v busybox | xargs -n1 ln -s busybox
+   )
+ 
+-  # relink /sbin/init
+-  ln "${rootfs}/bin/busybox" "${rootfs}/sbin/init"
+-
+   # /etc/fstab must exist for "mount -a"
+   touch "${rootfs}/etc/fstab"
+ 

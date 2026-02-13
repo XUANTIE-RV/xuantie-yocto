@@ -1,0 +1,81 @@
+diff --git a/CONFIG b/CONFIG
+index 7e6bd0d19..c8a24316a 100644
+--- a/CONFIG
++++ b/CONFIG
+@@ -19,6 +19,9 @@ CONFIG_LIBDIR=
+ # Prefix for cross compilation
+ CONFIG_CROSS_PREFIX=
+ 
++# Sysroot for cross compilation
++CONFIG_SYSROOT=
++
+ # Build with debug logging. Turn off for performance testing and normal usage
+ CONFIG_DEBUG=n
+ 
+diff --git a/configure b/configure
+index b564c6a4c..19460be30 100755
+--- a/configure
++++ b/configure
+@@ -26,6 +26,7 @@ function usage() {
+ 	echo " --target-arch=arch        Target build architecture. Must be a valid GNU arch. Default: native"
+ 	echo ""
+ 	echo " --cross-prefix=prefix     Prefix for cross compilation (default: none)"
++	echo " --sysroot=sysroot   	 	 Sysroot for cross compilation (default: none)"
+ 	echo "                           example: aarch64-linux-gnu"
+ 	echo " --libdir=path             Configure installation path for the libraries (default: \$prefix/lib)"
+ 	echo " --max-lcores=VAL          DPDK configuration. VAL defines maximum number of lcores supported"
+@@ -297,6 +298,9 @@ for i in "$@"; do
+ 		--disable-lto)
+ 			# Options handled before detecting CC.
+ 			;;
++		--sysroot=*)
++			CONFIG[SYSROOT]="${i#*=}"
++			;;
+ 		--prefix=*)
+ 			CONFIG[PREFIX]="${i#*=}"
+ 			;;
+@@ -707,7 +711,13 @@ if [[ $arch == x86_64* ]]; then
+ else
+ 	BUILD_CMD=($CC -o /dev/null -x c $CPPFLAGS $CFLAGS $LDFLAGS)
+ fi
+-BUILD_CMD+=(-I/usr/local/include -L/usr/local/lib)
++
++if [ -z "${CONFIG[SYSROOT]}" ]; then
++	BUILD_CMD+=(-I/usr/local/include -L/usr/local/lib)
++else
++	BUILD_CMD+=("--sysroot=${CONFIG[SYSROOT]}")
++fi
++
+ BUILD_CMD+=("-fuse-ld=$LD_TYPE")
+ if [[ -n "${CONFIG[OPENSSL_PATH]}" ]]; then
+ 	BUILD_CMD+=("-I${CONFIG[OPENSSL_PATH]}/include" "-L${CONFIG[OPENSSL_PATH]}")
+diff --git a/dpdkbuild/Makefile b/dpdkbuild/Makefile
+index ecb2eb829..1fd9c54aa 100644
+--- a/dpdkbuild/Makefile
++++ b/dpdkbuild/Makefile
+@@ -124,6 +124,8 @@ DPDK_OPTS += -Dcpu_instruction_set=$(TARGET_ARCHITECTURE)
+ ifneq ($(CONFIG_CROSS_PREFIX),)
+ ifeq ($(findstring mingw,$(CONFIG_CROSS_PREFIX)),mingw)
+ DPDK_OPTS += --cross-file $(SPDK_ROOT_DIR)/dpdk/config/x86/cross-mingw
++else ifeq ($(findstring riscv64,$(CONFIG_CROSS_PREFIX)),riscv64)
++DPDK_OPTS += --cross-file $(SPDK_ROOT_DIR)/dpdk/config/riscv/riscv64_llvm_config
+ else
+ $(error Automatic DPDK cross build is not supported. Please compile DPDK manually \
+ with e.g. `meson build --cross-file config/arm/arm64_armv8_linux_gcc`)
+diff --git a/mk/spdk.common.mk b/mk/spdk.common.mk
+index 03deb74f8..d3aa2d538 100644
+--- a/mk/spdk.common.mk
++++ b/mk/spdk.common.mk
+@@ -68,6 +68,12 @@ COMMON_CFLAGS += -march=$(TARGET_ARCHITECTURE)
+ COMMON_CFLAGS += -DPAGE_SIZE=$(shell getconf PAGESIZE)
+ else ifeq ('$(TARGET_MACHINE)|$(TARGET_ARCHITECTURE)','riscv64|native')
+ # -march=native is not yet supported by GCC on RISC-V. Falling back to default.
++else ifeq ($(TARGET_MACHINE),riscv64)
++	ifneq ($(CONFIG_SYSROOT),)
++	COMMON_CFLAGS += --sysroot=$(CONFIG_SYSROOT)
++	# COMMON_CFLAGS += -I$(CONFIG_SYSROOT)/usr/include -I$(CONFIG_SYSROOT)/usr/include/riscv64-linux-gnu/
++	LDFLAGS += -L$(CONFIG_SYSROOT)/usr/lib/riscv64-linux-gnu/ -L$(CONFIG_SYSROOT)/lib/riscv64-linux-gnu/ -Wl,-rpath-link,$(CONFIG_SYSROOT)/usr/lib/riscv64-linux-gnu/
++	endif
+ else ifneq ($(filter loongarch%,$(TARGET_MACHINE)),)
+ COMMON_CFLAGS += -march=$(TARGET_ARCHITECTURE)
+ COMMON_CFLAGS += -DPAGE_SIZE=$(shell getconf PAGESIZE)

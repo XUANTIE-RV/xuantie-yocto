@@ -31,6 +31,7 @@ IMAGE_INSTALL += " \
     glib-2.0 \
     gnu-config \
     grep \
+    kernel-selftest \
     libarchive \
     libcap \
     libcereal \
@@ -44,16 +45,15 @@ IMAGE_INSTALL += " \
     libudev \
     libusb1 \
     libxml2 \
+    litmus-tests-riscv \
     ltp \
-    lz4 \
-     \
-     \
     m4 \
     mpfr \
     nasm \
     ncurses \
     nfs-utils \
     ninja \
+    nss \
     ntfs-3g-ntfsprogs \
     ntp \
     openssl \
@@ -81,11 +81,89 @@ IMAGE_INSTALL += " \
     xz \
     yasm \
     zeromq \
-    zip \
     zlib \
+    zip \
 "
 
-IMAGE_INSTALL:append:riscv64 = "  libbpf pahole avahi cups openmpi nmap  go softfloat testfloat"
+IMAGE_INSTALL:append:riscv64 = " \
+    acpica \
+    acpitool \
+    audit \
+    bash-completion \
+    build-essential \
+    devmem2 \
+    dmidecode \
+    dos2unix \
+    dtc \
+    eject \
+    fio \
+    fontconfig \
+    glib-networking \
+    glog \
+    gmp \
+    googletest \
+    iozone3 \
+    iperf3 \
+    ipmitool \
+    kernel-devsrc \
+    klitmus \
+    kmod \
+    libnl \
+    libssh \
+    libvirt \
+    lsscsi \
+    lz4 \
+    man-db \
+    memtester \
+    meson \
+    ndctl \
+    netcat \
+    netperf \
+    nginx \
+    numactl \
+    perftest \
+    python3-cython \
+    python3-docutils \
+    python3-openpyxl \
+    python3-pexpect \
+    python3-pytest \
+    qperf \
+    rdma-core \
+    rpcsvc-proto \
+    rt-tests \
+    shadow \
+    smallpt \
+    sshpass \
+    sysstat \
+    tcl \
+    tcpdump \
+    trace-cmd \
+    tree \
+    ttf-dejavu-common \
+"
+
+IMAGE_INSTALL:append:riscv64 = " \
+    async-profiler \
+    avahi \
+    cups \
+    go \
+    kdump \
+    libbpf \
+    libunwind \
+    nmap \
+    nvme-cli \
+    openjdk \
+    openmpi \
+    pahole \
+    php \
+    softfloat \
+    spdk \
+    strace \
+    tcmalloc \
+    testfloat \
+    trinity \
+    vdsotest \
+"
 
 export IMAGE_BASENAME = "xuantie-common-packages"
 

@@ -11,3 +11,4 @@ S = "${WORKDIR}/litmus-0.13"
 DEPENDS = "neon"
 
 inherit autotools
+inherit xuantie-gcc14-compatible

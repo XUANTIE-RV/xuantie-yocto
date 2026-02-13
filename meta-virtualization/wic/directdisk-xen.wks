@@ -1,0 +1,10 @@
+# short-description: Create a 'pcbios' direct disk image with Xen hypervisor
+# long-description: Creates a partitioned legacy BIOS disk image to boot Xen
+# that the user can directly dd to boot media. Boot files are located on the
+# first vfat partition.
+
+part /boot --source bootimg-biosxen --ondisk sda --label boot --active --align 1024
+
+# For the main partition, it can be useful to add additional space for VMs:
+# eg. increase partition size by appending: --size 10G
+part / --source rootfs --ondisk sda --use-uuid --fstype=ext4 --label root --align 1024

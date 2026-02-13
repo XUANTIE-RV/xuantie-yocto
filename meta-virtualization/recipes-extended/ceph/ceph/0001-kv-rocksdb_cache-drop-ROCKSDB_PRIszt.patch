@@ -1,0 +1,51 @@
+From b7b58010fd10b95c681df78cc4322e6586a39099 Mon Sep 17 00:00:00 2001
+From: Kefu Chai <kchai@redhat.com>
+Date: Tue, 17 Aug 2021 15:20:24 +0800
+Subject: [PATCH 1/6] kv/rocksdb_cache: drop ROCKSDB_PRIszt
+
+ROCKSDB_PRIszt is a macro for "zu", which is in turn use for printing an
+(unsigned) size_t variable.
+
+there is no point having it in the header file or define a macro for it,
+as %zu is standard compliant, and we don't get any advantage by using a
+macro for it.
+
+Signed-off-by: Kefu Chai <kchai@redhat.com>
+
+Upstream-Status: Backport [44f5b827eb3c65665373a86908bf5d47e7d02687]
+
+Signed-off-by: Sakib Sajal <sakib.sajal@windriver.com>
+
+---
+ src/kv/rocksdb_cache/ShardedCache.cc | 2 +-
+ src/kv/rocksdb_cache/ShardedCache.h  | 1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/src/kv/rocksdb_cache/ShardedCache.cc b/src/kv/rocksdb_cache/ShardedCache.cc
+index 367140a9..8e08deb8 100644
+--- a/src/kv/rocksdb_cache/ShardedCache.cc
++++ b/src/kv/rocksdb_cache/ShardedCache.cc
+@@ -131,7 +131,7 @@ std::string ShardedCache::GetPrintableOptions() const {
+   char buffer[kBufferSize];
+   {
+     std::lock_guard<std::mutex> l(capacity_mutex_);
+-    snprintf(buffer, kBufferSize, "    capacity : %" ROCKSDB_PRIszt "\n",
++    snprintf(buffer, kBufferSize, "    capacity : %zu\n",
+              capacity_);
+     ret.append(buffer);
+     snprintf(buffer, kBufferSize, "    num_shard_bits : %d\n", num_shard_bits_);
+diff --git a/src/kv/rocksdb_cache/ShardedCache.h b/src/kv/rocksdb_cache/ShardedCache.h
+index 4d64893a..8ab2587b 100644
+--- a/src/kv/rocksdb_cache/ShardedCache.h
++++ b/src/kv/rocksdb_cache/ShardedCache.h
+@@ -22,7 +22,6 @@
+ #ifndef CACHE_LINE_SIZE
+ #define CACHE_LINE_SIZE 64 // XXX arch-specific define 
+ #endif
+-#define ROCKSDB_PRIszt "zu"
+ 
+ namespace rocksdb_cache {
+ 
+-- 
+2.33.0
+

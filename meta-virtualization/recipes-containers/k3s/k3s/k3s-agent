@@ -1,0 +1,103 @@
+#!/bin/sh -eu
+#
+# Copyright (C) 2020 Axis Communications AB
+#
+# SPDX-License-Identifier: Apache-2.0
+
+ENV_CONF=/etc/systemd/system/k3s-agent.service.d/10-env.conf
+
+usage() {
+	echo "
+USAGE:
+    ${0##*/} [OPTIONS]
+OPTIONS:
+    --token value, -t value             Token to use for authentication [\$K3S_TOKEN]
+    --token-file value                  Token file to use for authentication [\$K3S_TOKEN_FILE]
+    --server value, -s value            Server to connect to [\$K3S_URL]
+    --node-name value                   Node name [\$K3S_NODE_NAME]
+    --resolv-conf value                 Kubelet resolv.conf file [\$K3S_RESOLV_CONF]
+    --cluster-secret value              Shared secret used to bootstrap a cluster [\$K3S_CLUSTER_SECRET]
+    -h                                  print this
+"
+}
+
+[ $# -gt 0 ] || {
+	usage
+	exit
+}
+
+case $1 in
+	-*)
+		;;
+	*)
+		usage
+		exit 1
+		;;
+esac
+
+rm -f $ENV_CONF
+mkdir -p ${ENV_CONF%/*}
+echo [Service] > $ENV_CONF
+
+while getopts "t:s:-:h" opt; do
+	case $opt in
+		h)
+			usage
+			exit
+			;;
+		t)
+			VAR_NAME=K3S_TOKEN
+			;;
+		s)
+			VAR_NAME=K3S_URL
+			;;
+		-)
+			[ $# -ge $OPTIND ] || {
+				usage
+				exit 1
+			}
+			opt=$OPTARG
+			eval OPTARG='$'$OPTIND
+			OPTIND=$(($OPTIND + 1))
+			case $opt in
+				token)
+					VAR_NAME=K3S_TOKEN
+					;;
+				token-file)
+					VAR_NAME=K3S_TOKEN_FILE
+					;;
+				server)
+					VAR_NAME=K3S_URL
+					;;
+				node-name)
+					VAR_NAME=K3S_NODE_NAME
+					;;
+				resolv-conf)
+					VAR_NAME=K3S_RESOLV_CONF
+					;;
+				cluster-secret)
+					VAR_NAME=K3S_CLUSTER_SECRET
+					;;
+				help)
+					usage
+					exit
+					;;
+				*)
+					usage
+					exit 1
+					;;
+			esac
+			;;
+		*)
+			usage
+			exit 1
+			;;
+	esac
+    echo Environment=$VAR_NAME=$OPTARG >> $ENV_CONF
+done
+
+chmod 0644 $ENV_CONF
+rm -rf /var/lib/rancher/k3s/agent
+systemctl daemon-reload
+systemctl restart k3s-agent
+systemctl enable k3s-agent.service

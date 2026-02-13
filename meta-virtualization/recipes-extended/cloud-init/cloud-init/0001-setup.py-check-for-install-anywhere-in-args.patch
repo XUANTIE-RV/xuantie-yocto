@@ -1,0 +1,31 @@
+From 5c96379a4727c07fb5222208525013ec8b878184 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Wed, 4 Nov 2020 21:15:50 -0500
+Subject: [PATCH] setup.py: check for 'install' anywhere in args
+
+The python3distutils bbclass calls setup.py in a different way then
+cloud-init expects .. the 'install' is not argument 1, but is in fact
+after a 'build' and some other options.
+
+So rather than checking for install to be argv[1], we check for it
+anywhere in the arguments are trigger the template replacement to
+happen.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ setup.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: git/setup.py
+===================================================================
+--- git.orig/setup.py
++++ git/setup.py
+@@ -87,7 +87,7 @@
+ 
+     # older versions of tox use bdist (xenial), and then install from there.
+     # newer versions just use install.
+-    if not (sys.argv[1] == "install" or sys.argv[1].startswith("bdist*")):
++    if not ('install' in sys.argv or sys.argv[1].startswith('bdist*')):
+         return template
+ 
+     tmpl_ext = ".tmpl"

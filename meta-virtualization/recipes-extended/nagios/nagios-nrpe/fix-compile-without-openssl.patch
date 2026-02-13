@@ -1,0 +1,43 @@
+fix compile without openssl
+
+Build with --disable-ssl causes the build to break with
+this error:
+
+error: unknown type name 'SSL'
+ void complete_SSL_shutdown( SSL *);
+
+Signed-off-by: Rickard Engberg <rickard.engberg@windriver.com>
+Signed-off-by: Vu Tran <vu.tran@windriver.com>
+
+Index: nrpe-2.15/src/nrpe.c
+===================================================================
+--- nrpe-2.15.orig/src/nrpe.c	2013-09-06 17:27:13.000000000 +0200
++++ nrpe-2.15/src/nrpe.c	2013-11-20 23:22:49.546791020 +0100
+@@ -99,9 +99,9 @@
+ int     debug=FALSE;
+ int     use_src=FALSE; /* Define parameter for SRC option */
+ 
+-
++#ifdef HAVE_SSL
+ void complete_SSL_shutdown( SSL *);
+-
++#endif
+ 
+ int main(int argc, char **argv){
+ 	int result=OK;
+@@ -1796,6 +1796,7 @@
+ 	return OK;
+         }
+ 
++#ifdef HAVE_SSL
+ void complete_SSL_shutdown( SSL *ssl) {
+ 
+ 	/*  
+@@ -1816,6 +1817,7 @@
+ 		if( SSL_shutdown( ssl)) break;
+ 	}
+ }
++#endif
+ 
+ /* bail if daemon is running as root */
+ int check_privileges(void){

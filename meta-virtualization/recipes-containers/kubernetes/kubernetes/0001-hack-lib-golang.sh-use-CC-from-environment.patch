@@ -1,0 +1,37 @@
+From 9cbb2d523d481053d405ebac830c2074b00d3417 Mon Sep 17 00:00:00 2001
+From: Koen Kooi <koen.kooi@linaro.org>
+Date: Mon, 23 Jul 2018 15:28:02 +0200
+Subject: [PATCH] hack/lib/golang.sh: use CC from environment
+
+Toolchain tupples differs, especially when using vendor provides ones.
+
+Upstream-status: Inappropriate [embedded specific]
+Signed-off-by: Koen Kooi <koen.kooi@linaro.org>
+---
+ hack/lib/golang.sh | 4 ----
+ 1 file changed, 4 deletions(-)
+
+Index: kubernetes-v1.21.1+git45da3fc33872083fb225c1a8c4d03e530d6f7630/hack/lib/golang.sh
+===================================================================
+--- kubernetes-v1.21.1+git45da3fc33872083fb225c1a8c4d03e530d6f7630.orig/hack/lib/golang.sh
++++ kubernetes-v1.21.1+git45da3fc33872083fb225c1a8c4d03e530d6f7630/hack/lib/golang.sh
+@@ -414,19 +414,15 @@
+         ;;
+       "linux/arm")
+         export CGO_ENABLED=1
+-        export CC=${KUBE_LINUX_ARM_CC:-arm-linux-gnueabihf-gcc}
+         ;;
+       "linux/arm64")
+         export CGO_ENABLED=1
+-        export CC=${KUBE_LINUX_ARM64_CC:-aarch64-linux-gnu-gcc}
+         ;;
+       "linux/ppc64le")
+         export CGO_ENABLED=1
+-        export CC=${KUBE_LINUX_PPC64LE_CC:-powerpc64le-linux-gnu-gcc}
+         ;;
+       "linux/s390x")
+         export CGO_ENABLED=1
+-        export CC=${KUBE_LINUX_S390X_CC:-s390x-linux-gnu-gcc}
+         ;;
+     esac
+   fi

@@ -1,0 +1,31 @@
+From d06f0795cfd097c373c7b9824ce59f17c9194520 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Tue, 9 Jul 2024 21:23:47 +0000
+Subject: [PATCH] meson.build: clear abs_top_builddir to avoid QA warnings
+
+If we don't clear the absolute directories from the build,
+we'll get QA warnings on packaging.
+
+Upstream-Status: Inappropriate [oe specific]
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ src/meson.build | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/src/meson.build b/src/meson.build
+index 8cce42c7ad..dc7a81c980 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -3,8 +3,6 @@ src_inc_dir = include_directories('.')
+ src_dep = declare_dependency(
+   compile_args: [
+     '-DIN_LIBVIRT',
+-    '-Dabs_top_builddir="@0@"'.format(meson.project_build_root()),
+-    '-Dabs_top_srcdir="@0@"'.format(meson.project_source_root()),
+   ] + coverage_flags + win32_flags,
+   dependencies: [
+     glib_dep,
+-- 
+2.39.2
+

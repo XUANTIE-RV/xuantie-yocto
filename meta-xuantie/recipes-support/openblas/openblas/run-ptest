@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e
+
+cd $(dirname "$(realpath "$0")")
+
+./xscblat1
+./xdcblat1
+./xccblat1
+./xzcblat1
+./xscblat2 < sin2
+./xdcblat2 < din2
+./xccblat2 < cin2
+./xzcblat2 < zin2
+./xscblat3 < sin3
+./xdcblat3 < din3
+./xccblat3 < cin3
+./xzcblat3 < zin3
+
+echo "PASS: openblas"

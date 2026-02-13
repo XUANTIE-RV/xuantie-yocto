@@ -1,0 +1,64 @@
+From 72dd3b4b38705442d821fe97a40061f23e748769 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Thu, 6 Mar 2014 01:55:09 -0500
+Subject: [PATCH] cloud-init: source local lsb functions
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ sysvinit/debian/cloud-config     |    1 +
+ sysvinit/debian/cloud-final      |    1 +
+ sysvinit/debian/cloud-init       |    1 +
+ sysvinit/debian/cloud-init-local |    1 +
+ 4 files changed, 4 insertions(+)
+
+diff --git a/sysvinit/debian/cloud-config b/sysvinit/debian/cloud-config
+index 53322748ac65..7874dcfab9b0 100644
+--- a/sysvinit/debian/cloud-config
++++ b/sysvinit/debian/cloud-config
+@@ -30,6 +30,7 @@ SCRIPTNAME=/etc/init.d/$NAME
+ # Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+ # and status_of_proc is working.
+ . /lib/lsb/init-functions
++. /etc/init.d/functions
+ 
+ if init_is_upstart; then
+ 	case "$1" in
+diff --git a/sysvinit/debian/cloud-final b/sysvinit/debian/cloud-final
+index 55afc8b0678a..661314f0b64c 100644
+--- a/sysvinit/debian/cloud-final
++++ b/sysvinit/debian/cloud-final
+@@ -32,6 +32,7 @@ SCRIPTNAME=/etc/init.d/$NAME
+ # Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+ # and status_of_proc is working.
+ . /lib/lsb/init-functions
++. /etc/init.d/functions
+ 
+ if init_is_upstart; then
+ 	case "$1" in
+diff --git a/sysvinit/debian/cloud-init b/sysvinit/debian/cloud-init
+index 48fa04233f00..d3ccec99bacc 100755
+--- a/sysvinit/debian/cloud-init
++++ b/sysvinit/debian/cloud-init
+@@ -30,6 +30,7 @@ SCRIPTNAME=/etc/init.d/$NAME
+ # Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+ # and status_of_proc is working.
+ . /lib/lsb/init-functions
++. /etc/init.d/functions
+ 
+ if init_is_upstart; then
+ 	case "$1" in
+diff --git a/sysvinit/debian/cloud-init-local b/sysvinit/debian/cloud-init-local
+index 802ee8e9f386..c309e8347324 100644
+--- a/sysvinit/debian/cloud-init-local
++++ b/sysvinit/debian/cloud-init-local
+@@ -29,6 +29,7 @@ SCRIPTNAME=/etc/init.d/$NAME
+ # Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+ # and status_of_proc is working.
+ . /lib/lsb/init-functions
++. /etc/init.d/functions
+ 
+ if init_is_upstart; then
+ 	case "$1" in
+-- 
+1.7.10.4
+

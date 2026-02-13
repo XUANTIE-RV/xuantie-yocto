@@ -1,0 +1,29 @@
+From 0c29fdf9e0ed159fccee7662e5f980062263a115 Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Tue, 25 Nov 2025 15:16:51 +0800
+Subject: [PATCH] RISC-V: improve RVV Extension detection compatibility
+
+Current RVV detection uses __THEAD_VERSION__ macro which only exists
+in T-Head's compiler fork. This causes configuration failures when
+building with standard GCC toolchains that support RVV via the
+upstream __riscv_v macro.
+---
+ cmake/checks/cpu_rvv.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cmake/checks/cpu_rvv.cpp b/cmake/checks/cpu_rvv.cpp
+index 187f39866a..735e024441 100644
+--- a/cmake/checks/cpu_rvv.cpp
++++ b/cmake/checks/cpu_rvv.cpp
+@@ -10,7 +10,7 @@
+ 
+ #include <riscv_vector.h>
+ 
+-#ifdef __THEAD_VERSION__
++#if (defined(__THEAD_VERSION__) && defined(__riscv_v) && __riscv_v == 71000000) || ( defined(__clang__) && defined(__riscv_v) && __riscv_v == 7000)
+ int test()
+ {
+     const float src[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+-- 
+2.25.1
+

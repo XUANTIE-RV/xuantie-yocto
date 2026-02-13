@@ -1,0 +1,89 @@
+From 28cf9806d1632d378485005babec295da0c77fcf Mon Sep 17 00:00:00 2001
+From: Michael Brown <mcb30@ipxe.org>
+Date: Sat, 27 Jun 2020 20:21:11 +0100
+Subject: [PATCH] [intel] Avoid spurious compiler warning on GCC 10
+
+GCC 10 produces a spurious warning about an out-of-bounds array access
+for the unsized raw dword array in union intelvf_msg.
+
+Avoid the warning by embedding the zero-length array within a struct.
+
+Signed-off-by: Michael Brown <mcb30@ipxe.org>
+---
+ src/drivers/net/intelvf.c | 18 ++++++++++--------
+ src/drivers/net/intelvf.h |  8 +++++++-
+ 2 files changed, 17 insertions(+), 9 deletions(-)
+
+diff --git a/src/drivers/net/intelvf.c b/src/drivers/net/intelvf.c
+index ac6fea74..0d48b417 100644
+--- a/drivers/net/intelvf.c
++++ b/drivers/net/intelvf.c
+@@ -52,14 +52,15 @@ FILE_LICENCE ( GPL2_OR_LATER_OR_UBDL );
+  */
+ static void intelvf_mbox_write ( struct intel_nic *intel,
+ 				 const union intelvf_msg *msg ) {
++	const struct intelvf_msg_raw *raw = &msg->raw;
+ 	unsigned int i;
+ 
+ 	/* Write message */
+ 	DBGC2 ( intel, "INTEL %p sending message", intel );
+-	for ( i = 0 ; i < ( sizeof ( *msg ) / sizeof ( msg->dword[0] ) ) ; i++){
+-		DBGC2 ( intel, "%c%08x", ( i ? ':' : ' ' ), msg->dword[i] );
+-		writel ( msg->dword[i], ( intel->regs + intel->mbox.mem +
+-					  ( i * sizeof ( msg->dword[0] ) ) ) );
++	for ( i = 0 ; i < ( sizeof ( *msg ) / sizeof ( raw->dword[0] ) ) ; i++){
++		DBGC2 ( intel, "%c%08x", ( i ? ':' : ' ' ), raw->dword[i] );
++		writel ( raw->dword[i], ( intel->regs + intel->mbox.mem +
++					  ( i * sizeof ( raw->dword[0] ) ) ) );
+ 	}
+ 	DBGC2 ( intel, "\n" );
+ }
+@@ -72,14 +73,15 @@ static void intelvf_mbox_write ( struct intel_nic *intel,
+  */
+ static void intelvf_mbox_read ( struct intel_nic *intel,
+ 				union intelvf_msg *msg ) {
++	struct intelvf_msg_raw *raw = &msg->raw;
+ 	unsigned int i;
+ 
+ 	/* Read message */
+ 	DBGC2 ( intel, "INTEL %p received message", intel );
+-	for ( i = 0 ; i < ( sizeof ( *msg ) / sizeof ( msg->dword[0] ) ) ; i++){
+-		msg->dword[i] = readl ( intel->regs + intel->mbox.mem +
+-					( i * sizeof ( msg->dword[0] ) ) );
+-		DBGC2 ( intel, "%c%08x", ( i ? ':' : ' ' ), msg->dword[i] );
++	for ( i = 0 ; i < ( sizeof ( *msg ) / sizeof ( raw->dword[0] ) ) ; i++){
++		raw->dword[i] = readl ( intel->regs + intel->mbox.mem +
++					( i * sizeof ( raw->dword[0] ) ) );
++		DBGC2 ( intel, "%c%08x", ( i ? ':' : ' ' ), raw->dword[i] );
+ 	}
+ 	DBGC2 ( intel, "\n" );
+ }
+diff --git a/src/drivers/net/intelvf.h b/src/drivers/net/intelvf.h
+index ab404698..ffb18e04 100644
+--- a/drivers/net/intelvf.h
++++ b/drivers/net/intelvf.h
+@@ -119,6 +119,12 @@ struct intelvf_msg_queues {
+ 	uint32_t dflt;
+ } __attribute__ (( packed ));
+ 
++/** Raw mailbox message */
++struct intelvf_msg_raw {
++	/** Raw dwords */
++	uint32_t dword[0];
++} __attribute__ (( packed ));
++
+ /** Mailbox message */
+ union intelvf_msg {
+ 	/** Message header */
+@@ -132,7 +138,7 @@ union intelvf_msg {
+ 	/** Queue configuration message */
+ 	struct intelvf_msg_queues queues;
+ 	/** Raw dwords */
+-	uint32_t dword[0];
++	struct intelvf_msg_raw raw;
+ };
+ 
+ /** Maximum time to wait for mailbox message
+-- 
+2.17.1
+

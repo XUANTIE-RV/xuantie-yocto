@@ -1,0 +1,50 @@
+From 9b66394c712ec0d0fcb2052baa7f590621a53461 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Tue, 8 Nov 2016 13:15:46 -0500
+Subject: [PATCH] selinux: drop selinux support
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ src/systemdhook.c |   12 ------------
+ 1 file changed, 12 deletions(-)
+
+Index: git/src/systemdhook.c
+===================================================================
+--- git.orig/src/systemdhook.c
++++ git/src/systemdhook.c
+@@ -17,7 +17,6 @@
+ #include <errno.h>
+ #include <inttypes.h>
+ #include <linux/limits.h>
+-#include <selinux/selinux.h>
+ #include <yajl/yajl_tree.h>
+ #include <stdbool.h>
+ 
+@@ -166,12 +165,6 @@
+ 				closedir(dir);
+ 				return -1;
+ 			}
+-			if (label != NULL && (strcmp("", label))) {
+-				if ((is_selinux_enabled() > 0) && (setfilecon (full_path, label) < 0)) {
+-					pr_perror("%s: Failed to set context %s on %s", id, label, full_path);
+-				}
+-			}
+-
+ 			if (doChown) {
+ 				/* Change uid and gid to something the container can handle */
+ 				if (chown(full_path, uid, gid) < 0 ) {
+@@ -557,14 +550,6 @@
+ 				return -1;
+ 			}
+ 		}
+-
+-		if (strcmp("", mount_label)) {
+-			if ((is_selinux_enabled() > 0) &&
+-			    (setfilecon(journal_dir, (security_context_t)mount_label) < 0)) {
+-				pr_perror("%s: Failed to set journal dir selinux context", id);
+-				return -1;
+-			}
+-		}
+ 
+ 		/* Attempt to creare /var/log/journal inside of rootfs,
+ 		   if successful, or directory exists, mount tmpfs on top of

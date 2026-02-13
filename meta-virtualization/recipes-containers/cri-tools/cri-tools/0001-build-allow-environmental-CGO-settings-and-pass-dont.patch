@@ -1,0 +1,52 @@
+From 567b618f2ab9bb722826688d84f328773e4f37ce Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Wed, 17 Aug 2022 11:03:09 -0400
+Subject: [PATCH] build: allow environmental CGO settings and pass
+ dontusecurrentpkgs
+
+The build system already knows whether or not we want to use CGO,
+so we remove the hardcoded variant so our exported environment
+variable will control the enablement.
+
+Since our oe-core go infrastructure insists on both -pie and static
+builds (for the most part), and that is not recommended by many
+packages, we end up with errors like:
+
+   1.20.0+gitec9e336fd8c21c4bab89a6aed2c4a138c8cfae75/src/import/_output/crictl \
+        -ldflags '-X github.com/kubernetes-sigs/cri-tools/pkg/version.Version=1.20.0' \
+        -tags '' \
+        github.com/kubernetes-sigs/cri-tools/cmd/crictl
+    # github.com/kubernetes-sigs/cri-tools/cmd/crictl
+    cannot find package runtime/cgo (using -importcfg)
+    /work/cortexa72-poky-linux/cri-tools/1.20.0+gitec9e336fd8c21c4bab89a6aed2c4a138c8cfae75-r0/recipe-sysroot-native/usr/lib/aarch64-poky-linux/go/pkg/tool/linux_amd64/link:
+    cannot open file : open : no such file or directory
+
+In a similar manner to:
+
+https://www.yoctoproject.org/pipermail/meta-virtualization/2019-March/004084.html
+
+We introduce '-a -pkgdir dontusecurrentpkgs' to mask/fix the problem,
+and continue to work towards non-static builds.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ src/import/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/import/Makefile b/src/import/Makefile
+index 7c5b30ec..9b0dfeaf 100644
+--- a/src/import/Makefile
++++ b/src/import/Makefile
+@@ -72,7 +72,8 @@ crictl:
+ 	@$(MAKE) -B $(CRICTL)
+ 
+ $(CRICTL):
+-	CGO_ENABLED=0 $(GO_BUILD) -o $@ \
++	$(GO_BUILD) -o $@ \
++		-a -pkgdir dontusecurrentpkgs \
+ 		-ldflags '$(GO_LDFLAGS)' \
+ 		-trimpath \
+ 		$(PROJECT)/cmd/crictl
+-- 
+2.19.1
+

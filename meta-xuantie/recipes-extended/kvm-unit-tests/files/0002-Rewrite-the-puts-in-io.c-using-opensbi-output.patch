@@ -1,0 +1,134 @@
+From e382f1d89377983198d7dac6f26f170b786b81fa Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Thu, 24 Apr 2025 20:23:32 +0800
+Subject: [PATCH] Rewrite the puts in io.c using opensbi output
+
+---
+ lib/riscv/io.c | 105 +++++++++++++++----------------------------------
+ 1 file changed, 32 insertions(+), 73 deletions(-)
+
+diff --git a/lib/riscv/io.c b/lib/riscv/io.c
+index b3f587bb..b3330792 100644
+--- a/lib/riscv/io.c
++++ b/lib/riscv/io.c
+@@ -13,85 +13,44 @@
+ #include <asm/setup.h>
+ #include <asm/spinlock.h>
+ 
+-/*
+- * Use this guess for the uart base in order to make an attempt at
+- * having earlier printf support. We'll overwrite it with the real
+- * base address that we read from the device tree later. This is
+- * the address we expect the virtual machine manager to put in
+- * its generated device tree.
+- */
+-#define UART_EARLY_BASE ((u8 *)(unsigned long)CONFIG_UART_EARLY_BASE)
+-static volatile u8 *uart0_base = UART_EARLY_BASE;
+-static struct spinlock uart_lock;
+-
+-static void uart0_init_fdt(void)
+-{
+-	const char *compatible[] = {"ns16550a"};
+-	struct dt_pbus_reg base;
+-	int i, ret;
+-
+-	ret = dt_get_default_console_node();
+-	assert(ret >= 0 || ret == -FDT_ERR_NOTFOUND);
+-
+-	if (ret == -FDT_ERR_NOTFOUND) {
+-		for (i = 0; i < ARRAY_SIZE(compatible); i++) {
+-			ret = dt_pbus_get_base_compatible(compatible[i], &base);
+-			assert(ret == 0 || ret == -FDT_ERR_NOTFOUND);
+-			if (ret == 0)
+-				break;
+-		}
+-
+-		if (ret) {
+-			printf("%s: Compatible uart not found in the device tree, aborting...\n",
+-			       __func__);
+-			abort();
+-		}
+-	} else {
+-		ret = dt_pbus_translate_node(ret, 0, &base);
+-		assert(ret == 0);
+-	}
+-
+-	uart0_base = ioremap(base.addr, base.size);
++// SBI 扩展 ID 和函数号（console 扩展）
++#define SBI_CONSOLE_PUTCHAR 0x1
++#define SBI_EXT_CONSOLE_PUTCHAR 0x10 // 假设在 console 扩展中
++
++static inline void sbi_console_putchar(int ch) {
++    asm volatile(
++        "li a6, %0\n"     // 扩展 ID（立即数）
++        "li a7, %1\n"     // 函数号（立即数）
++        "mv a0, %2\n"     // 字符值放入 a0 寄存器
++        "ecall"
++        :
++        : "i"(SBI_EXT_CONSOLE_PUTCHAR),  // 立即数（立即数约束 "i"）
++          "i"(SBI_CONSOLE_PUTCHAR),
++          "r"(ch)                     // 通用寄存器约束 "r"
++        : "a0", "a6", "a7", "memory"  // 告知编译器使用的寄存器
++    );
+ }
+ 
+-static void uart0_init_acpi(void)
+-{
+-	assert_msg(false, "ACPI not available");
++static struct spinlock console_lock;
++
++void puts(const char *s) {
++    spin_lock(&console_lock);
++    while (*s) {
++        sbi_console_putchar(*s++);
++    }
++    spin_unlock(&console_lock);
+ }
+ 
+-void io_init(void)
+-{
+-	if (dt_available())
+-		uart0_init_fdt();
+-	else
+-		uart0_init_acpi();
++void halt(int code);
+ 
+-	if (uart0_base != UART_EARLY_BASE) {
+-		printf("WARNING: early print support may not work. "
+-		       "Found uart at %p, but early base is %p.\n",
+-		       uart0_base, UART_EARLY_BASE);
+-	}
++void exit(int code) {
++    printf("\nEXIT: STATUS=%d\n", ((code) << 1) | 1);
++    sbi_shutdown();
++    halt(code);
++    __builtin_unreachable();
+ }
+ 
+-void puts(const char *s)
+-{
+-	spin_lock(&uart_lock);
+-	while (*s)
+-		writeb(*s++, uart0_base);
+-	spin_unlock(&uart_lock);
++void io_init(void) {
++    // 无需初始化
+ }
+ 
+-/*
+- * Defining halt to take 'code' as an argument guarantees that it will
+- * be in a0 when we halt. That gives us a final chance to see the exit
+- * status while inspecting the halted unit test state.
+- */
+-void halt(int code);
+-
+-void exit(int code)
+-{
+-	printf("\nEXIT: STATUS=%d\n", ((code) << 1) | 1);
+-	sbi_shutdown();
+-	halt(code);
+-	__builtin_unreachable();
+-}
+-- 
+2.25.1
+

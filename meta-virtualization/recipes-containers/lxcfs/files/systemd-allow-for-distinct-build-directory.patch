@@ -1,0 +1,47 @@
+From 66a71fbf94020651880f1dbb6e4663d93391b47c Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <mark.asselstine@windriver.com>
+Date: Mon, 10 Sep 2018 13:14:07 -0400
+Subject: [PATCH] systemd: allow for distinct build directory
+
+The Makefile.am is currently written in a way that doesn't allow for a
+distinct build directory. As such we get the error:
+
+    install: cannot stat 'lxcfs.service': No such file or directory
+
+Make use of $(srcdir) to correct this.
+
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+---
+ config/init/systemd/Makefile.am | 2 +-
+ config/init/systemd/Makefile.in | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/config/init/systemd/Makefile.am b/config/init/systemd/Makefile.am
+index 79e96f5..d6933f9 100644
+--- a/config/init/systemd/Makefile.am
++++ b/config/init/systemd/Makefile.am
+@@ -5,7 +5,7 @@ SYSTEMD_UNIT_DIR = /lib/systemd/system
+ 
+ install-systemd: lxcfs.service
+ 	$(MKDIR_P) $(DESTDIR)$(SYSTEMD_UNIT_DIR)
+-	$(INSTALL_DATA) lxcfs.service $(DESTDIR)$(SYSTEMD_UNIT_DIR)/
++	$(INSTALL_DATA) $(srcdir)/lxcfs.service $(DESTDIR)$(SYSTEMD_UNIT_DIR)/
+ 
+ uninstall-systemd:
+ 	rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/lxcfs.service
+diff --git a/config/init/systemd/Makefile.in b/config/init/systemd/Makefile.in
+index d433e8a..430190c 100644
+--- a/config/init/systemd/Makefile.in
++++ b/config/init/systemd/Makefile.in
+@@ -450,7 +450,7 @@ uninstall-am: uninstall-local
+ 
+ @INIT_SCRIPT_SYSTEMD_TRUE@install-systemd: lxcfs.service
+ @INIT_SCRIPT_SYSTEMD_TRUE@	$(MKDIR_P) $(DESTDIR)$(SYSTEMD_UNIT_DIR)
+-@INIT_SCRIPT_SYSTEMD_TRUE@	$(INSTALL_DATA) lxcfs.service $(DESTDIR)$(SYSTEMD_UNIT_DIR)/
++@INIT_SCRIPT_SYSTEMD_TRUE@	$(INSTALL_DATA) $(srcdir)/lxcfs.service $(DESTDIR)$(SYSTEMD_UNIT_DIR)/
+ 
+ @INIT_SCRIPT_SYSTEMD_TRUE@uninstall-systemd:
+ @INIT_SCRIPT_SYSTEMD_TRUE@	rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/lxcfs.service
+-- 
+2.7.4
+

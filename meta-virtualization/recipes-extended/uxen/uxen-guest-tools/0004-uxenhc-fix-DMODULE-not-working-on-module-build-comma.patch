@@ -1,0 +1,56 @@
+From 732791cb353289e37448d84503a7d62ca156f29f Mon Sep 17 00:00:00 2001
+From: Martin Jansa <Martin.Jansa@gmail.com>
+Date: Tue, 30 Nov 2021 16:33:14 +0000
+Subject: [PATCH] uxenhc: fix -DMODULE not working on module build command line
+
+* ATTOXEN_API_INC isn't defined anywhere in our OE builds, so the command line ends like this:
+
+  x86_64-oe-linux-gcc  -fuse-ld=bfd -fmacro-prefix-map=/OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0=/usr/src/debug/uxen-guest-tools/4.1.8-r0                      -fdebug-prefix-map=/OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0=/usr/src/debug/uxen-guest-tools/4.1.8-r0                      -fdebug-prefix-map=/OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/recipe-sysroot=                      -fdebug-prefix-map=/OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/recipe-sysroot-native=  -fdebug-prefix-map=/OE/work-shared/qemux86-64/kernel-source=/usr/src/kernel -Wp,-MMD,/OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/uxen-4.1.8-72a4af9/vm-support/linux/uxenhc/.hypercall.o.d -I/OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/uxen-4.1.8-72a4af9/vm-support/linux/include/ -I/OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/uxen-4.1.8-72a4af9/vm-support/linux/include/uxen -I/OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/uxen-4.1.8-72a4af9/vm-support/linux/include/uxen/xen -I/OE/work-shared/qemux86-64/kernel-source/arch/x86/include -I./arch/x86/include/generated -I/OE/work-shared/qemux86-64/kernel-source/include -I./include -I/OE/work-shared/qemux86-64/kernel-source/arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I/OE/work-shared/qemux86-64/kernel-source/include/uapi -I./include/generated/uapi -include /OE/work-shared/qemux86-64/kernel-source/include/linux/compiler-version.h -include /OE/work-shared/qemux86-64/kernel-source/include/linux/kconfig.h -include /OE/work-shared/qemux86-64/kernel-source/include/linux/compiler_types.h -D__KERNEL__ -fmacro-prefix-map=/OE/work-shared/qemux86-64/kernel-source/= -Wall -Wundef -Werror=strict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -fshort-wchar -fno-PIE -Werror=implicit-function-declaration -Werror=implicit-int -Werror=return-type -Wno-format-security -std=gnu89 -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -fcf-protection=none -m64 -falign-jumps=1 -falign-loops=1 -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -mskip-rax-setup -march=core2 -mno-red-zone -mcmodel=kernel -Wno-sign-compare -fno-asynchronous-unwind-tables -mindirect-branch=thunk-extern -mindirect-branch-register -fno-jump-tables -fno-delete-null-pointer-checks -Wno-frame-address -Wno-format-truncation -Wno-format-overflow -Wno-address-of-packed-member -O2 -fno-allow-store-data-races -Wframe-larger-than=2048 -fstack-protector-strong -Wimplicit-fallthrough=5 -Wno-main -Wno-unused-but-set-variable -Wno-unused-const-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-stack-clash-protection -pg -mrecord-mcount -mfentry -DCC_USING_FENTRY -Wdeclaration-after-statement -Wvla -Wno-pointer-sign -Wno-stringop-truncation -Wno-zero-length-bounds -Wno-array-bounds -Wno-stringop-overflow -Wno-restrict -Wno-maybe-uninitialized -fno-strict-overflow -fno-stack-check -fconserve-stack -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -Wno-packed-not-aligned -DLX_TARGET_STANDARDVM -g -Wall -I  -DMODULE  -DKBUILD_BASENAME='"hypercall"' -DKBUILD_MODNAME='"uxenhc"' -D__KBUILD_MODNAME=kmod_uxenhc -c -o /OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/uxen-4.1.8-72a4af9/vm-support/linux/uxenhc/hypercall.o /OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/uxen-4.1.8-72a4af9/vm-support/linux/uxenhc/hypercall.c
+
+  the important part is "-I  -DMODULE" which breaks include/linux/module.h behavior:
+
+  /*
+   * MODULE_FILE is used for generating modules.builtin
+   * So, make it no-op when this is being built as a module
+   */
+  #ifdef MODULE
+  #define MODULE_FILE
+  #else
+  #define MODULE_FILE     MODULE_INFO(file, KBUILD_MODFILE);
+  #endif
+
+  resulting in:
+
+  In file included from /OE/work-shared/qemux86-64/kernel-source/include/linux/module.h:22,
+                   from /OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/uxen-4.1.8-72a4af9/vm-support/linux/uxenhc/hypercall.c:3:
+  /OE/work-shared/qemux86-64/kernel-source/include/linux/module.h:183:43: error: expected ',' or ';' before 'KBUILD_MODFILE'
+    183 | #define MODULE_FILE     MODULE_INFO(file, KBUILD_MODFILE);
+        |                                           ^~~~~~~~~~~~~~
+  /OE/work-shared/qemux86-64/kernel-source/include/linux/moduleparam.h:26:61: note: in definition of macro '__MODULE_INFO'
+     26 |                 = __MODULE_INFO_PREFIX __stringify(tag) "=" info
+        |                                                             ^~~~
+  /OE/work-shared/qemux86-64/kernel-source/include/linux/module.h:183:25: note: in expansion of macro 'MODULE_INFO'
+    183 | #define MODULE_FILE     MODULE_INFO(file, KBUILD_MODFILE);
+        |                         ^~~~~~~~~~~
+  /OE/work-shared/qemux86-64/kernel-source/include/linux/module.h:230:34: note: in expansion of macro 'MODULE_FILE'
+    230 | #define MODULE_LICENSE(_license) MODULE_FILE MODULE_INFO(license, _license)
+        |                                  ^~~~~~~~~~~
+  /OE/work/qemux86_64-oe-linux/uxen-guest-tools/4.1.8-r0/uxen-4.1.8-72a4af9/vm-support/linux/uxenhc/hypercall.c:161:1: note: in expansion of macro 'MODULE_LICENSE'
+    161 | MODULE_LICENSE("GPL");
+        | ^~~~~~~~~~~~~~
+
+Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+---
+ uxenhc/Kbuild | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/uxenhc/Kbuild b/uxenhc/Kbuild
+index e418096..ef1b145 100644
+--- a/uxenhc/Kbuild
++++ b/uxenhc/Kbuild
+@@ -1,4 +1,3 @@
+ obj-m += uxenhc.o
+ 
+ uxenhc-y := hypercall.o
+-CFLAGS_hypercall.o := -I$(ATTOXEN_API_INC)
+\ No newline at end of file

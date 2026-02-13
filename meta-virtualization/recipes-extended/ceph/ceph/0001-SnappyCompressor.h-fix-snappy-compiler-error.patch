@@ -1,0 +1,30 @@
+From 85bde55627cfbb35d8b4735dec32bf33fa30079f Mon Sep 17 00:00:00 2001
+From: Saul Wold <saul.wold@windriver.com>
+Date: Fri, 28 May 2021 10:16:07 -0700
+Subject: [PATCH] SnappyCompressor.h: fix snappy compiler error
+
+snappy quietly changed public type
+
+Known issue in ceph: https://tracker.ceph.com/issues/50934
+
+Upstream-Status: Pending
+
+Signed-off-by: Saul Wold <saul.wold@windriver.com>
+
+---
+ src/compressor/snappy/SnappyCompressor.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/compressor/snappy/SnappyCompressor.h b/src/compressor/snappy/SnappyCompressor.h
+index 0cfb819c..2fbe35b7 100644
+--- a/src/compressor/snappy/SnappyCompressor.h
++++ b/src/compressor/snappy/SnappyCompressor.h
+@@ -96,7 +96,7 @@ class SnappyCompressor : public Compressor {
+     if (qat_enabled)
+       return qat_accel.decompress(p, compressed_len, dst);
+ #endif
+-    snappy::uint32 res_len = 0;
++    uint32_t res_len = 0;
+     BufferlistSource source_1(p, compressed_len);
+     if (!snappy::GetUncompressedLength(&source_1, &res_len)) {
+       return -1;

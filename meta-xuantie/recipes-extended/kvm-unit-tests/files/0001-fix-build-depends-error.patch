@@ -1,0 +1,30 @@
+From d848cc42fccab5331b43cfc1b1b2faecd8253773 Mon Sep 17 00:00:00 2001
+From: lucz <chongzhi.lcz@alibaba-inc.com>
+Date: Wed, 19 Mar 2025 10:44:37 +0800
+Subject: [PATCH] fix build depends error
+
+---
+ riscv/Makefile | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/riscv/Makefile b/riscv/Makefile
+index c8498aa3..ed548a10 100644
+--- a/riscv/Makefile
++++ b/riscv/Makefile
+@@ -19,10 +19,10 @@ tests += $(TEST_DIR)/isa-dbltrp.$(exe)
+ all: $(tests)
+ 
+ sse-objs = $(TEST_DIR)/sse-asm.o $(TEST_DIR)/sse.o
+-$(TEST_DIR)/sbi-deps = $(TEST_DIR)/sbi-asm.o $(TEST_DIR)/sbi-sse.o $(sse-objs)
+-$(TEST_DIR)/sbi-deps += $(TEST_DIR)/sbi-fwft.o
++sbi-deps = $(TEST_DIR)/sbi-asm.o $(TEST_DIR)/sbi-sse.o $(sse-objs)
++sbi-deps += $(TEST_DIR)/sbi-fwft.o
+ 
+-$(TEST_DIR)/isa-dbltrp-deps = $(sse-objs)
++isa-dbltrp-deps = $(sse-objs)
+ 
+ # When built for EFI sieve needs extra memory, run with e.g. '-m 256' on QEMU
+ $(TEST_DIR)/sieve.$(exe): AUXFLAGS = 0x1
+-- 
+2.25.1
+

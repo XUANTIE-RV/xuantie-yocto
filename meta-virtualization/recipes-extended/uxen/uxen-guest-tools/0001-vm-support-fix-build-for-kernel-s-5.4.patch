@@ -1,0 +1,84 @@
+From 21bb6953a64390dd1c5a8b7520eb5e2c18ea3ff1 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Mon, 29 Nov 2021 21:01:03 -0500
+Subject: [PATCH] vm-support: fix build for kernel's > 5.4
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ a/uxenhc/hypercall.c             | 10 +++++++++-
+ a/v4vvsock/v4v_vsock.c           |  2 ++
+ a/vmdiagnostics/vm_diagnostics.c |  9 ++++++++-
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/uxenhc/hypercall.c b/uxenhc/hypercall.c
+index 0b9ef3f..04957a8 100644
+--- a/uxenhc/hypercall.c
++++ b/uxenhc/hypercall.c
+@@ -10,6 +10,7 @@
+ #include <linux/mm.h>
+ #include <linux/spinlock.h>
+ #include <linux/compiler.h>
++#include <linux/version.h>
+ 
+ #include <xen/xen.h>
+ #include <xen/version.h>
+@@ -124,7 +125,11 @@ static int __init uxen_hypercall_init(void)
+     printk(KERN_INFO "using uxen hypervisor\n");
+ 
+     if (!uxen_hcbase) {
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,8,0))
+         uxen_hcbase =  __vmalloc(PAGE_SIZE, GFP_KERNEL, PAGE_KERNEL_EXEC);
++#else
++	uxen_hcbase =  __vmalloc(PAGE_SIZE, GFP_KERNEL);
++#endif
+         if (!uxen_hcbase) {
+             ret = -ENOMEM;
+             goto out;
+diff --git a/v4vvsock/v4v_vsock.c b/v4vvsock/v4v_vsock.c
+index 8d80d7d..cd7e8ce 100644
+--- a/v4vvsock/v4v_vsock.c
++++ b/v4vvsock/v4v_vsock.c
+@@ -578,8 +578,10 @@ static const struct proto_ops vsock_dgram_ops = {
+     .ioctl = sock_no_ioctl,
+     .listen = sock_no_listen,
+     .shutdown = sock_no_shutdown,
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,10,0))
+     .setsockopt = sock_no_setsockopt,
+     .getsockopt = sock_no_getsockopt,
++#endif
+     .sendmsg = vsock_sendmsg,
+     .recvmsg = vsock_recvmsg,
+     .mmap = sock_no_mmap,
+diff --git a/vmdiagnostics/vm_diagnostics.c b/vmdiagnostics/vm_diagnostics.c
+index 9ff94fb..db14e57 100644
+--- a/vmdiagnostics/vm_diagnostics.c
++++ b/vmdiagnostics/vm_diagnostics.c
+@@ -22,6 +22,7 @@
+ #include <linux/timekeeping.h>
+ #include <linux/types.h>
+ #include <linux/vmstat.h>
++#include <linux/version.h>
+ 
+ #include <uxen-v4vlib.h>
+ 
+@@ -403,10 +404,16 @@ static void vm_handle_request_stat_task(struct vm_diagnostics_context *context,
+  
+             task_payload.state = task_state_to_char(task);
+             task_payload.num_threads = get_nr_threads(task);
++
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,5,0))
+             task_payload.start_time_nsec = task->real_start_time;
++#else
++            task_payload.start_time_nsec = task->start_boottime;
++#endif
++
+             task_payload.last_run_cpu_id = task_cpu(task);
+ 
+-            thread_group_cputime_adjusted(task, &user_nsec, &system_nsec);
++            //thread_group_cputime_adjusted(task, &user_nsec, &system_nsec);
+             task_payload.user_nsec = user_nsec;
+             task_payload.system_nsec = system_nsec;
+ 
+-- 
+2.19.1
+

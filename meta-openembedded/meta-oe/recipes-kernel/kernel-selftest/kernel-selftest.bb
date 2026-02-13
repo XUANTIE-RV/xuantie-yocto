@@ -17,7 +17,6 @@ SRC_URI:append:libc-musl = "\
                       "
 SRC_URI += "file://run-ptest \
             file://COPYING \
-            file://0006-riscv-Makefile-include-.-lib.mk.patch \
             "
 
 # now we just test bpf and vm
@@ -51,7 +50,7 @@ FULL_OPTIMIZATION = ""
 
 S = "${WORKDIR}/${BP}"
 
-TEST_LIST = "\
+TEST_LIST_KERNEL66 = "\
     cgroup \
     cpu-hotplug \
     filesystems \
@@ -70,7 +69,14 @@ TEST_LIST = "\
     iommu \
 "
 
-TEST_LIST:append:riscv64 = " kvm"
+TEST_LIST_KERNEL66:append:riscv64 = " ${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '6.6.y', 'kvm', '', d)}"
+
+TEST_LIST_KERNEL510 = "\
+    ${@bb.utils.filter('PACKAGECONFIG', 'bpf firmware vm', d)} \
+    rtc \
+"
+
+TEST_LIST = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '6.6.y', '${TEST_LIST_KERNEL66}', '${TEST_LIST_KERNEL510}', d)}"
 
 EXTRA_OEMAKE = '\
     CROSS_COMPILE=${TARGET_PREFIX} \

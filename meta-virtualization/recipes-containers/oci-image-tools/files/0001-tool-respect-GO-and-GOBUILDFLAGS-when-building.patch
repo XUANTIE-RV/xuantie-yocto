@@ -1,0 +1,31 @@
+From 7e6bfc9657f9fd83c170d5bf3721d54bf9e88074 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Sun, 13 Oct 2019 15:35:08 -0400
+Subject: [PATCH] tool: respect GO and GOBUILDFLAGS when building
+
+Ensure that the building of the tools respect the go compiler and
+build flags from our environemnt. Otherwise, we'll use the host
+settings for each and end up with a binary that cannot be run on
+the target.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index bacb341..1bfe021 100644
+--- a/Makefile
++++ b/Makefile
+@@ -27,7 +27,7 @@ check-license:
+ 
+ .PHONY: tool
+ tool:
+-	go build -ldflags "-X main.gitCommit=${COMMIT}" -o oci-image-tool ./cmd/oci-image-tool
++	$(GO) build $(GOBUILDFLAGS) $(EXTRA_FLAGS) -ldflags "-X main.gitCommit=${COMMIT}" -o oci-image-tool ./cmd/oci-image-tool
+ 
+ 
+ all: tool man
+-- 
+2.19.1
+

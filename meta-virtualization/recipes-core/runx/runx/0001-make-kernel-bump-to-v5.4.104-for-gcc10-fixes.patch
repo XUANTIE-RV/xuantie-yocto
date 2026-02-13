@@ -1,0 +1,26 @@
+From 9d9bb1883e3be291df737e159c93ffcab9e55b3a Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Fri, 26 Mar 2021 10:15:24 -0400
+Subject: [PATCH] make-kernel: bump to v5.4.104 for gcc10+ fixes
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ kernel/make-kernel | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/make-kernel b/kernel/make-kernel
+index 4e80b3c..a679096 100755
+--- a/kernel/make-kernel
++++ b/kernel/make-kernel
+@@ -17,7 +17,7 @@ kernel_srcdir=$kernel_stuffdir/src
+ kernel_builddir=$kernel_stuffdir/build
+ kernel_out=$kernel_outpath/kernel
+ 
+-kernel_version=5.4
++kernel_version=5.4.104
+ kernel_name=linux-$kernel_version
+ kernel_tarball="$kernel_name".tar.xz
+ kernel_url=https://www.kernel.org/pub/linux/kernel/v5.x/"$kernel_tarball"
+-- 
+2.19.1
+

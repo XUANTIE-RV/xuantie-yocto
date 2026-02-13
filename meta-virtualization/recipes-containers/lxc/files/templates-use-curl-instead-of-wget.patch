@@ -1,0 +1,51 @@
+From 3e4cb0b738649f7750413cefbcfdb2115213ad0d Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Sun, 14 Aug 2022 14:08:56 -0400
+Subject: [PATCH] download: Use curl instead of wget
+
+When curl's MIT license is preferable to wget's GPLv3.
+
+Signed-off-by: Joakim Roubert <joakimr@axis.com>
+Signed-off-by: Yanfei Xu <yanfei.xu@windriver.com>
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ templates/lxc-download.in | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/templates/lxc-download.in b/templates/lxc-download.in
+index a62ddf482..690307338 100755
+--- a/templates/lxc-download.in
++++ b/templates/lxc-download.in
+@@ -59,9 +59,9 @@ cleanup() {
+   fi
+ }
+ 
+-wget_wrapper() {
++curl_wrapper() {
+   for _ in $(seq 3); do
+-    if wget "$@"; then
++    if curl "$@"; then
+       return 0
+     fi
+   done
+@@ -70,7 +70,7 @@ wget_wrapper() {
+ }
+ 
+ download_file() {
+-  if ! wget_wrapper --user-agent="lxc/@PACKAGE_VERSION@ compat:${DOWNLOAD_COMPAT_LEVEL}" -T 30 -q "https://${DOWNLOAD_SERVER}/$1" -O "$2" >/dev/null 2>&1; then
++  if ! curl_wrapper --user-agent "lxc/@PACKAGE_VERSION@ compat:${DOWNLOAD_COMPAT_LEVEL}" -m 30 -s "https://${DOWNLOAD_SERVER}/$1" -o "$2" >/dev/null 2>&1; then
+     if [ "$3" = "noexit" ]; then
+       return 1
+     else
+@@ -176,7 +176,7 @@ while :; do
+ done
+ 
+ # Check for required binaries
+-for bin in tar xz wget; do
++for bin in tar xz curl; do
+   if ! command -V "${bin}" >/dev/null 2>&1; then
+     echo "ERROR: Missing required tool: ${bin}" 1>&2
+     exit 1
+-- 
+2.25.1
+

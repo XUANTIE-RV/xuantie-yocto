@@ -1,0 +1,64 @@
+From fa402247e9b24470648a366cfda1c9134660146a Mon Sep 17 00:00:00 2001
+From: Mark Asselstine <mark.asselstine@windriver.com>
+Date: Mon, 18 Mar 2019 14:04:16 -0400
+Subject: [PATCH] Makefile: force rebuilding all packages to avoid cgo
+
+We are running into an issue when attempting to build 'static',
+similar to what is described by
+
+https://plus.google.com/117192131596509381660/posts/eNnNePihYnK
+and
+https://github.com/golang/go/issues/9369
+
+In our case we can see that it manifests as a build error
+
+    cannot find package runtime/cgo (using -importcfg)
+    ...go/pkg/tool/linux_amd64/link: cannot open file : open : no such file or directory
+
+Although the descriptions of issue indicate that newer versions of GO,
+such as the version we are using, should not have this issue it is
+clear from the error that cgo is being referenced when it should be
+out of the picture.
+
+Interesting enough this issue only manifests when we are building on
+x86-64 and building for x86-64 which might indicate that GO might be
+finding -native packages and not -cross packages.
+
+This change works around the issue and will allow for the building of
+the 'static' make target, but at this time and until the issue is
+completely understood, it is recommended that the 'build' target is
+used.
+
+Upstream-Status: Inappropriate [only an issue with our builds]
+
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+
+Forward-ported to v0.5.3.
+
+Signed-off-by: Paul Barker <paul@betafive.co.uk>
+---
+ basic.mk | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/basic.mk b/basic.mk
+index 187dff3..76a8d93 100644
+--- a/src/import/basic.mk
++++ b/src/import/basic.mk
+@@ -45,12 +45,12 @@ build: prebuild $(NAME) ## Builds a dynamic executable or package.
+ 
+ $(NAME): $(wildcard *.go) $(wildcard */*.go) VERSION.txt
+ 	@echo "+ $@"
+-	$(GO) build -tags "$(BUILDTAGS)" ${GO_LDFLAGS} -o $(NAME) .
++	$(GO) build -a -pkgdir dontusecurrentpkgs -tags "$(BUILDTAGS)" ${GO_LDFLAGS} -o $(NAME) .
+ 
+ .PHONY: static
+ static: prebuild ## Builds a static executable.
+ 	@echo "+ $@"
+-	CGO_ENABLED=$(CGO_ENABLED) $(GO) build \
++	CGO_ENABLED=$(CGO_ENABLED) $(GO) build -a -pkgdir dontusecurrentpkgs \
+ 				-tags "$(BUILDTAGS) static_build" \
+ 				${GO_LDFLAGS_STATIC} -o $(NAME) .
+ 
+-- 
+2.23.0
+

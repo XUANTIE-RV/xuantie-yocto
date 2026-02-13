@@ -1,0 +1,148 @@
+From 758c1edc7bf3d2a023954f4fcc9ddf46fd370272 Mon Sep 17 00:00:00 2001
+From: Martin Jansa <Martin.Jansa@gmail.com>
+Date: Thu, 21 May 2020 14:14:56 +0200
+Subject: [PATCH] Use python3
+
+* without /usr/bin/python this just fails to configure with:
+  | checking for python... no
+  | configure: error: Please install python before installing.
+  | WARNING: exit code 1 from a shell command.
+
+Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+---
+ configure.ac                           | 6 +++---
+ etc/configure_transform.py             | 2 +-
+ libexec/python/helpers/json/add.py     | 2 +-
+ libexec/python/helpers/json/delete.py  | 2 +-
+ libexec/python/helpers/json/dump.py    | 2 +-
+ libexec/python/helpers/json/get.py     | 2 +-
+ libexec/python/helpers/json/inspect.py | 2 +-
+ libexec/python/import.py               | 2 +-
+ libexec/python/pull.py                 | 2 +-
+ libexec/python/shub/api.py             | 2 +-
+ libexec/python/size.py                 | 2 +-
+ 11 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 8ffa5ab32..71a1605b2 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -251,15 +251,15 @@ fi
+ # PYTHON
+ # ---------------------------------------------------------------------
+ 
+-AC_CHECK_PROG(PYTHON_CHECK,python,yes)
++AC_CHECK_PROG(PYTHON_CHECK,python3,yes)
+ if test x"$PYTHON_CHECK" != x"yes" ; then
+-    AC_MSG_ERROR([Please install python before installing.])
++    AC_MSG_ERROR([Please install python3 before installing.])
+ else
+ 
+     PYTHON_MODULES="base64 datetime glob hashlib io itertools json math multiprocessing pickle pwd re shutil signal subprocess stat sys tarfile tempfile time"
+     for PYTHON_MODULE in $PYTHON_MODULES; do
+         AC_MSG_CHECKING([for the $PYTHON_MODULE python module])
+-	    python_module_result=`python -c "import $PYTHON_MODULE" 2>&1`
++	    python_module_result=`python3 -c "import $PYTHON_MODULE" 2>&1`
+ 	    if test -z "$python_module_result"; then
+ 		AC_MSG_RESULT([yes])
+ 	    else
+diff --git a/etc/configure_transform.py b/etc/configure_transform.py
+index a1ff5c427..9ec445d21 100755
+--- a/etc/configure_transform.py
++++ b/etc/configure_transform.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # 
+ # Copyright (c) 2017, SingularityWare, LLC. All rights reserved.
+ #
+diff --git a/libexec/python/helpers/json/add.py b/libexec/python/helpers/json/add.py
+index b24aec75a..22abbbeb9 100644
+--- a/libexec/python/helpers/json/add.py
++++ b/libexec/python/helpers/json/add.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 
+diff --git a/libexec/python/helpers/json/delete.py b/libexec/python/helpers/json/delete.py
+index 0975e4e60..07e255228 100644
+--- a/libexec/python/helpers/json/delete.py
++++ b/libexec/python/helpers/json/delete.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 
+diff --git a/libexec/python/helpers/json/dump.py b/libexec/python/helpers/json/dump.py
+index ddba06e4a..37a8edf70 100644
+--- a/libexec/python/helpers/json/dump.py
++++ b/libexec/python/helpers/json/dump.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 
+diff --git a/libexec/python/helpers/json/get.py b/libexec/python/helpers/json/get.py
+index 355be9040..d1d822aea 100644
+--- a/libexec/python/helpers/json/get.py
++++ b/libexec/python/helpers/json/get.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 
+diff --git a/libexec/python/helpers/json/inspect.py b/libexec/python/helpers/json/inspect.py
+index 65772a4ef..61c723495 100644
+--- a/libexec/python/helpers/json/inspect.py
++++ b/libexec/python/helpers/json/inspect.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 
+diff --git a/libexec/python/import.py b/libexec/python/import.py
+index 2ec208417..1c58eda5c 100644
+--- a/libexec/python/import.py
++++ b/libexec/python/import.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 
+diff --git a/libexec/python/pull.py b/libexec/python/pull.py
+index 1cd705c90..4431023f3 100644
+--- a/libexec/python/pull.py
++++ b/libexec/python/pull.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 
+diff --git a/libexec/python/shub/api.py b/libexec/python/shub/api.py
+index 850d167e7..3c8313ad5 100644
+--- a/libexec/python/shub/api.py
++++ b/libexec/python/shub/api.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 
+diff --git a/libexec/python/size.py b/libexec/python/size.py
+index 34331fd27..99581ce52 100644
+--- a/libexec/python/size.py
++++ b/libexec/python/size.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ '''
+ 

@@ -7,13 +7,22 @@ SRCREV = "${XUANTIE_LINUX_TAG}"
 
 S = "${WORKDIR}"
 
-XUANTIE_GCC_SRC_URI_PATH ?= "ftp://11.122.129.163/Test/Test/Toolschain/gnu-riscv/V3.1.0"
-SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
-    '${XUANTIE_GCC_SRC_URI_PATH}/gcc_14.1.1_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=9882dfecd9817d1bb1f903480ede6d29033d6f4ba60a6bb865fad6ab1bce86e8', \
-    '${XUANTIE_GCC_SRC_URI_PATH}/gcc_14.1.1_riscv64-6.6.0-rv64gc-lp64d.deb;sha256sum=51a24c5a7981e25897112b08b27777fd31693b747655d3cb2c80485c6c732477', d)}"
-SRC_URI:riscv32 = "${XUANTIE_GCC_SRC_URI_PATH}/gcc_14.1.1_riscv32-6.6.0-rv32gc-ilp32d.deb;sha256sum=808823570c32d4078d18164d5427a2201482b8342c5059bfc4b5e9772a5d7ddc"
 
-PR = "r3"
+FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/gcc_14.3.0_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=0d338c4a4d83b2ec04582b19d295f5645f92e67cb62a84f6b96582bd86320de6"
+FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/gcc_14.3.0_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=d149bd076740fb05b80cf8ad4aa3f3051b18d2ab3f1bde14c30afd7c685a2106"
+FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/gcc_14.3.0_riscv32-5.10.4-rv32gc-ilp32d.deb;sha256sum=1f7e066ce6ceb63f0150f2bae01fb443a323ebc719593a6bd815df1b1a2259a7"
+FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/gcc_14.3.0_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=e5ba10b6f7466389cdeb3f9e78cdce8500edb99da1ab0d4831d4209b234795f6"
+
+SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
+    '${FILE_RV64_510}', \
+    '${FILE_RV64_66}', d)}"
+
+SRC_URI:riscv32 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
+    '${FILE_RV32_510}', \
+    '${FILE_RV32_66}', d)}"
+
+PR = "r9"
+
 INSANE_SKIP:${PN} += "file-rdeps dev-deps infodir"
 INSANE_SKIP:${PN} += "dev-so staticdev"
 INSANE_SKIP:${PN} += "already-stripped"
@@ -42,7 +51,7 @@ do_install() {
     rm -rf ${D}/usr/bin/riscv*-unknown-linux-gnu-c++
     rm -rf ${D}/usr/bin/riscv*-unknown-linux-gnu-g++
     rm -rf ${D}/usr/bin/riscv*-unknown-linux-gnu-gcc
-    rm -rf ${D}/usr/bin/riscv*-unknown-linux-gnu-gcc-14.1.1
+    rm -rf ${D}/usr/bin/riscv*-unknown-linux-gnu-gcc-*
     rm -rf ${D}/usr/bin/riscv*-unknown-linux-gnu-gcc-ar
     rm -rf ${D}/usr/bin/riscv*-unknown-linux-gnu-gcc-nm
     rm -rf ${D}/usr/bin/riscv*-unknown-linux-gnu-ranlib
@@ -51,3 +60,9 @@ do_install() {
 }
 
 RDEPENDS:${PN} += "elfutils libcurl ca-certificates libopcodes zstd openssl openssl-ossl-module-legacy libbfd"
+
+inherit update-alternatives
+
+ALTERNATIVE_PRIORITY = "100"
+ALTERNATIVE:${PN} = "strings"
+ALTERNATIVE_LINK_NAME[vconfig] = "${bindir}/strings"

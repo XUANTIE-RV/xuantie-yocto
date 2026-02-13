@@ -13,7 +13,8 @@ copy_files() {
 }
 
 do_install:append() {
-    if [ ${EXTERNAL_TOOLCHAIN_SYSROOT} != "lib64xthead" ] || [ ${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME} != "lp64d" ]; then
+    if [ ${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME} != "${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME_DEFAULT}" ] || [ ${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME} != "${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME_DEFAULT}" ]; then
         copy_files "${EXTERNAL_TOOLCHAIN_SYSROOT}/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}/${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME}" "${D}${libdir}"
     fi
 }
+INSANE_SKIP:${PN} += " file-rdeps "

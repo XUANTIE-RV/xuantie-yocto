@@ -1,0 +1,42 @@
+Upstream-Status: Submitted [https://github.com/jbruchon/dev86/pull/23]
+Signed-off-by: Ross Burton <ross.burton@arm.com>
+
+From f507ee398ae20e4e97f01dfbd9a8709a90bc760f Mon Sep 17 00:00:00 2001
+From: Ross Burton <ross.burton@arm.com>
+Date: Fri, 29 Apr 2022 16:44:08 +0100
+Subject: [PATCH] cpp: fix race writing token.h files
+
+The rules for token1.h and token2.h both write to a temporary file tmp.h
+before renaming to token1.h or token2.h. However, in a parallel build
+these will execute at the same time and race.
+
+  gperf -aptTc -N is_ctok -H hash1 token1.tok > tmp.h
+  gperf -aptTc -k1,3 -N is_ckey -H hash2 token2.tok > tmp.h
+  mv tmp.h token1.h
+  mv tmp.h token2.h
+  mv: cannot stat 'tmp.h': No such file or directory
+
+By using gperf --output-file, the race is avoided entirely.
+---
+ cpp/Makefile | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/cpp/Makefile b/cpp/Makefile
+index 0ea43cc..743694f 100644
+--- a/cpp/Makefile
++++ b/cpp/Makefile
+@@ -20,9 +20,7 @@ token1.o: token1.h
+ token2.o: token2.h
+ 
+ token1.h: token1.tok
+-	gperf -aptTc -N is_ctok -H hash1 token1.tok > tmp.h
+-	mv tmp.h token1.h
++	gperf -aptTc -N is_ctok -H hash1 --output-file $@ $<
+ 
+ token2.h: token2.tok
+-	gperf -aptTc -k1,3 -N is_ckey -H hash2 token2.tok > tmp.h
+-	mv tmp.h token2.h
++	gperf -aptTc -k1,3 -N is_ckey -H hash2 --output-file $@ $<
+-- 
+2.25.1
+

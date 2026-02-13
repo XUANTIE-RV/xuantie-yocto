@@ -35,8 +35,8 @@ import_string_env image_rootfs
 # memory layout
 set $vmlinux_addr = 0x80000000 + 0x00200000
 set $rootfs_addr  = 0x80000000 + 0x04000000
-set $zsb_addr     = 0x60000000 + 0x04000000 - 0x00008000
-set $dtb_addr     = 0x60000000 + 0x04000000 - 0x00100000
+set $zsb_addr     = 0x60000000 + 0x00400000 - 0x00008000
+set $dtb_addr     = $zsb_addr  - 0x00100000 + 0x00008000
 set $bl31_addr    = 0x60000000
 set $teeos_addr   = 0xef000000
 

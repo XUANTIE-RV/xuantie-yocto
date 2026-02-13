@@ -23,6 +23,8 @@ FILES:${PN}-dev = "\
 "
 FILES:${PN}-staticdev = "${libdir}/libgfortran.a"
 
+INSANE_SKIP:${PN} = "file-rdeps already-stripped"
+
 do_package_write_ipk[depends] += "virtual/${MLPREFIX}libc:do_packagedata"
 do_package_write_deb[depends] += "virtual/${MLPREFIX}libc:do_packagedata"
 do_package_write_rpm[depends] += "virtual/${MLPREFIX}libc:do_packagedata"

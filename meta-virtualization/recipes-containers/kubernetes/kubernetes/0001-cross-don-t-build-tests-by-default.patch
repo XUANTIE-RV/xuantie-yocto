@@ -1,0 +1,33 @@
+From fa912b53186a047d787c8c456156b9dbdcdf040d Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@windriver.com>
+Date: Thu, 1 Nov 2018 10:21:10 -0400
+Subject: [PATCH] cross: don't build tests by default
+
+The hack/* build infrastructure doesn't respect the WHAT= commands
+that the make infrastructure provides to limit what is built.
+
+In our case, we are cross building and can't build the server test
+components without error. As such, we patch the targets out of the
+script to allow a successful build.
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ hack/make-rules/cross.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hack/make-rules/cross.sh b/hack/make-rules/cross.sh
+index 8e1e938..0898c5c 100755
+--- a/hack/make-rules/cross.sh
++++ b/hack/make-rules/cross.sh
+@@ -33,6 +33,6 @@ make all WHAT="${KUBE_NODE_TARGETS[*]}" KUBE_BUILD_PLATFORMS="${KUBE_NODE_PLATFO
+ 
+ make all WHAT="${KUBE_CLIENT_TARGETS[*]}" KUBE_BUILD_PLATFORMS="${KUBE_CLIENT_PLATFORMS[*]}"
+ 
+-make all WHAT="${KUBE_TEST_TARGETS[*]}" KUBE_BUILD_PLATFORMS="${KUBE_TEST_PLATFORMS[*]}"
++#make all WHAT="${KUBE_TEST_TARGETS[*]}" KUBE_BUILD_PLATFORMS="${KUBE_TEST_PLATFORMS[*]}"
+ 
+-make all WHAT="${KUBE_TEST_SERVER_TARGETS[*]}" KUBE_BUILD_PLATFORMS="${KUBE_TEST_SERVER_PLATFORMS[*]}"
++#make all WHAT="${KUBE_TEST_SERVER_TARGETS[*]}" KUBE_BUILD_PLATFORMS="${KUBE_TEST_SERVER_PLATFORMS[*]}"
+-- 
+2.7.4
+

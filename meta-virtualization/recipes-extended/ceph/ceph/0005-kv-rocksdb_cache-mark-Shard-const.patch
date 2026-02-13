@@ -1,0 +1,32 @@
+From 52c57e25a5e2c617bc797b8ce50060b5894bd7fc Mon Sep 17 00:00:00 2001
+From: Kefu Chai <kchai@redhat.com>
+Date: Tue, 17 Aug 2021 18:06:31 +0800
+Subject: [PATCH 5/6] kv/rocksdb_cache: mark Shard() const
+
+it does not mutate anything, so mark it `const`.
+
+Signed-off-by: Kefu Chai <kchai@redhat.com>
+
+Upstream-Status: Backport [0296ac4458c0be0609f033e15b0fa8c6c9c20049]
+
+Signed-off-by: Sakib Sajal <sakib.sajal@windriver.com>
+---
+ src/kv/rocksdb_cache/ShardedCache.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/kv/rocksdb_cache/ShardedCache.h b/src/kv/rocksdb_cache/ShardedCache.h
+index 4d3ca302..f98421a0 100644
+--- a/src/kv/rocksdb_cache/ShardedCache.h
++++ b/src/kv/rocksdb_cache/ShardedCache.h
+@@ -136,7 +136,7 @@ class ShardedCache : public rocksdb::Cache, public PriorityCache::PriCache {
+ //    return Hash(s.data(), s.size(), 0);
+   }
+ 
+-  uint32_t Shard(uint32_t hash) {
++  uint32_t Shard(uint32_t hash) const {
+     // Note, hash >> 32 yields hash in gcc, not the zero we expect!
+     return (num_shard_bits_ > 0) ? (hash >> (32 - num_shard_bits_)) : 0;
+   }
+-- 
+2.33.0
+
