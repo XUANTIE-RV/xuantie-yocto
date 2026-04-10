@@ -2,9 +2,9 @@ require conf/machine/include/riscv/tune-riscv.inc
 require xuantie-clang.inc
 
 DISTRO_NAME = "xuantie C9xx Release Distro"
-DISTRO_VERSION = "1.2.0"
+DISTRO_VERSION = "1.2.1"
 
-XUANTIE_LINUX_TAG = "XuanTie_V1.2.0"
+XUANTIE_LINUX_TAG = "XuanTie_V1.2.1"
 
 EXTERNAL_TOOLCHAIN ?= "${TOPDIR}/../../riscv-toolchain"
 TCMODE = "external"
@@ -21,6 +21,7 @@ INSANE_SKIP:${PN} += "glibc-so gobject-introspection-so glibc-external"
 
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-xuantie"
 KBUILD_DEFCONFIG ?= "defconfig"
+SERIAL_CONSOLES ??= "115200;ttyS0"
 
 PREFERRED_VERSION_op-tee ?= "0.1"
 PREFERRED_VERSION_opensbi ?= "1.7"
@@ -67,7 +68,7 @@ python() {
 }
 
 XUANTIE_PACKAGE_FEED_ARCH ??= "${TUNE_ARCH}"
-PACKAGE_FEED_URIS ?= "http://114.55.254.174/xuantie/deb/dev/1.2/${XUANTIE_KERNEL_VERSION}/${XUANTIE_PACKAGE_FEED_ARCH}"
+PACKAGE_FEED_URIS ?= "http://114.55.254.174/xuantie/deb/release/${DISTRO_VERSION}/${XUANTIE_KERNEL_VERSION}/${XUANTIE_PACKAGE_FEED_ARCH}"
 PACKAGE_FEED_ARCHS = "common"
 
 INHERIT += "own-mirrors"
@@ -109,15 +110,14 @@ PREFERRED_VERSION_openmpbench ?= "4.0"
 PREFERRED_VERSION_openblas ?= "0.3.30"
 # PREFERRED_VERSION_sysbench ?= "0.5"
 PREFERRED_VERSION_sysbench ?= "1.0.20"
-PREFERRED_VERSION_bcc ?= "0.27.0"
-PREFERRED_VERSION_bpftrace ?= "0.16.0"
+PREFERRED_VERSION_bcc ?= "0.35.0"
 # PREFERRED_VERSION_ffmpeg ?= "7.0"
 PREFERRED_VERSION_ffmpeg ?= "7.1"
 
 ## according to arch to select version
 ## 1.1 for prebuild; 1.2 for source code
 PREFERRED_VERSION_spec2006 ?= "1.2"
-PREFERRED_VERSION_spec2017 ?= "1.0.5"
+PREFERRED_VERSION_spec2017 ?= "1.0.6"
 PREFERRED_VERSION_lmbench ?= "3.0-a9"
 
 # build static librarie

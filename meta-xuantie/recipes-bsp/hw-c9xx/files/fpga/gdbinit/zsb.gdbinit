@@ -165,20 +165,17 @@ if ($simulate_run == 0)
 		set $pc         = $zsb_addr
 
 		# Release all harts from reset
-		set *0x18030000 = 0x7f
+		set *0x18030000 = 0xff
 	else
 		# core0 rvba set
 		set *0x26828020 = $zsb_addr
 		# core1 rvba set
 		set *0x26808020 = $zsb_addr
 		set *(unsigned long *)0x26828100 = 0x80000008
-		thread 1
-		p/x $pc = $zsb_addr
-		thread 2
-		p/x $pc = $zsb_addr
+		set $pc         = $zsb_addr
 
 		# Release all harts from reset
-		set *0x18030000 = 0x3f
+		set *0x18030000 = 0xff
 	end
 	echo Finished GDBINIT\n\n
 end

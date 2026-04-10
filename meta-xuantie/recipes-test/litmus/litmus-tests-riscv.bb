@@ -10,7 +10,7 @@ SRC_URI = " \
     git://github.com/litmus-tests/litmus-tests-riscv.git;branch=master;protocol=https \
     file://instructions.excl \
     "
-SRCREV = "dcb920f14b196ec760afb56bc789b7fe618e99e9"
+SRCREV = "1fe2afdcc121566fda2c97d324c26c58a33ea56d"
 
 S = "${WORKDIR}/git"
 

@@ -9,7 +9,8 @@ SRC_URI = " \
     'git://github.com/XUANTIE-RV/zero_stage_boot;protocol=https;branch=master', d)} \
 "
 
-SRCREV = "f77aff68d161cbd5b8fa083e5e60a9453c366a59"
+# ci: Bump opensbi to v1.7
+SRCREV = "4952ac88e4fde9a0530a9995cf34b0caafcba010"
 S = "${WORKDIR}/git"
 
 CROSS_LDFLAGS:riscv32 = " -melf32lriscv"

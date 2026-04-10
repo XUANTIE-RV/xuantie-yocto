@@ -6,6 +6,7 @@ require ../packagegroups/xuantie-buildroot-lite.bb
 IMAGE_INSTALL += " \
     acl \
     alsa-lib \
+    alsa-ucm-conf \
     alsa-utils \
     asciidoc \
     autoconf \
@@ -38,13 +39,17 @@ IMAGE_INSTALL += " \
     libcroco \
     libevent \
     libffi \
+    libgfortran \
+    libgomp \
     libnsl2 \
     libpcre \
     libsamplerate0 \
     libtest-harness-perl \
+    libtheora \
     libudev \
     libusb1 \
     libxml2 \
+    libxv \
     litmus-tests-riscv \
     ltp \
     m4 \
@@ -81,8 +86,8 @@ IMAGE_INSTALL += " \
     xz \
     yasm \
     zeromq \
-    zlib \
     zip \
+    zlib \
 "
 
 IMAGE_INSTALL:append:riscv64 = " \

@@ -30,6 +30,7 @@ default_isa[c908v-cp_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei
 default_isa[c908i_v2]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zca_zcb_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc"
 default_isa[c908i-cp_v2]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zca_zcb_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadsync_xtheadcei"
 default_isa[c908v-cp-xt_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
+
 default_isa[c908vk-cp_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zkt_zvbb_zvbc_zvkb_zvkg_zvkned_zvknha_zvknhb_zvksed_zvksh_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 default_isa[c908vk-cp-xt_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zkt_zvbb_zvbc_zvkb_zvkg_zvkned_zvknha_zvknhb_zvksed_zvksh_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 
@@ -63,17 +64,27 @@ default_isa[r908fd-cp]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zi
 default_isa[r908fd-cp-xt]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadfpp_xtheadcbi_xtheadcei_xtheadcf"
 default_isa[r908fdv-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadfpp_xtheadsync_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 default_isa[r908fdv-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadfpp_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-
+# R908vk since 2026/03/11 
+default_isa[r908fdvk-cp]="rv64imafdcbv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zmmul_zaamo_zalrsc_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfh_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_sstc_svinval_svnapot_svpbmt_xtheadcbi_xtheadcei_xtheadcf_xtheadcv_xtheadfpp_xxtcsrcacherpl"
+default_isa[r908fdvk-cp-xt]="rv64imafdcbv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zmmul_zaamo_zalrsc_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfh_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_sstc_svinval_svnapot_svpbmt_xtheadba_xtheadbb_xtheadbs_xtheadc_xtheadcbi_xtheadcei_xtheadcf_xtheadcmo_xtheadcondmov_xtheadcv_xtheadfmemidx_xtheadfmv_xtheadfpp_xtheadmac_xtheadmemidx_xtheadmempair_xtheadsync_xtheadvdot_xxtcsrcacherpl"
 
 # C908X
 default_isa[c908x]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw"
 default_isa[c908x-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 default_isa[c908x-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
 
+## C925 series
+default_isa[xt-c925-cp]="rv64imafdcbh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zaamo_zabha_zacas_zalasr_zalrsc_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svade_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadaioe_xtheadcbi_xtheadcbop_xtheadcf_xtheadcrc"
+default_isa[xt-c925v-cp]="rv64imafdcbvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zaamo_zabha_zacas_zalasr_zalrsc_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svade_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadaioe_xtheadcbi_xtheadcbop_xtheadcf_xtheadcrc_xtheadcv_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadvfoe8m0min_xtheadvfofp4min_xtheadvfofp8min"
+
+## C930 series
 default_isa[xt-c930]="rv64imafdch_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadser"
 default_isa[xt-c930-cp]="rv64imafdch_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadcf_xtheadcei_xtheadser"
 default_isa[xt-c930v]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadser"
 default_isa[xt-c930v-cp]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadcf_xtheadcei_xtheadcv_xtheadser"
+
+# C950
+default_isa[xt-c950v]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadcf_xtheadcei_xtheadcv_xtheadser_xtheadmatrix_xtheadcae_xtheadfxcr"
 
 function print_help() {
 	echo "Usage:  update_dts_cpu.sh <soc_platform>  <-cpu>  [-layout 1]  [-isa default]"
@@ -88,7 +99,7 @@ function print_help() {
 	echo "[-intc plic]:      Choose one from [ plic | aplic | others(do nothing) ] etc."
 	echo "[-sv 48]:          Choose one from [ 39 | 48 | others(do nothing) ] etc."
 	echo "[-gmac h100]:      Choose one from [ h100 | pro | others(do nothing) ] etc."
-	echo "[-ntrace false]:   Choose one from [ false | true ] etc."
+	echo "[-ntrace false]:   Choose one from [ false | v1 | <ntrace cfgfile name> ] etc."
 	echo "[-memsize 1G]      Input memory size [ 1G, 2G, 3G, 4G ] etc."
 	echo "[-optee false]:    Choose one from [ false | true ] etc."
 	echo "[-pmc false]:      Choose one from [ false | true ] etc."
@@ -122,14 +133,15 @@ MEMORY_SIZE=
 OPTEE=false
 PMC=false
 
-
 function update_c930
 {
-	if [[ $CPU =~ .*c930.* ]]; then
-		echo ">> updating c930"
-		GMAC=c930
-		sed -i 's/ctl_enable_2core == 0/ctl_enable_2core == 2/g' gdbinit/zsb.gdbinit
-	fi
+    case "$CPU" in
+        *c930*|*c925*)
+            echo ">> updating c930"
+            GMAC=c930
+            sed -i 's/ctl_enable_2core == 0/ctl_enable_2core == 2/g' gdbinit/zsb.gdbinit
+            ;;
+    esac
 }
 
 function parse_old_args(){
@@ -342,18 +354,21 @@ function update_dts_ntrace
 {
 	rm -rf dts/ntrace-memory.dtsi dts/ntrace.dtsi
 	touch  dts/ntrace-memory.dtsi dts/ntrace.dtsi
-	if [ "${NTRACE}" = "true" ] ; then
-		ln -srf dts/ntrace-memory-xiaohui-common.dtsi dts/ntrace-memory.dtsi
-		if [ "$CORE_LAYOUT" = "1" ];then
-			cp -f dts/ntrace-1cluster1core-xiaohui-common.dtsi dts/ntrace.dtsi
-		elif [ "$CORE_LAYOUT" = "11" ] ; then
-			cp -f dts/ntrace-1cluster2core-xiaohui-common.dtsi dts/ntrace.dtsi
-		elif [ "$CORE_LAYOUT" = "1111" ] ; then
-			cp -f dts/ntrace-1cluster4core-xiaohui-common.dtsi dts/ntrace.dtsi
-		elif [ "$CORE_LAYOUT" = "11111111" ] ; then
-			cp -f dts/ntrace-1cluster8core-xiaohui-common.dtsi dts/ntrace.dtsi
+	if [ "${NTRACE}" = "false" ] ; then 
+		echo ">> no ntrace..."
+	elif [ "${NTRACE}" = "v1" ] ; then
+		## for c908/c907 old arch of trace
+		echo ">> Please select a valid ntrace configuration for c908/c907..."
+		exit 1
+	else
+		## for  v1/v2 arch configuration of trace
+		trace_config_file="./script/trace-configs/$NTRACE.json"
+		if [ ! -f "$trace_config_file" ]; then
+			echo "Error: NTrace config file '$trace_config_file' not found!"
+			exit 1
 		fi
-
+		echo ">> updating ntrace by config: $trace_config_file"
+		./script/generate_trace_dts.sh -c "$trace_config_file"
 		ntrace_file=dts/ntrace.dtsi
 		sed -i "s|trace_encoder_context = .*|trace_encoder_context = \"${TRACE_CONTEXT}\";|g" "${ntrace_file}" && \
 		sed -i "s|trace_encoder_inst_stall_enable = .*|trace_encoder_inst_stall_enable = \"${TRACE_STALL}\";|g" "${ntrace_file}" && \
@@ -480,7 +495,7 @@ function update_dts_core_layout
 		elif [ ${#CORE_LAYOUT} -gt 8 ];then
 			sed -i "s/.*set \*0x18030000 = .*/	set \*0x18030000 = 0xffffffff/g" ${ZSB_GDBINIT}
 		else
-			sed -i "s/.*set \*0x18030000 = .*/	set \*0x18030000 = 0x7f/g" ${ZSB_GDBINIT}
+			sed -i "s/.*set \*0x18030000 = .*/	set \*0x18030000 = 0xff/g" ${ZSB_GDBINIT}
 		fi
 		echo ">> updating core layout to $CORE_LAYOUT"
 		decimal=$((2#$CORE_LAYOUT))
@@ -508,6 +523,39 @@ function update_dts_isa
 	if [ ! -z $ISA_STRING ]; then
 		echo ">> updating isa string to $ISA_STRING"
 		sed -i "s/riscv,isa = .*/riscv,isa = \"$ISA_STRING\";/g" ${TMP_DTS}
+
+		local ext_part="${ISA_STRING#rv64}"
+		
+		# basic part 
+		local base_part="${ext_part%%_*}"
+		local ext_list="${ext_part#*_}"
+		[ "$ext_part" = "$ext_list" ] && ext_list="" 
+		local base_fmt=""
+		for (( i=0; i<${#base_part}; i++ )); do
+			base_fmt+="\"${base_part:$i:1}\", "
+		done
+		base_fmt="${base_fmt%, }" 
+
+		# ext part
+		local ext_fmt=""
+		if [ -n "$ext_list" ]; then
+			ext_fmt=$(echo "$ext_list" | sed 's/_/", "/g')
+			ext_fmt="\"$ext_fmt\""
+		fi
+
+		# merge
+		local isa_ext_val=""
+		if [ -n "$base_fmt" ] && [ -n "$ext_fmt" ]; then
+			isa_ext_val="$base_fmt, $ext_fmt"
+		elif [ -n "$base_fmt" ]; then
+			isa_ext_val="$base_fmt"
+		else
+			isa_ext_val="$ext_fmt"
+		fi
+
+		echo ">> updating isa-extensions to: $isa_ext_val"
+		sed -i "s|riscv,isa-extensions = .*|riscv,isa-extensions = ${isa_ext_val};|g" "${TMP_DTS}"
+
 	else
 		echo "WARNING: ISA_STRING not set, skip update ISA_STRING"
 	fi

@@ -311,16 +311,16 @@ if [ ${params_array["simulate_run"]} == "false" ]; then
 	fi
 	# SoC related initialization and  boot linux with gdbinit
 	if [ ${params_array["abi_mode"]} == "rv32_std" ]; then
-		./riscv64-linux-gdb -q -ex "set architecture riscv:rv32" -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
+		./riscv64-unknown-elf-gdb -q -ex "set architecture riscv:rv32" -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
 	else
 		if [ ${params_array["enable_2core"]} == "true" ]; then
 			ipport=${params_array["target_remote"]}
-			./riscv64-linux-gdb -q -ex "tar remote ${ipport/1025/1026}" -x gdbinit/zsb.gdbinit_core1 &
+			./riscv64-unknown-elf-gdb -q -ex "tar remote ${ipport/1025/1026}" -x gdbinit/zsb.gdbinit_core1 &
 			sleep 4s
 		fi
-		./riscv64-linux-gdb -q -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
+		./riscv64-unknown-elf-gdb -q -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
 	fi
 else
 	echo ""
-	./riscv64-linux-gdb -x gdbinit/zsb.gdbinit -ex "q"
+	./riscv64-unknown-elf-gdb -x gdbinit/zsb.gdbinit -ex "q"
 fi

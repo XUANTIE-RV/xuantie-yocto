@@ -34,8 +34,9 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 KERNEL_VERSION_SANITY_SKIP="1"
 
-# support tee for common xuantie defconfig,Commits on Feb 3, 2026
-SRCREV = "66b4411dfc5a428212939fc50b8a92c04e318a81"
+# Fri Jun 13 15:53:38 2025 +0800
+# RISC-V: perf/kvm: Add reporting of interrupt events
+SRCREV = "295a5e0ab743e84e8d388e8f2fd621f027adf696"
 LICENSE = "CLOSED"
 
 S = "${WORKDIR}/linux-${PV}"

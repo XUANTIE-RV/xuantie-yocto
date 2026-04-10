@@ -229,7 +229,7 @@ echo "=============================="
 
 # SoC related initialization and  boot linux with gdbinit
 if [ $BOARD == "zsb_rv32" ]; then
-	./riscv64-linux-gdb -q -ex "set architecture riscv:rv32" -ex "tar remote $TARGET_REMOTE" -x $SOCINIT -x $GDBINIT -ex "c"
+	./riscv64-unknown-elf-gdb -q -ex "set architecture riscv:rv32" -ex "tar remote $TARGET_REMOTE" -x $SOCINIT -x $GDBINIT -ex "c"
 else
-	./riscv64-linux-gdb -q -ex "tar remote $TARGET_REMOTE" -x $SOCINIT -x $GDBINIT -ex "c"
+	./riscv64-unknown-elf-gdb -q -ex "tar remote $TARGET_REMOTE" -x $SOCINIT -x $GDBINIT -ex "c"
 fi

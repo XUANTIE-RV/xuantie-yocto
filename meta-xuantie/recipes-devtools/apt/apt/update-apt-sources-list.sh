@@ -22,10 +22,11 @@ case "$KERNEL_VERSION" in
         APT_KERNEL_PATH="${APT_SOURCE_URIS}/kernel_6.6_ali6000"
         ;;
     *)
+        KVER=$(uname -r | cut -d'.' -f1-2)
         if zcat "$CONFIG_GZ" | grep -q '^CONFIG_FTRACE=y'; then
-            APT_KERNEL_PATH="${APT_SOURCE_URIS}/kernel_6.6_debug"
+            APT_KERNEL_PATH="${APT_SOURCE_URIS}/kernel_${KVER}_debug"
         else
-            APT_KERNEL_PATH="${APT_SOURCE_URIS}/kernel_6.6_default"
+            APT_KERNEL_PATH="${APT_SOURCE_URIS}/kernel_${KVER}_default"
         fi
         ;;
 esac

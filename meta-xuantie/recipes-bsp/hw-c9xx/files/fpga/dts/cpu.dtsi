@@ -9,10 +9,13 @@
 			reg = <0>;
 			status = "okay";
 			compatible = "riscv";
-			riscv,isa = "rv64imacsu";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
 			mmu-type = "riscv,sv39";
-			riscv,cbom-block-size = <64>;
-			riscv,cboz-block-size = <64>;
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
 			cpu0_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -24,10 +27,13 @@
 			reg = <1>;
 			status = "skip";
 			compatible = "riscv";
-			riscv,isa = "rv64imacsu";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
 			mmu-type = "riscv,sv39";
-			riscv,cbom-block-size = <64>;
-			riscv,cboz-block-size = <64>;
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
 			cpu1_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -39,10 +45,13 @@
 			reg = <2>;
 			status = "skip";
 			compatible = "riscv";
-			riscv,isa = "rv64imacsu";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
 			mmu-type = "riscv,sv39";
-			riscv,cbom-block-size = <64>;
-			riscv,cboz-block-size = <64>;
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
 			cpu2_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -54,10 +63,13 @@
 			reg = <3>;
 			status = "skip";
 			compatible = "riscv";
-			riscv,isa = "rv64imacsu";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
 			mmu-type = "riscv,sv39";
-			riscv,cbom-block-size = <64>;
-			riscv,cboz-block-size = <64>;
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
 			cpu3_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -69,10 +81,13 @@
 			reg = <4>;
 			status = "skip";
 			compatible = "riscv";
-			riscv,isa = "rv64imacsu";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
 			mmu-type = "riscv,sv39";
-			riscv,cbom-block-size = <64>;
-			riscv,cboz-block-size = <64>;
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
 			cpu4_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -84,10 +99,13 @@
 			reg = <5>;
 			status = "skip";
 			compatible = "riscv";
-			riscv,isa = "rv64imacsu";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
 			mmu-type = "riscv,sv39";
-			riscv,cbom-block-size = <64>;
-			riscv,cboz-block-size = <64>;
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
 			cpu5_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -99,10 +117,13 @@
 			reg = <6>;
 			status = "skip";
 			compatible = "riscv";
-			riscv,isa = "rv64imacsu";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
 			mmu-type = "riscv,sv39";
-			riscv,cbom-block-size = <64>;
-			riscv,cboz-block-size = <64>;
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
 			cpu6_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
@@ -114,10 +135,13 @@
 			reg = <7>;
 			status = "skip";
 			compatible = "riscv";
-			riscv,isa = "rv64imacsu";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
 			mmu-type = "riscv,sv39";
-			riscv,cbom-block-size = <64>;
-			riscv,cboz-block-size = <64>;
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
 			cpu7_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";

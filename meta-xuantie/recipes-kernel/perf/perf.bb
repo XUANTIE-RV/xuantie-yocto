@@ -20,7 +20,7 @@ PACKAGECONFIG[python] = ",NO_LIBPYTHON=1,python3 python3-setuptools-native"
 # to cover a wide range of kernel we add both dependencies
 PACKAGECONFIG[tui] = ",NO_NEWT=1,libnewt slang"
 PACKAGECONFIG[libunwind] = ",NO_LIBUNWIND=1 NO_LIBDW_DWARF_UNWIND=1,libunwind"
-PACKAGECONFIG[bfd] = ",BUILD_NONDISTRO=1"
+PACKAGECONFIG[bfd] = "BUILD_NONDISTRO=1,NO_LIBBFD=1"
 PACKAGECONFIG[systemtap] = ",NO_SDT=1,systemtap"
 PACKAGECONFIG[jvmti] = ",NO_JVMTI=1"
 # libaudit support would need scripting to be enabled
@@ -44,6 +44,7 @@ RDEPENDS:${PN} += "numactl \
                    binutils \
                    libatomic \
                    libcap-ng \
+                   libbfd \
                    libopcodes \
 "
 

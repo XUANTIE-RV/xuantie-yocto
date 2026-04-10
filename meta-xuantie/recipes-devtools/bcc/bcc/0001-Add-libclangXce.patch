@@ -1,0 +1,37 @@
+From eb845b45ab8138e31c519c44bb899a05479be70e Mon Sep 17 00:00:00 2001
+From: huxin <wb-hx963136@alibaba-inc.com>
+Date: Mon, 9 Feb 2026 20:18:18 +0800
+Subject: [PATCH] Add libclangXce
+
+---
+ CMakeLists.txt         | 1 +
+ cmake/clang_libs.cmake | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8e497e6c..ad277a44 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -155,6 +155,7 @@ if(NOT PYTHON_ONLY)
+ 
+     if(${LLVM_PACKAGE_VERSION} VERSION_EQUAL 15 OR ${LLVM_PACKAGE_VERSION} VERSION_GREATER 15)
+       find_library(libclangSupport NAMES clangSupport clang-cpp HINTS ${CLANG_SEARCH})
++      find_library(libclangXce NAMES clangXce clang-cpp HINTS ${CLANG_SEARCH})
+     endif()
+ 
+     if(${LLVM_PACKAGE_VERSION} VERSION_EQUAL 18 OR ${LLVM_PACKAGE_VERSION} VERSION_GREATER 18)
+diff --git a/cmake/clang_libs.cmake b/cmake/clang_libs.cmake
+index 55353d18..35f37f88 100644
+--- a/cmake/clang_libs.cmake
++++ b/cmake/clang_libs.cmake
+@@ -54,6 +54,7 @@ list(APPEND clang_libs
+ 
+ # if (${LLVM_PACKAGE_VERSION} VERSION_EQUAL 15 OR ${LLVM_PACKAGE_VERSION} VERSION_GREATER 15)
+   list(APPEND clang_libs ${libclangSupport})
++  list(APPEND clang_libs ${libclangXce})
+ # endif()
+ 
+ if (${LLVM_PACKAGE_VERSION} VERSION_EQUAL 18 OR ${LLVM_PACKAGE_VERSION} VERSION_GREATER 18)
+-- 
+2.25.1
+
