@@ -39,7 +39,7 @@ if [ "$#" -eq 0 ] || \
 	echo "     --abi_mode           value: rv64_std | rv32_std "
 	echo "     --enable_uboot       value: false | true"
 	echo "     --enable_2core       value: false | true"
-	echo "     --opensbi_ver        value: 1.7 | 1.6 | 1.5 | 1.3 | 0.9"
+	echo "     --opensbi_ver        value: 1.7 | 0.9"
 	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c906fdv"
 	echo "     --kernel_cfg         value: debug | default"
 	echo "     --rootfs_type        value: lite"
