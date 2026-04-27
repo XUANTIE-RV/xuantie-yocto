@@ -12,6 +12,8 @@ IMAGE_INSTALL:append = " \
 
 IMAGE_INSTALL:append = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', ' ', 'klitmus', d)}"
 IMAGE_INSTALL:append:riscv64 = " \
+    bcc \
+    bpftrace \
     core-to-core-latency \
     dragonwell \
     glibc-benchtests \

@@ -3,10 +3,10 @@ HOMEPAGE = "https://clang.llvm.org/"
 DESCRIPTION = "Clang is a compiler for the C language family, providing fast compilation and highly useful diagnostics. It aims to deliver a modern and expressive programming environment."
 LICENSE = "CLOSED"
 
-FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/clang_18.1.8_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=a4a9c90f0546a41c5924611264fb84a433c941d95df793b38b9cb848f4a0bc8a"
-FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/clang_18.1.8_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=f44862ae6f74c92249f8b7d00ebf319d389873af951b97d52d0d32472183b484"
-FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/clang_18.1.8_riscv32-5.10.4-rv32gc-ilp32d.deb;sha256sum=91c36414f4d11af1e5d1e0791a213568100183666db8bd636dd6f30d02808cfc"
-FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/clang_18.1.8_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=7f86bf9bd246d33805f37600a14aef3637450b1c0bc2f3cbdd7ee323673f1064"
+FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/clang_18.1.8_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=377bd53ce72ae7c4fdbf851a5ef7364fdcdb1940984edb4a4fe90cacc42ffc55"
+FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/clang_18.1.8_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=5a40c5a9f1ac04deb3ae35be9bbcd8b0237528b4bb56cc425d64adf3b4932319"
+FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/clang_18.1.8_riscv32-5.10.4-rv32gc-ilp32d.deb;sha256sum=537cd1d6e9aef1d68153e44406d46b7751f00b4a2b7218c12a9cf8366e22d745"
+FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/clang_18.1.8_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=b1c8a440206ae583d3532de852b46d36bd6e9b57d92e84a7f75abe21cac2420f"
 
 SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
     '${FILE_RV64_510};subdir=${BP}', \
@@ -16,7 +16,7 @@ SRC_URI:riscv32 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10
     '${FILE_RV32_510};subdir=${BP}', \
     '${FILE_RV32_66};subdir=${BP}', d)}"
 
-PR = "r14"
+PR = "r23"
 
 INSANE_SKIP:${PN} += " file-rdeps dev-so staticdev already-stripped installed-vs-shipped dev-deps"
 do_configure[noexec] = "1"

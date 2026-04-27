@@ -4,10 +4,10 @@ inherit python3-dir autotools texinfo
 SECTION = "devel"
 DEPENDS = "expat mpfr zlib ncurses virtual/libiconv bison-native"
 
-FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/Xuantie-900-gcc-linux-5.10.4-glibc-native_gdb-rv64gc-lp64d-V3.3.0.tar.gz;sha256sum=f10580dbeabd6e3db7192367d4b21a3c5a6a7d2a0099ba452b164c6331fed4fe"
-FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/Xuantie-900-gcc-linux-6.6.36-glibc-native_gdb-rv64gc-lp64d-V3.3.0.tar.gz;sha256sum=dd87114c03da7465c0ebb4913f00fcc8d3d37c0187e23b3f0cf5e0153ea51ad8"
-FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/Xuantie-900-gcc-linux-5.10.4-glibc-native_gdb-rv32gc-ilp32d-V3.3.0.tar.gz;sha256sum=b2a144b73ae64254f1f2eabfefb0cd7678bdb3f65db886bcda7f6749b58f81d7"
-FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/Xuantie-900-gcc-linux-6.6.36-glibc-native_gdb-rv32gc-ilp32d-V3.3.0.tar.gz;sha256sum=787fdcd02ad580f7ba0216297795d07c4c1426ec436a58c33b740ce971ebe24a"
+FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/Xuantie-900-gcc-linux-5.10.4-glibc-native_gdb-rv64gc-lp64d-V3.4.0.tar.gz;sha256sum=c1348923512a2b3afbdcbc265117aa0445dab98f39c960c05bf85c738ae8a059"
+FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/Xuantie-900-gcc-linux-6.6.36-glibc-native_gdb-rv64gc-lp64d-V3.4.0.tar.gz;sha256sum=1c6f9adfc46e314499e127bdab3e97073866dea88ee819811460a16a3d3807b0"
+FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/Xuantie-900-gcc-linux-5.10.4-glibc-native_gdb-rv32gc-ilp32d-V3.4.0.tar.gz;sha256sum=3359422aef355fbfa2e128e742cecca2379cc60413977ce3474a224aca97ab81"
+FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/Xuantie-900-gcc-linux-6.6.36-glibc-native_gdb-rv32gc-ilp32d-V3.4.0.tar.gz;sha256sum=868231e7ae8e5bb58b1ee08cfde33993e5fb8a2d96aa24096eabde16fac7e55b"
 
 SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
     '${FILE_RV64_510}', \
@@ -17,7 +17,7 @@ SRC_URI:riscv32 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10
     '${FILE_RV32_510}', \
     '${FILE_RV32_66}', d)}"
 
-PR = "r1"
+PR = "r4"
 
 INSANE_SKIP:${PN} = "already-stripped"
 do_compile() {

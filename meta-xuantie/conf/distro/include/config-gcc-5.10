@@ -1,2 +1,2 @@
-TOOLCHAIN_URL=http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V3.3.0.tar.gz
-TOOLCHAIN_MD5=0ae3af9244f871741d4e9d516c11323c
+TOOLCHAIN_URL=https://occ-oss-prod.oss-cn-hangzhou.aliyuncs.com/resource//1777014695436/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V3.4.0-20260323.tar.gz
+TOOLCHAIN_MD5=b5c83f0ebef6ea06d0779b3c0773060b

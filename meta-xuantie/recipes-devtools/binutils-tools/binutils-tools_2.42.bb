@@ -8,10 +8,10 @@ SRCREV = "${XUANTIE_LINUX_TAG}"
 S = "${WORKDIR}"
 
 
-FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/gcc_14.3.0_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=0d338c4a4d83b2ec04582b19d295f5645f92e67cb62a84f6b96582bd86320de6"
-FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/gcc_14.3.0_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=d149bd076740fb05b80cf8ad4aa3f3051b18d2ab3f1bde14c30afd7c685a2106"
-FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/gcc_14.3.0_riscv32-5.10.4-rv32gc-ilp32d.deb;sha256sum=1f7e066ce6ceb63f0150f2bae01fb443a323ebc719593a6bd815df1b1a2259a7"
-FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.2.0/gcc_14.3.0_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=e5ba10b6f7466389cdeb3f9e78cdce8500edb99da1ab0d4831d4209b234795f6"
+FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/gcc_14.3.0_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=36ab871f00a0507fc49a636bdf281b5c1545da3f7372355e69c9c6a99ead299a"
+FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/gcc_14.3.0_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=960df75dd3ecda23eab41e62a758da6b97e95be09057ca3495841eb204d4bc0e"
+FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/gcc_14.3.0_riscv32-5.10.4-rv32gc-ilp32d.deb;sha256sum=b65c169c1af97c23314ded77a28f7054a6628f20a94893fcccd49412a30af882"
+FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/gcc_14.3.0_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=de43ed42da3f6ded487302b89d1a7c22235cdfaf2b26c43f6ca7893e6eb4ca91"
 
 SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
     '${FILE_RV64_510}', \
@@ -21,7 +21,7 @@ SRC_URI:riscv32 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10
     '${FILE_RV32_510}', \
     '${FILE_RV32_66}', d)}"
 
-PR = "r9"
+PR = "r11"
 
 INSANE_SKIP:${PN} += "file-rdeps dev-deps infodir"
 INSANE_SKIP:${PN} += "dev-so staticdev"

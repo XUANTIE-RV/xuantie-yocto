@@ -137,7 +137,7 @@ function update_c930
 {
     case "$CPU" in
         *c930*|*c925*)
-            echo ">> updating c930"
+            echo ">> updating c930/c925"
             GMAC=c930
             sed -i 's/ctl_enable_2core == 0/ctl_enable_2core == 2/g' gdbinit/zsb.gdbinit
             ;;
@@ -311,8 +311,8 @@ function update_dts_mmu
 function update_dts_intc
 {
 	rm -f dts/aplic.dtsi
-	if [[ "$CPU" == *c930* ]]; then
-		echo ">> updating c930 intc"
+	if [[ "$CPU" == *c930* || "$CPU" == *c925* ]]; then
+		echo ">> updating c930/c925 intc"
 		ln -sr dts/aplic_c930.dtsi dts/aplic.dtsi
 	else
 		echo ">> updating rv64 intc"
@@ -604,8 +604,8 @@ function update_dts_pmc() {
 function update_dts_pmu
 {
 	rm -f dts/pmu.dtsi
-	if [[ "$CPU" == *c930* ]]; then
-		echo ">> updating c930 pmu"
+	if [[ "$CPU" == *c930* || "$CPU" == *c925* ]]; then
+		echo ">> updating c930/c925 pmu"
 		ln -sr dts/pmu_c930.dtsi dts/pmu.dtsi
 	else
 		echo ">> updating rv64 pmu"
