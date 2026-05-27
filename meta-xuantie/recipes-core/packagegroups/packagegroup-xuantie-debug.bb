@@ -8,7 +8,6 @@ RDEPENDS:${PN} += " \
     gdbserver \
     gcc-sanitizers-external \
     strace \
-    glibc-mtrace \
     perf \
     trace-cmd \
     memtool \
@@ -17,3 +16,4 @@ RDEPENDS:${PN} += " \
     systemd-analyze \
 "
 
+RDEPENDS:${PN}:append:libc-glibc = " glibc-mtrace"

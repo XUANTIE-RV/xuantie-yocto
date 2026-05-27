@@ -12,7 +12,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -30,7 +30,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -48,7 +48,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -66,7 +66,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -84,7 +84,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -102,7 +102,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -120,7 +120,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -138,11 +138,155 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
 			cpu7_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@8 {
+			device_type = "cpu";
+			reg = <8>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
+			mmu-type = "riscv,sv57";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+			cpu8_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@9 {
+			device_type = "cpu";
+			reg = <9>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
+			mmu-type = "riscv,sv57";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+			cpu9_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@10 {
+			device_type = "cpu";
+			reg = <10>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
+			mmu-type = "riscv,sv57";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+			cpu10_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@11 {
+			device_type = "cpu";
+			reg = <11>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
+			mmu-type = "riscv,sv57";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+			cpu11_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@12 {
+			device_type = "cpu";
+			reg = <12>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
+			mmu-type = "riscv,sv57";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+			cpu12_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@13 {
+			device_type = "cpu";
+			reg = <13>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
+			mmu-type = "riscv,sv57";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+			cpu13_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@14 {
+			device_type = "cpu";
+			reg = <14>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
+			mmu-type = "riscv,sv57";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+			cpu14_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		cpu@15 {
+			device_type = "cpu";
+			reg = <15>;
+			status = "skip";
+			compatible = "riscv";
+			riscv,isa = "rv64imac";
+			riscv,isa-base = "rv64i";
+			riscv,isa-extensions = "i", "m", "a", "c";
+			mmu-type = "riscv,sv57";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+			cpu15_intc: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
 				interrupt-controller;

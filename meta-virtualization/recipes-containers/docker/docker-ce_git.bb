@@ -31,19 +31,21 @@ DESCRIPTION = "Linux container runtime \
 # so we get that tag, and make it our SRCREVS:
 #
 
-SRCREV_docker = "3949ff121ee486eb73484f6c4708d199f68c930e"
-SRCREV_libnetwork = "f6ccccb1c082a432c2a5814aaedaca56af33d9ea"
-SRCREV_cli = "100c70180fde3601def79a59cc3e996aa553c9b9"
+SRCREV_docker = "219f21bf07502b447095649b5a2764661737f164"
+SRCREV_libnetwork = "25ec449c45d2075c85fb3688ef4c1730be0466e0"
+SRCREV_cli = "569dd73db13099a7c3104d73aa15117b359045bc"
 SRCREV_FORMAT = "docker_libnetwork"
 SRC_URI = "\
-	git://github.com/docker/docker.git;branch=20.10;name=docker;protocol=https \
+	git://github.com/docker/docker.git;branch=23.0;name=docker;protocol=https \
 	git://github.com/docker/libnetwork.git;branch=master;name=libnetwork;destsuffix=git/libnetwork;protocol=https \
-	git://github.com/docker/cli;branch=20.10;name=cli;destsuffix=git/cli;protocol=https \
+	git://github.com/docker/cli;branch=23.0;name=cli;destsuffix=git/cli;protocol=https \
 	file://0001-libnetwork-use-GO-instead-of-go.patch \
 	file://docker.init \
-        file://0001-dynbinary-use-go-cross-compiler.patch \
+        file://0001-dynbinary-use-go-cross-compiler.patch;patchdir=src/import \
         file://0001-cli-use-external-GO111MODULE-and-cross-compiler.patch \
 	"
+
+DOCKER_COMMIT = "${SRCREV_docker}"
 
 require docker.inc
 
@@ -51,7 +53,7 @@ require docker.inc
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://src/import/LICENSE;md5=4859e97a9c7780e77972d989f0823f28"
 
-DOCKER_VERSION = "20.10.17-ce"
+DOCKER_VERSION = "23.0.2-ce"
 PV = "${DOCKER_VERSION}+git${SRCREV_docker}"
 
-CVE_PRODUCT = "docker"
+CVE_PRODUCT = "docker mobyproject:moby"

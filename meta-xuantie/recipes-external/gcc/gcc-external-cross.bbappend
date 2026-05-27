@@ -6,7 +6,7 @@ wrap_bin () {
     for arg in "$@"; do
         printf '%s\n' "$arg"
     done >>"$script"
-    printf 'exec $EXTERNAL_TOOLCHAIN_EXPORT_GCC/bin/riscv64-unknown-linux-gnu-%s "$@"\n' "$bin" >>"$script"
+    printf 'exec $EXTERNAL_TOOLCHAIN_EXPORT_GCC/bin/${EXTERNAL_TARGET_SYS}-%s "$@"\n' "$bin" >>"$script"
     chmod +x "$script"
     if [ "${TARGET_PREFIX}" != "riscv64-linux-" ]; then
         cp -rfd "$script" "${D}${bindir}/riscv64-linux-$bin"
@@ -16,8 +16,8 @@ wrap_bin () {
 do_install () {
     install -d ${D}${bindir}
     for bin in ${EXTERNAL_CROSS_BINARIES}; do
-        if [ ! -e "${EXTERNAL_TOOLCHAIN_BIN}/riscv64-unknown-linux-gnu-$bin" ]; then
-            bbdebug 1 "${EXTERNAL_TOOLCHAIN_BIN}/riscv64-unknown-linux-gnu-$bin does not exist"
+        if [ ! -e "${EXTERNAL_TOOLCHAIN_BIN}/${EXTERNAL_TARGET_SYS}-$bin" ]; then
+            bbdebug 1 "${EXTERNAL_TOOLCHAIN_BIN}/${EXTERNAL_TARGET_SYS}-$bin does not exist"
             continue
         fi
 

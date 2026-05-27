@@ -10,7 +10,7 @@ S = "${WORKDIR}/git"
 
 PV = "${RUNC_VERSION}+git${SRCPV}"
 
-inherit goxuantie
+inherit go
 inherit goarch
 inherit pkgconfig
 

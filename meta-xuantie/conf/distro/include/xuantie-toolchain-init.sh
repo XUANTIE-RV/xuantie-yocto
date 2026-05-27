@@ -39,8 +39,7 @@ handle_multilib() {
         fi
     done
 
-    if [ ! -d "$TOOLCHAIN_DIR/sysroot/usr/lib32xthead/" ] && \
-        [ ! -d "$TOOLCHAIN_DIR/sysroot/usr/lib64xthead/" ]; then
+    if [ ! -d "$TOOLCHAIN_DIR/sysroot/usr/lib64xthead/" ]; then
         return
     fi
 
@@ -170,4 +169,57 @@ for TOOLCHAIN_TYPE in gcc clang; do
     # Update marker
     update_version_marker "$MARKER_FILE" "$TOOLCHAIN_NAME"
     echo "Configuration completed for $TOOLCHAIN_TYPE"
+done
+
+# Deploy muslc toolchains (optional - skip if config files don't exist)
+MUSLC_BASE_DIR="$TOP_DIR/riscv-toolchain-gcc-muslc"
+
+for MUSLC_VARIANT in muslc32 muslc64; do
+    # Map variant to arch subdirectory and config file prefix
+    # config-gcc-muslc64-6.6 for muslc64, config-gcc-muslc32-6.6 for muslc32
+    case "$MUSLC_VARIANT" in
+        muslc32) MUSLC_ARCH_DIR="rv32"; MUSLC_CONFIG_PREFIX="muslc32" ;;
+        muslc64) MUSLC_ARCH_DIR="rv64"; MUSLC_CONFIG_PREFIX="muslc64" ;;
+    esac
+
+    TOOLCHAIN_DIR="$MUSLC_BASE_DIR/$MUSLC_ARCH_DIR"
+    MARKER_FILE="$TOOLCHAIN_DIR/README.md"
+    HIDDEN_CONFIG="$TOOLCHAIN_DIR/.config"
+
+    # Resolve config file
+    if [ -n "${XUANTIE_TOOLCHAIN_CONFIG}" ]; then
+        CONFIG_FILE="${SCRIPT_DIR}/config-gcc-${MUSLC_CONFIG_PREFIX}-${XUANTIE_TOOLCHAIN_CONFIG}"
+    else
+        CONFIG_FILE="${SCRIPT_DIR}/config-gcc-${MUSLC_CONFIG_PREFIX}-6.6"
+    fi
+
+    # Skip if config file doesn't exist (muslc is optional)
+    [ ! -f "$CONFIG_FILE" ] && continue
+
+    # Setup environment
+    mkdir -p "$DOWNLOAD_DIR"
+    mkdir -p "$TOOLCHAIN_DIR"
+    cp "$CONFIG_FILE" "$HIDDEN_CONFIG"
+
+    # Source configuration
+    source "$HIDDEN_CONFIG"
+    TOOLCHAIN_NAME=$(basename "$TOOLCHAIN_URL")
+    TOOLCHAIN_PATH="$DOWNLOAD_DIR/$TOOLCHAIN_NAME"
+
+    # Version check - skip if already deployed
+    if [[ -f "$MARKER_FILE" ]] && grep -q "$TOOLCHAIN_NAME" "$MARKER_FILE"; then
+        continue
+    fi
+
+    # Download and verify
+    echo "Processing gcc-$MUSLC_VARIANT..."
+    download_and_verify "$TOOLCHAIN_PATH" "$TOOLCHAIN_MD5" "$TOOLCHAIN_URL"
+
+    # Extract toolchain
+    extract_toolchain "$TOOLCHAIN_PATH" "$TOOLCHAIN_DIR"
+    # No handle_multilib/create_link for muslc (not multilib, no glibc .so symlinks)
+
+    # Update marker
+    update_version_marker "$MARKER_FILE" "$TOOLCHAIN_NAME"
+    echo "Configuration completed for gcc-$MUSLC_VARIANT"
 done

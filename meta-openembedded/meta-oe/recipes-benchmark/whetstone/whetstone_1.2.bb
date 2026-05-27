@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM ="file://${WORKDIR}/whetstone.c;beginline=1;endline=52;md5=c795
 SRC_URI = "http://www.netlib.org/benchmark/whetstone.c"
 SRC_URI[md5sum] = "d8eb2cd7104bb5a12d614ac6d3f1f9fb"
 SRC_URI[sha256sum] = "333e4ceca042c146f63eec605573d16ae8b07166cbc44a17bec1ea97c6f1efbf"
-PACKAGE_ARCH = "${XUANTIE_MCPU}_external"
+PACKAGE_ARCH = "${XUANTIE_MCPU_PACKAGE_ARCH}_external"
 S = "${WORKDIR}"
 PR="r2"
 

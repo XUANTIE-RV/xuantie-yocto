@@ -34,9 +34,9 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 KERNEL_VERSION_SANITY_SKIP="1"
 
-# Fri Jun 13 15:53:38 2025 +0800
-# RISC-V: perf/kvm: Add reporting of interrupt events
-SRCREV = "295a5e0ab743e84e8d388e8f2fd621f027adf696"
+# Sun Jan 25 00:52:12 2026 -0500
+# riscv: mm: Fixup no5lvl failure when vaddr is invalid
+SRCREV = "9c99e96ec4c065d5769137e14b5d48fa75b56830"
 LICENSE = "CLOSED"
 
 S = "${WORKDIR}/linux-${PV}"
@@ -89,23 +89,29 @@ FILES:${KERNEL_PACKAGE_NAME}-base += "${sysconfdir}"
 
 DEPENDS += "pahole-native"
 
-# TOOLCHAIN:forcevariable = "clang"
+# Clang/LLVM toolchain support (activated when TOOLCHAIN=clang via toolchain-clang override)
+DEPENDS:append:toolchain-clang = " clang-cross-${TARGET_ARCH}"
 
-# DEPENDS:append = " ${TOOLCHAIN}-cross-${TARGET_ARCH}"
-# do_kernel_configme[depends] += "clang-cross-${TARGET_ARCH}:do_populate_sysroot"
+KERNEL_CC:toolchain-clang = "${CCACHE}${HOST_PREFIX}clang ${HOST_CC_KERNEL_ARCH} ${DEBUG_PREFIX_MAP} -fdebug-prefix-map=${STAGING_KERNEL_DIR}=${KERNEL_SRC_PATH} -fdebug-prefix-map=${STAGING_KERNEL_BUILDDIR}=${KERNEL_SRC_PATH}"
+KERNEL_LD:toolchain-clang = "${CCACHE}${HOST_PREFIX}ld.lld ${HOST_LD_KERNEL_ARCH}"
+KERNEL_AR:toolchain-clang = "${CCACHE}${HOST_PREFIX}llvm-ar ${HOST_AR_KERNEL_ARCH}"
 
+EXTRA_OEMAKE:append:toolchain-clang = " LLVM=1"
 
-# KERNEL_CC = "${CCACHE}${HOST_PREFIX}clang ${HOST_CC_KERNEL_ARCH} ${DEBUG_PREFIX_MAP} -fdebug-prefix-map=${STAGING_KERNEL_DIR}=${KERNEL_SRC_PATH} -fdebug-prefix-map=${STAGING_KERNEL_BUILDDIR}=${KERNEL_SRC_PATH} -fdebug-prefix-map=${STAGING_KERNEL_BUILDDIR}=${KERNEL_SRC_PATH}"
-# KERNEL_LD = "${CCACHE}${HOST_PREFIX}ld.lld ${HOST_LD_KERNEL_ARCH} ${HOST_LD_KERNEL_ARCH}"
-# KERNEL_AR = "${CCACHE}${HOST_PREFIX}llvm-ar ${HOST_AR_KERNEL_ARCH}"
+do_compile:prepend:toolchain-clang() {
+	export LLVM=1
+}
 
-# do_compile:prepend() {
-# 	export LLVM=1
-# }
+do_compile_kernelmodules:prepend:toolchain-clang() {
+	export LLVM=1
+}
 
-# do_compile_kernelmodules:prepend() {
-# 	export LLVM=1
-# }
-
-# python do_kernel_configcheck() {
-# }
+# kconfiglib's symbol_why.py (do_kernel_configcheck) parses Kconfig.include which
+# runs as-version.sh $(CC) $(CLANG_FLAGS). When CLANG_FLAGS is unset (kconfiglib
+# does not go through the kernel Makefile where Makefile.clang sets it), the
+# assembler check fails because clang's integrated assembler needs -fintegrated-as.
+# Fix: inject CLANG_FLAGS into the environment so kconfiglib shell calls pick it up.
+python do_kernel_configcheck:prepend:toolchain-clang() {
+    import os
+    os.environ["CLANG_FLAGS"] = "-fintegrated-as"
+}

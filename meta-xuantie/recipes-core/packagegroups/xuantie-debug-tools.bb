@@ -5,8 +5,9 @@ inherit packagegroup
 
 RDEPENDS:${PN} += " \
     gdb \
-    glibc-mtrace \
     trace-cmd \
 "
+
+RDEPENDS:${PN}:append:libc-glibc = " glibc-mtrace"
 
 RDEPENDS:${PN}:append:riscv64 = " perf gcc-sanitizers kdump"

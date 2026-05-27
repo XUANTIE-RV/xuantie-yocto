@@ -51,6 +51,11 @@ restore_xt $image_dtb                                                   binary $
 # Load rootfs & kernel
 restore_xt $image_kernel                                                binary $vmlinux_addr
 restore_xt $image_rootfs                                                binary $rootfs_addr
+
+# Set flag to 0, controlled by hardware
+set $flag_addr    = 0x603FFF00
+set *(unsigned int *)$flag_addr = 0x0
+
 # Set all harts reset address
 set *(unsigned long *)0x18030010 = $zsb_addr
 set *(unsigned long *)0x18030018 = $zsb_addr

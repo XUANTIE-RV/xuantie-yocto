@@ -8,7 +8,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -26,7 +26,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -44,7 +44,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -62,7 +62,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -80,7 +80,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -98,7 +98,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -116,7 +116,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -134,7 +134,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -152,7 +152,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -170,7 +170,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -188,7 +188,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -206,7 +206,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -224,7 +224,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -242,7 +242,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -260,7 +260,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -278,7 +278,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -296,7 +296,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -314,7 +314,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -332,7 +332,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -350,7 +350,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -368,7 +368,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -386,7 +386,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -404,7 +404,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;
@@ -422,7 +422,7 @@
 			riscv,isa = "rv64imac";
 			riscv,isa-base = "rv64i";
 			riscv,isa-extensions = "i", "m", "a", "c";
-			mmu-type = "riscv,sv39";
+			mmu-type = "riscv,sv57";
 			riscv,cbom-block-size = <0x40>;
 			riscv,cboz-block-size = <0x40>;
 			riscv,cbop-block-size = <0x40>;

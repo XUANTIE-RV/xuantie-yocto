@@ -1,0 +1,14 @@
+{
+  "trace_version": "v2",
+  "xuantie-cpu": "c930/c925/c920",
+  "soc_platform": "xiaohui-h100",
+  "clusters": 2,
+  "cores_per_cluster": [3,3],
+  "enabled_cores": [0,1,2,3,4,5],
+  "sba_dmi_addr": "true",
+  "dmi_apb_base": "0x28000000",
+  "sink_type": "smem",
+  "reserved_mem_start": "0x450000000",
+  "reserved_mem_size": "0x10000000",
+  "output_dir": "./dts"
+}

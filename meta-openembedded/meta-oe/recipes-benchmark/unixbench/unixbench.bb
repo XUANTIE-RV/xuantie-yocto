@@ -8,20 +8,19 @@ SRC_URI = " \
     file://0001-adaption-for-rv32-and-rv64-mode.patch \
 "
 PV = "5.1.3"
-inherit xuantie-set-package-arch-with-mcpu
-PACKAGE_ARCH = "${MACHINE_ARCH}"
-# Extend cpu configuration for different xuantie cpu
-python () {
-    if   d.getVar('CPU_MODEL'):
-        d.setVar('CFLAGS', d.getVar('CFLAGS') + " -mcpu={}".format(d.getVar('CPU_MODEL')))
-        d.setVar('CXXFLAGS', d.getVar('CXXFLAGS') + " -mcpu={}".format(d.getVar('CPU_MODEL')))
-}
+inherit xuantie-set-package-arch-with-mcpu-benchmark
 
 S = "${WORKDIR}/git"
 
 EXTRA_OEMAKE = '\
     TUNE_ARCH=${TUNE_ARCH} \
 '
+CFLAGS = ""
+LDFLAGS = "-static"
+export UB_GCC_OPTIONS=" -O3 -ffast-math -static "
+do_configure:prepend() {
+    sed -i 's/^CC=/#CC=/' ${S}/UnixBench/Makefile
+}
 
 do_compile() {
 	cd UnixBench && oe_runmake

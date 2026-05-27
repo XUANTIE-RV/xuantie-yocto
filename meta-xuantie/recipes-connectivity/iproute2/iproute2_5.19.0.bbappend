@@ -9,3 +9,8 @@ IPROUTE2_PACKAGES =+ "\
 "
 
 FILES:${PN}-vdpa = "${base_sbindir}/vdpa"
+
+inherit xuantie-gcc14-compatible
+
+# musl does not provide GNU basename() in <string.h>; use POSIX version.
+CFLAGS:append:libc-musl = " -include libgen.h"

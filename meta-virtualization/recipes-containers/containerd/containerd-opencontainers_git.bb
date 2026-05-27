@@ -27,7 +27,7 @@ S = "${WORKDIR}/git/src/github.com/containerd/containerd"
 
 PV = "${CONTAINERD_VERSION}+git${SRCPV}"
 
-inherit goxuantie
+inherit go
 inherit goarch
 
 GO_IMPORT = "import"

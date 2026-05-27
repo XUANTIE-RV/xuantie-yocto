@@ -5,6 +5,7 @@ SRC_URI += " file://0001-config-meson-get-cpu_instruction_set-from-meson-opti.pa
 SRCREV = "b3485f4293997d35b6daecc3437bb0c183a51fb3"
 S = "${WORKDIR}/git"
 
+COMPATIBLE_HOST:libc-musl:class-target = "null"
 
 do_write_config:append:class-target() {
     sed -i "/\[properties\]/a \

@@ -5,9 +5,13 @@ fi
 
 # get zsb image
 if [[ ${params_array["abi_mode"]} == "rv64_std" ]]; then
-	images_array["image_zsb"]=$image_path/zsb/zero_stage_boot-rv64.bin
+	if [[ ${params_array["kernel_ver"]} == "5.10" ]]; then
+		images_array["image_zsb"]=$image_path/zsb/zero_stage_boot-v1.2-rv64.bin
+	else
+		images_array["image_zsb"]=$image_path/zsb/zero_stage_boot-v1.3-rv64.bin
+	fi
 elif [[ ${params_array["abi_mode"]} == "rv32_std" ]]; then
-	images_array["image_zsb"]=$image_path/zsb/zero_stage_boot-rv32.bin
+	images_array["image_zsb"]=$image_path/zsb/zero_stage_boot-v1.3-rv32.bin
 fi
 
 # get uboot image

@@ -27,11 +27,15 @@ PREFERRED_PROVIDER_libgcc-initial = "libgcc-external"
 PREFERRED_PROVIDER_libnsl2 = "libnsl2"
 PREFERRED_PROVIDER_libtirpc = "libtirpc"
 # PREFERRED_PROVIDER_libgfortran = "libgfortran-external"
-PREFERRED_PROVIDER_glibc ?= "glibc-external"
-PREFERRED_PROVIDER_virtual/libc ?= "glibc-external"
-PREFERRED_PROVIDER_virtual/libintl ?= "glibc-external"
-PREFERRED_PROVIDER_virtual/libiconv ?= "glibc-external"
-PREFERRED_PROVIDER_virtual/crypt ?= "libxcrypt"
+
+# Select external libc provider based on TCLIBC
+EXTERNAL_LIBC_PROVIDER ?= "${@'musl-external' if d.getVar('TCLIBC') == 'musl' else 'glibc-external'}"
+
+PREFERRED_PROVIDER_glibc:tcmode-external = "${EXTERNAL_LIBC_PROVIDER}"
+PREFERRED_PROVIDER_virtual/libc:tcmode-external = "${EXTERNAL_LIBC_PROVIDER}"
+PREFERRED_PROVIDER_virtual/libintl:tcmode-external = "${EXTERNAL_LIBC_PROVIDER}"
+PREFERRED_PROVIDER_virtual/libiconv:tcmode-external = "${EXTERNAL_LIBC_PROVIDER}"
+PREFERRED_PROVIDER_virtual/crypt:tcmode-external = "${@'musl-external' if d.getVar('TCLIBC') == 'musl' else 'libxcrypt'}"
 PREFERRED_PROVIDER_gdb-cross-${TARGET_ARCH} ?= "gdb-external-cross-${TARGET_ARCH}"
 PREFERRED_PROVIDER_oprofile ??= "oprofile"
 # Work around bug where the implicitly created mlprefix preference isn't being
@@ -40,7 +44,7 @@ PREFERRED_PROVIDER_${MLPREFIX}gdbserver ?= "${MLPREFIX}gdb"
 
 # This is defined in default-providers.inc, which is parsed before the tcmode,
 # so we can't use ?=
-PREFERRED_PROVIDER_linux-libc-headers = "glibc-external"
+PREFERRED_PROVIDER_linux-libc-headers = "${EXTERNAL_LIBC_PROVIDER}"
 SKIP_RECIPE[linux-libc-headers] = "not building with an external toolchain"
 SKIP_RECIPE[linux-libc-headers-yocto] = "not building with an external toolchain"
 
@@ -69,6 +73,16 @@ SKIP_RECIPE[gcc-source] = "not building with an external toolchain"
 SKIP_RECIPE[libgcc-initial] = "not building with an external toolchain"
 SKIP_RECIPE[libgcc] = "not building with an external toolchain"
 SKIP_RECIPE[libgfortran] = "not building with an external toolchain"
+
+# Skip OE-Core musl ecosystem source recipes when using external toolchain.
+# Safe to skip unconditionally: when TCLIBC=glibc these have COMPATIBLE_HOST=".*-musl.*"
+# and won't be parsed anyway.
+SKIP_RECIPE[musl] = "not building with an external toolchain"
+SKIP_RECIPE[musl-utils] = "not building with an external toolchain"
+SKIP_RECIPE[musl-obstack] = "not building with an external toolchain"
+SKIP_RECIPE[bsd-headers] = "not building with an external toolchain"
+SKIP_RECIPE[libssp-nonshared] = "not building with an external toolchain"
+SKIP_RECIPE[musl-locales] = "not building with an external toolchain"
 
 SKIP_RECIPE_DYNAMIC += "\
     ${MLPREFIX}gcc-cross-${TARGET_ARCH} \
@@ -137,3 +151,11 @@ REMOVE_MACRO_PREFIX_MAP = "-fmacro-prefix-map=${WORKDIR}=/usr/src/debug/${PN}/${
 DEBUG_PREFIX_MAP:remove:class-target = "${@'${REMOVE_MACRO_PREFIX_MAP}' if '${GCC_VERSION}' not in ['', 'UNKNOWN'] and [int(v) for v in '${GCC_VERSION}'.split('.')] < [8,0] else ''}"
 
 BUILDCFG_VARS += "EXTERNAL_TOOLCHAIN EXTERNAL_TARGET_SYS GCC_VERSION"
+
+# Override LIBC_DEPENDENCIES for musl with external toolchain.
+# This overrides tclibc-musl.inc's default which references OE-Core source-built musl packages.
+LIBC_DEPENDENCIES:libc-musl:tcmode-external = "\
+    musl-external \
+    musl-external-dbg \
+    musl-external-dev \
+"

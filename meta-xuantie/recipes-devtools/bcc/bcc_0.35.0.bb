@@ -16,7 +16,7 @@ DEPENDS += "bison-native \
             "
 
 RDEPENDS:${PN} += "bash python3 python3-core python3-setuptools xz"
-RDEPENDS:${PN} += "bison flex zip zlib elfutils bash python3 python3-setuptools xz iputils netperf iperf3"
+RDEPENDS:${PN} += "bison flex zip zlib elfutils bash python3 python3-setuptools xz iputils netperf"
 RDEPENDS:${PN}-ptest = "kernel-devsrc cmake bash python3 python3-netaddr python3-pyroute2 clang"
 
 SRC_URI = "gitsm://github.com/iovisor/bcc;branch=master;protocol=https \

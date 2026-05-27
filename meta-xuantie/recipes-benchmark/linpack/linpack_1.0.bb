@@ -12,8 +12,9 @@ SRC_URI[sha256sum] = "aeeb16b8e0a966794fa1f670097e92b557ceb001b157a34d0b757183d9
 S = "${WORKDIR}"
 inherit autotools
 inherit xuantie-set-package-arch-with-mcpu-benchmark
+PACKAGE_ARCH = "${XUANTIE_MCPU}_external"
 
-PR = "r7"
+PR = "r8"
 
 python () {
     if "c906" in d.getVar('XUANTIE_MCPU') or \

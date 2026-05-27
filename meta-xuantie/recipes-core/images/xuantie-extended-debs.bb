@@ -16,13 +16,14 @@ IMAGE_INSTALL:append:riscv64 = " \
     bpftrace \
     core-to-core-latency \
     dragonwell \
-    glibc-benchtests \
     kvmtool \
     qemu-kvm \
     qemu-test \
     specjbb2015 \
     kvm-unit-tests \
 "
+
+IMAGE_INSTALL:append:riscv64:libc-glibc = " glibc-benchtests"
 
 IMAGE_INSTALL:remove = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
     'kvmtool kvm-unit-tests qemu-kvm qemu-test', ' ', d)}"

@@ -2,9 +2,9 @@ require conf/machine/include/riscv/tune-riscv.inc
 require xuantie-clang.inc
 
 DISTRO_NAME = "xuantie C9xx Release Distro"
-DISTRO_VERSION = "1.3.0"
+DISTRO_VERSION = "1.3.1"
 
-XUANTIE_LINUX_TAG = "XuanTie_V1.3.0"
+XUANTIE_LINUX_TAG = "XuanTie_V1.3.1"
 
 EXTERNAL_TOOLCHAIN ?= "${TOPDIR}/../../riscv-toolchain"
 TCMODE = "external"
@@ -21,7 +21,7 @@ INSANE_SKIP:${PN} += "glibc-so gobject-introspection-so glibc-external"
 
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-xuantie"
 KBUILD_DEFCONFIG ?= "defconfig"
-SERIAL_CONSOLES ??= "115200;ttyS0"
+SERIAL_CONSOLES ?= "115200;ttyS0"
 
 PREFERRED_VERSION_op-tee ?= "0.1"
 PREFERRED_VERSION_opensbi ?= "1.7"
@@ -105,8 +105,7 @@ ${XUANTIE_GITSM} gitsm://git@github.com/ruyisdk/ \
 "
 PREFERRED_VERSION_opencv ?= "4.12.0"
 PREFERRED_VERSION_libvirt ?= "v11.1.0+git"
-# PREFERRED_VERSION_openmpbench ?= "3.1"
-PREFERRED_VERSION_openmpbench ?= "4.0"
+PREFERRED_VERSION_openmpbench ?= "3.1"
 PREFERRED_VERSION_openblas ?= "0.3.30"
 # PREFERRED_VERSION_sysbench ?= "0.5"
 PREFERRED_VERSION_sysbench ?= "1.0.20"
@@ -132,5 +131,38 @@ DISABLE_STATIC:pn-flex = ""
 LD_LIBXTSTRING ?= ""
 
 ROOT_HOME ?= "/root"
+
+# LIBC bridge: environment variable -> internal XUANTIE_TCLIBC
+# Usage: LIBC=muslc DISTRO=c907fdv bitbake ...
+LIBC ?= "glibc"
+XUANTIE_TCLIBC ?= "${LIBC}"
+require xuantie-libc-${XUANTIE_TCLIBC}.inc
+
+# kernel bridge: environment variable -> kernel config includes
+# Usage: kernel=6.6-default DISTRO=c907fdv bitbake ...
+# Valid values: 6.6-default, 6.6-debug, 5.10-default, 5.10-debug
+# Existing kernel-combined configs (rv64-k6.6-default.conf etc.) include
+# kernel configs explicitly and are unaffected by this default.
+kernel ?= "6.6-default"
+XUANTIE_KERNEL ?= "${kernel}"
+include conf/distro/include/xuantie-kernel-${XUANTIE_KERNEL}.inc
+
+python () {
+    libc = d.getVar('LIBC')
+    if libc and libc not in ('glibc', 'muslc'):
+        bb.fatal("Invalid LIBC='%s'. Valid values: glibc, muslc" % libc)
+
+    kernel_val = d.getVar('XUANTIE_KERNEL')
+    if kernel_val:
+        valid = ('6.6-default', '6.6-debug', '5.10-default', '5.10-debug')
+        if kernel_val not in valid:
+            bb.fatal("Invalid kernel='%s'. Valid values: %s" % (kernel_val, ', '.join(valid)))
+
+    tc = d.getVar('TOOLCHAIN')
+    if tc and tc not in ('gcc', 'clang'):
+        bb.fatal("Invalid TOOLCHAIN='%s'. Valid values: gcc, clang" % tc)
+    if libc == 'muslc' and tc == 'clang':
+        raise bb.parse.SkipRecipe("LIBC=muslc + TOOLCHAIN=clang is not supported")
+}
 
 require xuantie-proprietary.inc

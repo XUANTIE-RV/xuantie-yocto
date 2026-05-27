@@ -64,6 +64,15 @@ EXTRA_OECONF = "--with-statduser=rpcuser \
 
 LDFLAGS:append = " -lsqlite3 -levent"
 
+# musl does not provide sys/queue.h; copy it from libbsd into a local compat dir
+# to avoid polluting the include namespace with all of libbsd.
+DEPENDS:append:libc-musl = " libbsd"
+CFLAGS:append:libc-musl = " -I${B}/musl-compat"
+do_configure:prepend:libc-musl() {
+    mkdir -p ${B}/musl-compat/sys
+    cp ${STAGING_INCDIR}/bsd/sys/queue.h ${B}/musl-compat/sys/queue.h
+}
+
 PACKAGECONFIG ??= "tcp-wrappers \
     ${@bb.utils.filter('DISTRO_FEATURES', 'ipv6', d)} \
 "

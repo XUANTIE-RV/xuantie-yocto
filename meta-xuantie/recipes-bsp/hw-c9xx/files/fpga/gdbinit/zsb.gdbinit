@@ -81,8 +81,14 @@ else
 	set $vmlinux_addr = 0x60400000
 end
 
-set $dtb_addr     = 0x60300000
-set $zsb_addr     = 0x603F8000
+if ($opensbi_0_9_with_kernel_5_10 == 1)
+	set $dtb_addr     = 0x63f00000
+	set $zsb_addr     = 0x63ff8000
+else
+	set $dtb_addr     = 0x60300000
+	set $zsb_addr     = 0x603F8000
+end
+
 set $flag_addr    = 0x603FFF00
 set $rootfs_addr  = 0x64000000
 
@@ -167,15 +173,45 @@ if ($simulate_run == 0)
 		# Release all harts from reset
 		set *0x18030000 = 0xff
 	else
-		# core0 rvba set
-		set *0x26828020 = $zsb_addr
-		# core1 rvba set
+		# Set all harts reset address
 		set *0x26808020 = $zsb_addr
+		set *0x26828020 = $zsb_addr
+		set *0x26888020 = $zsb_addr
+		set *0x268a8020 = $zsb_addr
+		set *0x26908020 = $zsb_addr
+		set *0x26928020 = $zsb_addr
+		set *0x26988020 = $zsb_addr
+		set *0x269a8020 = $zsb_addr
+		set *0x26a08020 = $zsb_addr
+		set *0x26a28020 = $zsb_addr
+		set *0x26a88020 = $zsb_addr
+		set *0x26aa8020 = $zsb_addr
+		set *0x26b08020 = $zsb_addr
+		set *0x26b28020 = $zsb_addr
+		set *0x26b88020 = $zsb_addr
+		set *0x26ba8020 = $zsb_addr
+
+		set *(unsigned long *)0x26808100 = 0x80000008
 		set *(unsigned long *)0x26828100 = 0x80000008
+		set *(unsigned long *)0x26888100 = 0x80000008
+		set *(unsigned long *)0x268a8100 = 0x80000008
+		set *(unsigned long *)0x26908100 = 0x80000008
+		set *(unsigned long *)0x26928100 = 0x80000008
+		set *(unsigned long *)0x26988100 = 0x80000008
+		set *(unsigned long *)0x269a8100 = 0x80000008
+		set *(unsigned long *)0x26a08100 = 0x80000008
+		set *(unsigned long *)0x26a28100 = 0x80000008
+		set *(unsigned long *)0x26a88100 = 0x80000008
+		set *(unsigned long *)0x26aa8100 = 0x80000008
+		set *(unsigned long *)0x26b08100 = 0x80000008
+		set *(unsigned long *)0x26b28100 = 0x80000008
+		set *(unsigned long *)0x26b88100 = 0x80000008
+		set *(unsigned long *)0x26ba8100 = 0x80000008
+
 		set $pc         = $zsb_addr
 
 		# Release all harts from reset
-		set *0x18030000 = 0xff
+		set *0x18030000 = 0xffff
 	end
 	echo Finished GDBINIT\n\n
 end

@@ -54,6 +54,6 @@
 	};
 };
 
-/* If more than 8 cores, uncomment the follow line */
+/* If more than 16 cores, uncomment the follow line */
 // /include/ "32cores.dtsi"
 
