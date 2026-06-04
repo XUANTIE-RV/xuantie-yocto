@@ -18,6 +18,7 @@ SRC_URI = "${DEBIAN_MIRROR}/main/a/apt/${BPN}_${PV}.tar.xz \
            file://0002-interactive-helper-Undefine-_FORTIFY_SOURCE.patch \          
            "
 SRC_URI:append = " file://0001-Resolve-apt-compilation-errors-in-gcc14-toolchain.patch "
+SRC_URI:append = " file://0002-Fix-missing-cstdint-for-GCC15.patch "
 SRC_URI:append:class-native = " \
            file://0001-Do-not-init-tables-from-dpkg-configuration.patch \
            file://0001-Revert-always-run-dpkg-configure-a-at-the-end-of-our.patch \

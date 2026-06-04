@@ -19,6 +19,7 @@ EXTRA_OECONF = "--disable-iberty"
 
 SRC_URI = "${GNU_MIRROR}/which/which-${PV}.tar.gz \
            file://automake.patch \
+           file://musl-fix-getopt.patch \
            "
 
 SRC_URI[md5sum] = "097ff1a324ae02e0a3b0369f07a7544a"

@@ -2,9 +2,9 @@ require conf/machine/include/riscv/tune-riscv.inc
 require xuantie-clang.inc
 
 DISTRO_NAME = "xuantie C9xx Release Distro"
-DISTRO_VERSION = "1.3.1"
+DISTRO_VERSION = "1.3.2"
 
-XUANTIE_LINUX_TAG = "XuanTie_V1.3.1"
+XUANTIE_LINUX_TAG = "XuanTie_V1.3.2"
 
 EXTERNAL_TOOLCHAIN ?= "${TOPDIR}/../../riscv-toolchain"
 TCMODE = "external"

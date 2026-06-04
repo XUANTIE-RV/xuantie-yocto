@@ -21,21 +21,21 @@ if [ "$#" -eq 0 ] || \
 	echo "Examples:"
 	echo "  run_fpga.sh --target_remote=127.0.0.1:1025"
 	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 \\"
-	echo "              --rva_profile=rva20  \\"
+	echo "              --rva_profile=rva22  \\"
 	echo "              --abi_mode=rv64_std  \\"
 	echo "              --enable_uboot=true \\"
 	echo "              --opensbi_ver=1.7  \\"
 	echo "              --kernel_ver=6.6 \\"
 	echo "              --kernel_cfg=debug \\"
 	echo "              --rootfs_type=lite \\"
-	echo "  eg: for rva23 profile(C930), we like to use  -  "
+	echo "  eg: for rva23 profile(C950/C930/C925 etc), we like to use  -  "
 	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 --system=xuantie_rva23_std_kernel6_6_kcdefault"
-	echo "  eg: for rva20 profile(C920/C908/C907/C906 RV64 series), we like to use  -  "
+	echo "  eg: for rva22 profile(C920/C908/C907/C906 RV64 series), we like to use  -  "
 	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 --system=xuantie_rv64_std_kernel6_6_kcdefault"
 	echo ""
 	echo "[OPTION] format is: [--KEY=VALUE] defines below, the 1st value is DEFAULT."
 	echo "     --target_remote      value: 192.168.0.1:1234"
-	echo "     --rva_profile        value: rva23 | rva20"
+	echo "     --rva_profile        value: rva23 | rva22"
 	echo "     --abi_mode           value: rv64_std | rv32_std "
 	echo "     --enable_uboot       value: false | true"
 	echo "     --enable_2core       value: false | true"
@@ -63,7 +63,7 @@ declare -a params_order
 
 # set default values
 params_array["target_remote"]="192.168.0.1:1025"; params_order+=("target_remote")
-params_array["rva_profile"]="rva20";              params_order+=("rva_profile")
+params_array["rva_profile"]="rva22";              params_order+=("rva_profile")
 params_array["abi_mode"]="rv64_std";              params_order+=("abi_mode")
 params_array["enable_uboot"]="false";             params_order+=("enable_uboot")
 params_array["enable_2core"]="false";             params_order+=("enable_2core")
@@ -195,7 +195,7 @@ gdb_control_array["opensbi_0_9_with_kernel_5_10"]=0
 
 if [ ${params_array["rva_profile"]} == "rva23" ]; then
 	gdb_control_array["rva23_profile"]=1
-elif [ ${params_array["rva_profile"]} == "rva20" ]; then
+elif [ ${params_array["rva_profile"]} == "rva22" ]; then
 	gdb_control_array["rva20_profile"]=1
 fi
 

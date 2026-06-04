@@ -29,13 +29,13 @@ PREFERRED_PROVIDER_libtirpc = "libtirpc"
 # PREFERRED_PROVIDER_libgfortran = "libgfortran-external"
 
 # Select external libc provider based on TCLIBC
-EXTERNAL_LIBC_PROVIDER ?= "${@'musl-external' if d.getVar('TCLIBC') == 'musl' else 'glibc-external'}"
+EXTERNAL_LIBC_PROVIDER ?= "${@'musl-external' if d.getVar('TCLIBC') == 'musl' else ('uclibc-ng-external' if d.getVar('TCLIBC') == 'uclibc' else 'glibc-external')}"
 
 PREFERRED_PROVIDER_glibc:tcmode-external = "${EXTERNAL_LIBC_PROVIDER}"
 PREFERRED_PROVIDER_virtual/libc:tcmode-external = "${EXTERNAL_LIBC_PROVIDER}"
 PREFERRED_PROVIDER_virtual/libintl:tcmode-external = "${EXTERNAL_LIBC_PROVIDER}"
 PREFERRED_PROVIDER_virtual/libiconv:tcmode-external = "${EXTERNAL_LIBC_PROVIDER}"
-PREFERRED_PROVIDER_virtual/crypt:tcmode-external = "${@'musl-external' if d.getVar('TCLIBC') == 'musl' else 'libxcrypt'}"
+PREFERRED_PROVIDER_virtual/crypt:tcmode-external = "${@'musl-external' if d.getVar('TCLIBC') == 'musl' else ('uclibc-ng-external' if d.getVar('TCLIBC') == 'uclibc' else 'libxcrypt')}"
 PREFERRED_PROVIDER_gdb-cross-${TARGET_ARCH} ?= "gdb-external-cross-${TARGET_ARCH}"
 PREFERRED_PROVIDER_oprofile ??= "oprofile"
 # Work around bug where the implicitly created mlprefix preference isn't being
@@ -158,4 +158,11 @@ LIBC_DEPENDENCIES:libc-musl:tcmode-external = "\
     musl-external \
     musl-external-dbg \
     musl-external-dev \
+"
+
+# Override LIBC_DEPENDENCIES for uclibc-ng with external toolchain.
+LIBC_DEPENDENCIES:libc-uclibc-ng:tcmode-external = "\
+    uclibc-ng-external \
+    uclibc-ng-external-dbg \
+    uclibc-ng-external-dev \
 "

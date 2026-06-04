@@ -8,9 +8,9 @@ SRCREV = "${XUANTIE_LINUX_TAG}"
 S = "${WORKDIR}"
 
 
-FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.1/gcc_14.3.0_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=e8af6b561b9b25e6e66e62816399567d223876bdad78cccab1ed9d0f695adf5c"
-FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.1/gcc_14.3.0_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=484fb47a78044e69330d3729963029cb7fcce0287b83f0407cdef60d544091fa"
-FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.1/gcc_14.3.0_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=1fa2b574d4d994560c3ff0c45aac79d00ad2ff9a07b8fc5ec646a6efd7a1e98d"
+FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.2/gcc_14.3.0_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=e8af6b561b9b25e6e66e62816399567d223876bdad78cccab1ed9d0f695adf5c"
+FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.2/gcc_14.3.0_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=484fb47a78044e69330d3729963029cb7fcce0287b83f0407cdef60d544091fa"
+FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.2/gcc_14.3.0_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=1fa2b574d4d994560c3ff0c45aac79d00ad2ff9a07b8fc5ec646a6efd7a1e98d"
 
 SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
     '${FILE_RV64_510}', \

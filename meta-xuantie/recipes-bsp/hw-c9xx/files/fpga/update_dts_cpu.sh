@@ -107,7 +107,7 @@ default_isa[xt-c9501fdvt]="rv64imafdcbvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_zi
 function print_help() {
 	echo "Usage:  update_dts_cpu.sh <soc_platform>  <-cpu>  [-layout 1]  [-isa default]"
 	echo
-	echo "<soc_platform>:    Choose one from [ xiaohui | zsb_rv64 | zsb_rv32 ] etc."
+	echo "<soc_platform>:    Choose one from [ zsb_rv64 | zsb_rv32 ] etc."
 	echo "<-cpu your_cpu>:   Choose one from [ c910 | c920v2 | c908 | c907 ] etc."
 	echo "[-layout 1]:       Choose one from [ 11 | 110011| 11111111 ] etc."
 	echo "[-isa default]:    Choose one from [ default | your_customized_isa ] etc."
@@ -647,6 +647,52 @@ function update_dts_pmu
 	fi
 }
 
+function update_dts_cluster
+{
+	case "$CPU" in
+		*c930*|*c925*) ;;
+		*) return ;;
+	esac
+
+	if [ -z "$CORE_LAYOUT" ] || [ "$CORE_LAYOUT" = "1" ]; then
+		return
+	fi
+	if [[ ! "$CORE_LAYOUT" =~ ^[01]+$ ]]; then
+		echo "WARNING: -layout '$CORE_LAYOUT' is not binary, skip cluster update"
+		return
+	fi
+
+	local layout_dec=$((2#$CORE_LAYOUT))
+
+	local hart_rst_addrs=( \
+		0x26808020 0x26828020 0x26888020 0x268a8020 \
+		0x26908020 0x26928020 0x26988020 0x269a8020 \
+		0x26a08020 0x26a28020 0x26a88020 0x26aa8020 \
+		0x26b08020 0x26b28020 0x26b88020 0x26ba8020)
+	local hart_mode_addrs=( \
+		0x26808100 0x26828100 0x26888100 0x268a8100 \
+		0x26908100 0x26928100 0x26988100 0x269a8100 \
+		0x26a08100 0x26a28100 0x26a88100 0x26aa8100 \
+		0x26b08100 0x26b28100 0x26b88100 0x26ba8100)
+
+	local enabled_count=0
+	local i
+	for ((i = 0; i < 16; i++)); do
+		local rst="${hart_rst_addrs[$i]}"
+		local dat="${hart_mode_addrs[$i]}"
+		if (( (layout_dec >> i) & 1 )); then
+			sed -i "s|^\(\s*\)#\s*\(set \*${rst} = \$zsb_addr\)$|\1\2|" "${ZSB_GDBINIT}"
+			sed -i "s|^\(\s*\)#\s*\(set \*(unsigned long \*)${dat} = 0x80000008\)$|\1\2|" "${ZSB_GDBINIT}"
+			enabled_count=$((enabled_count + 1))
+		else
+			sed -i "/^[[:space:]]*set \*${rst} = \\\$zsb_addr$/ s|^\(\s*\)\(set\)|\1# \2|" "${ZSB_GDBINIT}"
+			sed -i "/^[[:space:]]*set \*(unsigned long \*)${dat} = 0x80000008$/ s|^\(\s*\)\(set\)|\1# \2|" "${ZSB_GDBINIT}"
+		fi
+	done
+
+	echo ">> updating c930/c925 hart reset/mode: layout=$CORE_LAYOUT, enabled_harts=$enabled_count"
+}
+
 # update origin dts file
 update_cpu_socinit
 update_gdbinit_cp
@@ -664,5 +710,6 @@ update_dts_pmu
 # update $TMP_DTS file
 ./dtc -I dts -O dts $DTS > $TMP_DTS
 update_dts_core_layout
+update_dts_cluster
 update_dts_isa
 update_dts_memory_size

@@ -1,0 +1,28 @@
+Fix musl libc compatibility - avoid conflicting getopt declaration
+
+musl libc already declares getopt in unistd.h, so we need to avoid
+the conflicting declaration in this header when not using glibc.
+
+Upstream-Status: Pending
+
+--- a/getopt.h
++++ b/getopt.h
+@@ -97,13 +97,15 @@ struct option
+ #define optional_argument	2
+ 
+ #if defined (__STDC__) && __STDC__
+-#ifdef __GNU_LIBRARY__
++/* Many other libraries have conflicting prototypes for getopt, with
++   differences in the consts, in stdlib.h.  To avoid compilation
++   errors, only prototype getopt for the GNU C library.
++   Also skip for musl libc which has getopt in unistd.h */
++#if defined(__GLIBC__) || defined(__UCLIBC__)
+ /* Many other libraries have conflicting prototypes for getopt, with
+    differences in the consts, in stdlib.h.  To avoid compilation
+    errors, only prototype getopt for the GNU C library.  */
+ extern int getopt (int argc, char *const *argv, const char *shortopts);
+-#else /* not __GNU_LIBRARY__ */
+-extern int getopt ();
+ #endif /* __GNU_LIBRARY__ */
+ extern int getopt_long (int argc, char *const *argv, const char *shortopts,
+ 		        const struct option *longopts, int *longind);

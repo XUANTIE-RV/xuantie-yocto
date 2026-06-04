@@ -1,0 +1,29 @@
+From 654adfb0cd7b96486e7c1359dcd556c1c285d06f Mon Sep 17 00:00:00 2001
+From: yanan.he <yanan.he@alibaba-inc.com>
+Date: Tue, 6 May 2025 00:00:00 +0000
+Subject: [PATCH] strutl: Add missing include <cstdint> for gcc 15
+
+GCC 15 defaults to C++23 which no longer implicitly includes <cstdint>.
+This causes compilation errors in strutl.cc when using types like
+uint32_t, uint64_t without explicit header inclusion.
+
+Upstream-Status: Backport [https://salsa.debian.org/apt-team/apt/-/commit/main]
+Signed-off-by: yanan.he <yanan.he@alibaba-inc.com>
+---
+ apt-pkg/contrib/strutl.cc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/apt-pkg/contrib/strutl.cc b/apt-pkg/contrib/strutl.cc
+index 2a7c8c3..9d3e4f1 100644
+--- a/apt-pkg/contrib/strutl.cc
++++ b/apt-pkg/contrib/strutl.cc
+@@ -16,6 +16,7 @@
+ /*}}}*/
+ // Includes								/*{{{*/
+ #include <config.h>
++#include <cstdint>
+ 
+ #include <apt-pkg/error.h>
+ #include <apt-pkg/fileutl.h>
+-- 
+2.43.0
