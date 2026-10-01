@@ -30,7 +30,7 @@ index 7746d86..666a823 100644
  
  stream_c.exe: stream.c
 -	$(CC) $(CFLAGS) stream.c -o stream_c.exe
-+	$(CC) $(CFLAGS) stream.c -O2 -static -o stream_c.exe
++	$(CC) $(CFLAGS) stream.c -O2 -static -o stream_c.exe $(LIBS)
  
  clean:
  	rm -f stream_f.exe stream_c.exe *.o

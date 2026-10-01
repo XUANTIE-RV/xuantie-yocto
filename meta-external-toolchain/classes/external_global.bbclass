@@ -45,9 +45,32 @@ def fixed_oe_import(d, modules=None):
 
 EXTERNAL_IMPORTED := "${@fixed_oe_import(d, ['oe.external'])}"
 
-EXTERNAL_TOOLCHAIN_SYSROOT ?= "${@external_run(d, '${EXTERNAL_CC}', *(TARGET_CC_ARCH.split() + ['-print-sysroot'])).rstrip()}"
-EXTERNAL_TOOLCHAIN_LIBROOT ?= "${@external_run(d, '${EXTERNAL_CC}', *(TARGET_CC_ARCH.split() + ['-print-file-name=crtbegin.o'])).rstrip().replace('/crtbegin.o', '')}"
-EXTERNAL_HEADERS_MULTILIB_SUFFIX ?= "${@external_run(d, '${EXTERNAL_CC}', *(TARGET_CC_ARCH.split() + ['-print-sysroot-headers-suffix'])).rstrip()}"
+# RISC-V profile names (e.g., -march=rva23u64) are accepted by Clang but NOT
+# by riscv-gnu GCC (15.2.0), which only understands ISA strings starting with
+# 'rv32' or 'rv64'. The GCC queries below (-print-sysroot, -print-file-name,
+# -print-sysroot-headers-suffix) only depend on the base arch (rv32/rv64) and
+# ABI -- the exact extension list does not affect the result. So translate any
+# profile-name -march to a simple rv32gc/rv64gc equivalent before invoking GCC.
+# Actual compilation flags (TARGET_CC_ARCH) are left untouched.
+def _sanitize_cc_arch_for_gcc(cc_arch_str):
+    import re
+    args = (cc_arch_str or '').split()
+    result = []
+    for arg in args:
+        if arg.startswith('-march='):
+            march_val = arg[len('-march='):]
+            if not march_val.startswith('rv32') and not march_val.startswith('rv64'):
+                if re.match(r'^rv[abm]\d+u(32|64)$', march_val):
+                    if 'u64' in march_val:
+                        arg = '-march=rv64gc'
+                    else:
+                        arg = '-march=rv32gc'
+        result.append(arg)
+    return result
+
+EXTERNAL_TOOLCHAIN_SYSROOT ?= "${@external_run(d, '${EXTERNAL_CC}', *(_sanitize_cc_arch_for_gcc(d.getVar('TARGET_CC_ARCH')) + ['-print-sysroot'])).rstrip()}"
+EXTERNAL_TOOLCHAIN_LIBROOT ?= "${@external_run(d, '${EXTERNAL_CC}', *(_sanitize_cc_arch_for_gcc(d.getVar('TARGET_CC_ARCH')) + ['-print-file-name=crtbegin.o'])).rstrip().replace('/crtbegin.o', '')}"
+EXTERNAL_HEADERS_MULTILIB_SUFFIX ?= "${@external_run(d, '${EXTERNAL_CC}', *(_sanitize_cc_arch_for_gcc(d.getVar('TARGET_CC_ARCH')) + ['-print-sysroot-headers-suffix'])).rstrip()}"
 EXTERNAL_LIBC_KERNEL_VERSION ?= "${@external_get_kernel_version(d, "${EXTERNAL_TOOLCHAIN_SYSROOT}${prefix}")}"
 
 EXTERNAL_INSTALL_SOURCE_PATHS = "\

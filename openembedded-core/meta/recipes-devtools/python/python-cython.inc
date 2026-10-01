@@ -5,12 +5,14 @@ It's designed to bridge the gap between the nice, high-level, easy-to-use world 
 and the messy, low-level world of C."
 SECTION = "devel/python"
 LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=e23fadd6ceef8c618fc1c65191d846fa"
-PYPI_PACKAGE = "Cython"
+LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=61c3ee8961575861fa86c7e62bc9f69c"
+# Cython 3.0.x renamed its PyPI sdist to lowercase "cython"; this also drives
+# S = ${WORKDIR}/cython-${PV} through the pypi class.
+PYPI_PACKAGE = "cython"
 BBCLASSEXTEND = "native nativesdk"
 
-SRC_URI[sha256sum] = "8733cf4758b79304f2a4e39ebfac5e92341bce47bcceb26c1254398b2f8c1af7"
-UPSTREAM_CHECK_REGEX = "Cython-(?P<pver>.*)\.tar"
+SRC_URI[sha256sum] = "b988bb297ce76c671e28c97d017b95411010f7c77fa6623dd0bb47eed1aee1bc"
+UPSTREAM_CHECK_REGEX = "[Cc]ython-(?P<pver>.*)\.tar"
 
 inherit pypi
 

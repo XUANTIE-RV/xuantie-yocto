@@ -1,0 +1,43 @@
+From b9867e6b744b77d97d22333eca3ab3d23d47e2e2 Mon Sep 17 00:00:00 2001
+From: Chen Qi <Qi.Chen@windriver.com>
+Date: Thu, 14 Mar 2024 00:19:19 -0700
+Subject: [PATCH] cephadm/build.py: avoid using python3 from sysroot when
+ creating zipapp archive
+
+ceph has the assumption that the python used during build
+is the python used at target, but this is not true for
+cross compilation. We'll need to use the target python3 here,
+otherwise, the cephadm zipapp cannot be executed.
+
+Upstream-Status: Pending
+
+Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+---
+ src/cephadm/build.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/cephadm/build.py b/src/cephadm/build.py
+index 4264b814f1e..a4483d6f79d 100755
+--- a/src/cephadm/build.py
++++ b/src/cephadm/build.py
+@@ -93,7 +93,7 @@ def _compile(dest, tempdir):
+         zipapp.create_archive(
+             source=tempdir,
+             target=dest,
+-            interpreter=sys.executable,
++            interpreter='/usr/bin/python3',
+             compressed=True,
+         )
+         log.info("Zipapp created with compression")
+@@ -102,7 +102,7 @@ def _compile(dest, tempdir):
+         zipapp.create_archive(
+             source=tempdir,
+             target=dest,
+-            interpreter=sys.executable,
++            interpreter='/usr/bin/python3',
+         )
+         log.info("Zipapp created without compression")
+ 
+-- 
+2.42.0
+

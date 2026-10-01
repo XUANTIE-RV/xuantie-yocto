@@ -1,21 +1,21 @@
 From 9b50c0b76cd97f5491108262b07e18f6de36bfed Mon Sep 17 00:00:00 2001
 From: lucz <chongzhi.lcz@alibaba-inc.com>
 Date: Mon, 18 Nov 2024 23:18:26 +0800
-Subject: [PATCH] 0002-add-defconfig
+Subject: [PATCH] add xuantie fpga defconfig
 
 ---
- configs/fpga_xuantie_riscv32_smode_defconfig | 30 ++++++++++++++++++++
- configs/fpga_xuantie_riscv64_smode_defconfig | 30 ++++++++++++++++++++
- 2 files changed, 60 insertions(+)
+ configs/fpga_xuantie_riscv32_smode_defconfig | 48 ++++++++++++++++++++
+ configs/fpga_xuantie_riscv64_smode_defconfig | 48 ++++++++++++++++++++
+ 2 files changed, 94 insertions(+)
  create mode 100644 configs/fpga_xuantie_riscv32_smode_defconfig
  create mode 100644 configs/fpga_xuantie_riscv64_smode_defconfig
 
 diff --git a/configs/fpga_xuantie_riscv32_smode_defconfig b/configs/fpga_xuantie_riscv32_smode_defconfig
 new file mode 100644
-index 0000000000..f7ea6a9344
+index 0000000000..593ae0481a
 --- /dev/null
 +++ b/configs/fpga_xuantie_riscv32_smode_defconfig
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,48 @@
 +CONFIG_RISCV=y
 +CONFIG_SYS_MALLOC_LEN=0x800000
 +CONFIG_NR_DRAM_BANKS=1
@@ -27,15 +27,15 @@ index 0000000000..f7ea6a9344
 +CONFIG_SYS_NS16550=y
 +CONFIG_DEFAULT_DEVICE_TREE="fpga-xuantie-riscv32"
 +CONFIG_SYS_LOAD_ADDR=0x60800000
-+CONFIG_TARGET_TH1520_LPI4A=y
 +CONFIG_ARCH_RV32I=y
 +CONFIG_RISCV_SMODE=y
++CONFIG_RISCV_XUANTIE=y
 +CONFIG_FIT=y
 +CONFIG_SYS_BOOTM_LEN=0x4000000
 +CONFIG_DISTRO_DEFAULTS=y
 +CONFIG_USE_PREBOOT=y
 +CONFIG_PREBOOT="setenv fdt_addr ${fdtcontroladdr}; fdt addr ${fdtcontroladdr};"
-+CONFIG_BOOTCOMMAND="booti 0x60800000 - 0x63f00000"
++CONFIG_BOOTCOMMAND="booti 0x60800000 - 0x60300000"
 +CONFIG_DISPLAY_CPUINFO=y
 +CONFIG_DISPLAY_BOARDINFO=y
 +CONFIG_CMD_BOOTEFI_SELFTEST=y
@@ -46,12 +46,30 @@ index 0000000000..f7ea6a9344
 +CONFIG_CC_OPTIMIZE_FOR_DEBUG=y
 +CONFIG_SYS_NS16550_MEM32=y
 +CONFIG_SYS_NS16550_REG_SIZE=-4
++CONFIG_OF_BOARD=y
++CONFIG_NET=y
++CONFIG_CMD_BOOTI=y
++CONFIG_CMD_DHCP=y
++CONFIG_CMD_PING=y
++CONFIG_CMD_TFTPPUT=y
++CONFIG_CMD_NET=y
++CONFIG_ENV_IS_NOWHERE=y
++CONFIG_NET_RANDOM_ETHADDR=y
++CONFIG_IP_DEFRAG=y
++CONFIG_TFTP_BLOCKSIZE=4096
++CONFIG_TFTP_PORT=y
++CONFIG_PHY_MARVELL=y
++CONFIG_DM_ETH=y
++CONFIG_PHYLIB=y
++CONFIG_ETH_DESIGNWARE=y
++CONFIG_DW_ALTDESCRIPTOR=y
++CONFIG_MII=y
 diff --git a/configs/fpga_xuantie_riscv64_smode_defconfig b/configs/fpga_xuantie_riscv64_smode_defconfig
 new file mode 100644
-index 0000000000..ceffe180a8
+index 0000000000..6b1afa0b1d
 --- /dev/null
 +++ b/configs/fpga_xuantie_riscv64_smode_defconfig
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,48 @@
 +CONFIG_RISCV=y
 +CONFIG_SYS_MALLOC_LEN=0x800000
 +CONFIG_NR_DRAM_BANKS=1
@@ -63,15 +81,15 @@ index 0000000000..ceffe180a8
 +CONFIG_SYS_NS16550=y
 +CONFIG_DEFAULT_DEVICE_TREE="fpga-xuantie-riscv64"
 +CONFIG_SYS_LOAD_ADDR=0x60800000
-+CONFIG_TARGET_TH1520_LPI4A=y
 +CONFIG_ARCH_RV64I=y
 +CONFIG_RISCV_SMODE=y
++CONFIG_RISCV_XUANTIE=y
 +CONFIG_FIT=y
 +CONFIG_SYS_BOOTM_LEN=0x4000000
 +CONFIG_DISTRO_DEFAULTS=y
 +CONFIG_USE_PREBOOT=y
 +CONFIG_PREBOOT="setenv fdt_addr ${fdtcontroladdr}; fdt addr ${fdtcontroladdr};"
-+CONFIG_BOOTCOMMAND="booti 0x60800000 - 0x63f00000"
++CONFIG_BOOTCOMMAND="booti 0x60800000 - 0x60300000"
 +CONFIG_DISPLAY_CPUINFO=y
 +CONFIG_DISPLAY_BOARDINFO=y
 +CONFIG_CMD_BOOTEFI_SELFTEST=y
@@ -82,6 +100,24 @@ index 0000000000..ceffe180a8
 +CONFIG_CC_OPTIMIZE_FOR_DEBUG=y
 +CONFIG_SYS_NS16550_MEM32=y
 +CONFIG_SYS_NS16550_REG_SIZE=-4
---
++CONFIG_OF_BOARD=y
++CONFIG_NET=y
++CONFIG_CMD_BOOTI=y
++CONFIG_CMD_DHCP=y
++CONFIG_CMD_PING=y
++CONFIG_CMD_TFTPPUT=y
++CONFIG_CMD_NET=y
++CONFIG_ENV_IS_NOWHERE=y
++CONFIG_NET_RANDOM_ETHADDR=y
++CONFIG_IP_DEFRAG=y
++CONFIG_TFTP_BLOCKSIZE=4096
++CONFIG_TFTP_PORT=y
++CONFIG_PHY_MARVELL=y
++CONFIG_DM_ETH=y
++CONFIG_PHYLIB=y
++CONFIG_ETH_DESIGNWARE=y
++CONFIG_DW_ALTDESCRIPTOR=y
++CONFIG_MII=y
+-- 
 2.17.1
 

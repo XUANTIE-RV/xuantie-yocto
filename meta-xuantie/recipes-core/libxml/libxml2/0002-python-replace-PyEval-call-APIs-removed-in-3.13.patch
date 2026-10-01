@@ -1,0 +1,163 @@
+From: yanan.he <yanan.he@linux.alibaba.com>
+Subject: [PATCH] python: replace PyEval_CallObject/CallMethod removed in 3.13
+
+Python 3.13 removed PyEval_CallObject and PyEval_CallMethod from the C
+API (deprecated since 3.9). libxml2 2.9.14's bindings still call them;
+they compile only as implicit declarations and the resulting
+libxml2mod.so has undefined symbols, so `import libxml2` fails:
+"undefined symbol: PyEval_CallObject". This breaks itstool-native
+do_configure ("Python module libxml2 is needed").
+
+PyObject_CallObject / PyObject_CallMethod are drop-in equivalents
+available in every supported Python version (same call semantics).
+
+Upstream-Status: Backport [fixed differently in >= 2.10]
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ python/libxml.c | 40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
+
+--- a/python/libxml.c	2026-07-31 12:17:02.114496807 +0800
++++ b/python/libxml.c	2026-07-31 12:17:02.114496807 +0800
+@@ -257,7 +257,7 @@
+ #endif
+     file = (PyObject *) context;
+     if (file == NULL) return(-1);
+-    ret = PyEval_CallMethod(file, (char *) "close", (char *) "()");
++    ret = PyObject_CallMethod(file, (char *) "close", (char *) "()");
+     if (ret != NULL) {
+ 	Py_DECREF(ret);
+     }
+@@ -287,7 +287,7 @@
+ #endif
+     file = (PyObject *) context;
+     if (file == NULL) return(-1);
+-    ret = PyEval_CallMethod(file, (char *) "read", (char *) "(i)", len);
++    ret = PyObject_CallMethod(file, (char *) "read", (char *) "(i)", len);
+     if (ret == NULL) {
+ 	printf("xmlPythonFileReadRaw: result is NULL\n");
+ 	return(-1);
+@@ -352,7 +352,7 @@
+ #endif
+     file = (PyObject *) context;
+     if (file == NULL) return(-1);
+-    ret = PyEval_CallMethod(file, (char *) "io_read", (char *) "(i)", len);
++    ret = PyObject_CallMethod(file, (char *) "io_read", (char *) "(i)", len);
+     if (ret == NULL) {
+ 	printf("xmlPythonFileRead: result is NULL\n");
+ 	return(-1);
+@@ -420,10 +420,10 @@
+     string = PY_IMPORT_STRING_SIZE(buffer, len);
+     if (string == NULL) return(-1);
+     if (PyObject_HasAttrString(file, (char *) "io_write")) {
+-        ret = PyEval_CallMethod(file, (char *) "io_write", (char *) "(O)",
++        ret = PyObject_CallMethod(file, (char *) "io_write", (char *) "(O)",
+ 	                        string);
+     } else if (PyObject_HasAttrString(file, (char *) "write")) {
+-        ret = PyEval_CallMethod(file, (char *) "write", (char *) "(O)",
++        ret = PyObject_CallMethod(file, (char *) "write", (char *) "(O)",
+ 	                        string);
+     }
+     Py_DECREF(string);
+@@ -459,9 +459,9 @@
+     file = (PyObject *) context;
+     if (file == NULL) return(-1);
+     if (PyObject_HasAttrString(file, (char *) "io_close")) {
+-        ret = PyEval_CallMethod(file, (char *) "io_close", (char *) "()");
++        ret = PyObject_CallMethod(file, (char *) "io_close", (char *) "()");
+     } else if (PyObject_HasAttrString(file, (char *) "flush")) {
+-        ret = PyEval_CallMethod(file, (char *) "flush", (char *) "()");
++        ret = PyObject_CallMethod(file, (char *) "flush", (char *) "()");
+     }
+     if (ret != NULL) {
+ 	Py_DECREF(ret);
+@@ -1642,7 +1642,7 @@
+         Py_XINCREF(libxml_xmlPythonErrorFuncCtxt);
+         message = libxml_charPtrConstWrap(str);
+         PyTuple_SetItem(list, 1, message);
+-        result = PyEval_CallObject(libxml_xmlPythonErrorFuncHandler, list);
++        result = PyObject_CallObject(libxml_xmlPythonErrorFuncHandler, list);
+         Py_XDECREF(list);
+         Py_XDECREF(result);
+     }
+@@ -1730,7 +1730,7 @@
+     PyTuple_SetItem(list, 2, libxml_intWrap(severity));
+     PyTuple_SetItem(list, 3, Py_None);
+     Py_INCREF(Py_None);
+-    result = PyEval_CallObject(pyCtxt->f, list);
++    result = PyObject_CallObject(pyCtxt->f, list);
+     if (result == NULL) 
+     {
+ 	/* TODO: manage for the exception to be propagated... */
+@@ -1916,7 +1916,7 @@
+     PyTuple_SetItem(list, 0, libxml_charPtrWrap(str));
+     PyTuple_SetItem(list, 1, pyCtxt->arg);
+     Py_XINCREF(pyCtxt->arg);
+-    result = PyEval_CallObject(pyCtxt->error, list);
++    result = PyObject_CallObject(pyCtxt->error, list);
+     if (result == NULL) 
+     {
+ 	/* TODO: manage for the exception to be propagated... */
+@@ -1943,7 +1943,7 @@
+     PyTuple_SetItem(list, 0, libxml_charPtrWrap(str));
+     PyTuple_SetItem(list, 1, pyCtxt->arg);
+     Py_XINCREF(pyCtxt->arg);
+-    result = PyEval_CallObject(pyCtxt->warn, list);
++    result = PyObject_CallObject(pyCtxt->warn, list);
+     if (result == NULL) 
+     {
+ 	/* TODO: manage for the exception to be propagated... */
+@@ -2078,7 +2078,7 @@
+     PyTuple_SetItem(list, 1, libxml_charPtrConstWrap(msg));
+     PyTuple_SetItem(list, 2, libxml_intWrap(severity));
+     PyTuple_SetItem(list, 3, libxml_xmlTextReaderLocatorPtrWrap(locator));
+-    result = PyEval_CallObject(pyCtxt->f, list);
++    result = PyObject_CallObject(pyCtxt->f, list);
+     if (result == NULL)
+     {
+ 	/* TODO: manage for the exception to be propagated... */
+@@ -2273,7 +2273,7 @@
+         cur = libxml_xmlXPathObjectPtrWrap(obj);
+         PyTuple_SetItem(list, i + 1, cur);
+     }
+-    result = PyEval_CallObject(current_function, list);
++    result = PyObject_CallObject(current_function, list);
+     Py_DECREF(list);
+ 
+     obj = libxml_xmlXPathObjectPtrConvert(result);
+@@ -3176,7 +3176,7 @@
+     PyTuple_SetItem(list, 0, libxml_charPtrWrap(str));
+     PyTuple_SetItem(list, 1, pyCtxt->arg);
+     Py_XINCREF(pyCtxt->arg);
+-    result = PyEval_CallObject(pyCtxt->error, list);
++    result = PyObject_CallObject(pyCtxt->error, list);
+     if (result == NULL) 
+     {
+         /* TODO: manage for the exception to be propagated... */
+@@ -3203,7 +3203,7 @@
+     PyTuple_SetItem(list, 0, libxml_charPtrWrap(str));
+     PyTuple_SetItem(list, 1, pyCtxt->arg);
+     Py_XINCREF(pyCtxt->arg);
+-    result = PyEval_CallObject(pyCtxt->warn, list);
++    result = PyObject_CallObject(pyCtxt->warn, list);
+     if (result == NULL) 
+     {
+         /* TODO: manage for the exception to be propagated... */
+@@ -3340,7 +3340,7 @@
+ 	PyTuple_SetItem(list, 0, libxml_charPtrWrap(str));
+ 	PyTuple_SetItem(list, 1, pyCtxt->arg);
+ 	Py_XINCREF(pyCtxt->arg);
+-	result = PyEval_CallObject(pyCtxt->error, list);
++	result = PyObject_CallObject(pyCtxt->error, list);
+ 	if (result == NULL) 
+ 	{
+ 		/* TODO: manage for the exception to be propagated... */
+@@ -3367,7 +3367,7 @@
+ 	PyTuple_SetItem(list, 0, libxml_charPtrWrap(str));
+ 	PyTuple_SetItem(list, 1, pyCtxt->arg);
+ 	Py_XINCREF(pyCtxt->arg);
+-	result = PyEval_CallObject(pyCtxt->warn, list);
++	result = PyObject_CallObject(pyCtxt->warn, list);
+ 	if (result == NULL)
+ 	{
+ 		/* TODO: manage for the exception to be propagated... */

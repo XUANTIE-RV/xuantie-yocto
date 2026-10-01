@@ -1,0 +1,30 @@
+From: Yanan He <noreply@example.com>
+Subject: [PATCH] common/device-utils: include libgen.h for basename()
+
+With musl libc, basename() is only declared in <libgen.h>; <string.h>
+does not expose the GNU non-POSIX variant. Recent clang treats the
+resulting implicit declaration / int-to-pointer assignment as a hard
+error (-Wint-conversion), causing the build to fail:
+
+    common/device-utils.c:344:7: error: incompatible integer to
+        pointer conversion assigning to 'char *' from 'int'
+        [-Wint-conversion]
+        name = basename(path);
+
+Add the missing include so basename() has its proper prototype.
+
+Upstream-Status: Inappropriate [musl/clang build fix]
+---
+ common/device-utils.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/common/device-utils.c
++++ b/common/device-utils.c
+@@ -26,6 +26,7 @@
+ #include <blkid/blkid.h>
+ #include <linux/limits.h>
+ #include <linux/fs.h>
++#include <libgen.h>
+ #include <limits.h>
+ #include "kernel-lib/sizes.h"
+ #include "kernel-shared/disk-io.h"

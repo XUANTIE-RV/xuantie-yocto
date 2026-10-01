@@ -1,0 +1,570 @@
+From c5dc678a723bcade77ef0b20a8b7ff277757ee95 Mon Sep 17 00:00:00 2001
+From: "yanan.he" <yanan.he@linux.alibaba.com>
+Date: Wed, 10 Jun 2026 18:11:41 +0800
+Subject: [PATCH] riscv: add cache subsystem support
+
+Backport mainline RISC-V cache infrastructure to v2024.10 and add
+XuanTie vendor-specific runtime cache detection.
+
+1. insn-def.h (mainline bfc8ca3f7f): instruction definition macros for
+   generating I-type instructions via .insn directive.
+
+2. Zicbom CBO (mainline 9e859849e2): cache block operations
+   (cbo.flush/cbo.inval) in arch/riscv/lib/cache.c with
+   RISCV_ISA_ZICBOM Kconfig.
+
+3. XTheadCMO shared library (mainline 3dbff9eecc): move T-Head
+   non-standard cache ops from cv1800b/cache.c to shared
+   lib/thead_cmo.c, controlled by SYS_CACHE_THEAD_CMO Kconfig.
+
+4. XuanTie runtime detection: arch/riscv/cpu/xuantie/ vendor directory
+   with mvendorid/marchid/mimpid-based CPU detection (SBI in S-mode,
+   CSR in M-mode):
+   - Legacy C9xx (c906/c910/c920): XuanTie custom cache instructions
+   - Newer cores (c920v2/c925/c930/c950): standard Zicbom CBO
+   Detection cached in .data section (safe before BSS init).
+
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ arch/riscv/Kconfig                            |  12 ++
+ arch/riscv/cpu/cv1800b/Kconfig                |   1 +
+ arch/riscv/cpu/cv1800b/Makefile               |   1 -
+ arch/riscv/cpu/xuantie/Kconfig                |  15 ++
+ arch/riscv/cpu/xuantie/Makefile               |   5 +
+ arch/riscv/cpu/xuantie/cache.c                | 141 ++++++++++++++++++
+ arch/riscv/cpu/xuantie/cpu.c                  |  22 +++
+ arch/riscv/cpu/xuantie/dram.c                 |  29 ++++
+ arch/riscv/include/asm/insn-def.h             |  41 +++++
+ arch/riscv/lib/Makefile                       |   1 +
+ arch/riscv/lib/cache.c                        |  98 +++++++++++-
+ .../{cpu/cv1800b/cache.c => lib/thead_cmo.c}  |   0
+ configs/qemu-riscv32_smode_defconfig          |   1 +
+ configs/qemu-riscv64_smode_defconfig          |   1 +
+ 14 files changed, 366 insertions(+), 2 deletions(-)
+ create mode 100644 arch/riscv/cpu/xuantie/Kconfig
+ create mode 100644 arch/riscv/cpu/xuantie/Makefile
+ create mode 100644 arch/riscv/cpu/xuantie/cache.c
+ create mode 100644 arch/riscv/cpu/xuantie/cpu.c
+ create mode 100644 arch/riscv/cpu/xuantie/dram.c
+ create mode 100644 arch/riscv/include/asm/insn-def.h
+ rename arch/riscv/{cpu/cv1800b/cache.c => lib/thead_cmo.c} (100%)
+
+diff --git a/arch/riscv/Kconfig b/arch/riscv/Kconfig
+index 8891a5359d..e37ed121f9 100644
+--- a/arch/riscv/Kconfig
++++ b/arch/riscv/Kconfig
+@@ -69,6 +69,14 @@ config SYS_DCACHE_OFF
+ 	help
+ 	  Do not enable data cache in U-Boot.
+ 
++config SYS_CACHE_THEAD_CMO
++	bool "THEAD non-standard cache operations"
++	depends on !SYS_DCACHE_OFF
++	default n
++	help
++	  Support for non-standard cache management operations on SoCs based on
++	  T-Head C906/C910 cores.
++
+ config SPL_SYS_DCACHE_OFF
+ 	bool "Do not enable dcache in SPL"
+ 	depends on SPL
+@@ -104,6 +112,7 @@ source "arch/riscv/cpu/fu540/Kconfig"
+ source "arch/riscv/cpu/fu740/Kconfig"
+ source "arch/riscv/cpu/generic/Kconfig"
+ source "arch/riscv/cpu/jh7110/Kconfig"
++source "arch/riscv/cpu/xuantie/Kconfig"
+ 
+ # architecture-specific options below
+ 
+@@ -320,6 +329,9 @@ config DMA_ADDR_T_64BIT
+ 	bool
+ 	default y if 64BIT
+ 
++config RISCV_ISA_ZICBOM
++	bool "Zicbom support"
++
+ config RISCV_ACLINT
+ 	bool
+ 	depends on RISCV_MMODE
+diff --git a/arch/riscv/cpu/cv1800b/Kconfig b/arch/riscv/cpu/cv1800b/Kconfig
+index 7225b1210c..57f724ae04 100644
+--- a/arch/riscv/cpu/cv1800b/Kconfig
++++ b/arch/riscv/cpu/cv1800b/Kconfig
+@@ -6,6 +6,7 @@ config SOPHGO_CV1800B
+ 	bool
+ 	select ARCH_EARLY_INIT_R
+ 	select SYS_CACHE_SHIFT_6
++	select SYS_CACHE_THEAD_CMO
+ 	imply CPU
+ 	imply CPU_RISCV
+ 	imply RISCV_TIMER
+diff --git a/arch/riscv/cpu/cv1800b/Makefile b/arch/riscv/cpu/cv1800b/Makefile
+index 95beb34b51..da12e0f64e 100644
+--- a/arch/riscv/cpu/cv1800b/Makefile
++++ b/arch/riscv/cpu/cv1800b/Makefile
+@@ -4,4 +4,3 @@
+ 
+ obj-y += dram.o
+ obj-y += cpu.o
+-obj-y += cache.o
+diff --git a/arch/riscv/cpu/xuantie/Kconfig b/arch/riscv/cpu/xuantie/Kconfig
+new file mode 100644
+index 0000000000..bd3b525904
+--- /dev/null
++++ b/arch/riscv/cpu/xuantie/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++#
++# Copyright (c) 2026 Alibaba-inc, DAMO
++
++config RISCV_XUANTIE
++	bool "XuanTie RISC-V CPU support"
++	select SYS_CACHE_SHIFT_6
++	imply CPU
++	imply CPU_RISCV
++	imply RISCV_TIMER if (RISCV_SMODE || SPL_RISCV_SMODE)
++	help
++	  Enable XuanTie RISC-V CPU support (C906/C908/C910/C920/C930/C950).
++	  Provides runtime CPU detection for cache operations, supporting
++	  both legacy XuanTie custom cache instructions and the standard
++	  RISC-V Zicbom extension.
+diff --git a/arch/riscv/cpu/xuantie/Makefile b/arch/riscv/cpu/xuantie/Makefile
+new file mode 100644
+index 0000000000..efb1da5067
+--- /dev/null
++++ b/arch/riscv/cpu/xuantie/Makefile
+@@ -0,0 +1,5 @@
++# SPDX-License-Identifier: GPL-2.0+
++
++obj-y += dram.o
++obj-y += cpu.o
++obj-y += cache.o
+diff --git a/arch/riscv/cpu/xuantie/cache.c b/arch/riscv/cpu/xuantie/cache.c
+new file mode 100644
+index 0000000000..ff1aff68af
+--- /dev/null
++++ b/arch/riscv/cpu/xuantie/cache.c
+@@ -0,0 +1,141 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (c) 2026 Alibaba-inc, DAMO
++ *
++ * Cache operations for XuanTie RISC-V CPUs with runtime detection.
++ *
++ * Legacy C9xx CPUs (c906/c910/c920) use XuanTie custom cache
++ * instructions; newer XuanTie cores and other RISC-V vendors fall
++ * back to standard Zicbom.
++ */
++
++#include <asm/cache.h>
++#include <cpu_func.h>
++#include <asm/insn-def.h>
++
++#if CONFIG_IS_ENABLED(RISCV_SMODE)
++#include <asm/sbi.h>
++#endif
++
++#define XUANTIE_VENDOR_ID		0x5b7
++
++/* XuanTie C9xx custom cache instruction encodings */
++#define XUANTIE_ICACHE_IALL	".long 0x0100000b"
++#define XUANTIE_DCACHE_CALL	".long 0x0010000b"
++#define XUANTIE_DCACHE_IALL	".long 0x0020000b"
++#define XUANTIE_DCACHE_CIPA_A0	".long 0x02b5000b"
++#define XUANTIE_DCACHE_IPA_A0	".long 0x02a5000b"
++#define XUANTIE_SYNC_S		".long 0x0190000b"
++#define XUANTIE_SYNC_I		".long 0x01a0000b"
++
++/* Standard RISC-V Zicbom cache instructions via insn-def.h */
++#define CBO_INVAL_A0 \
++	INSN_I(OPCODE_MISC_MEM, FUNC3(2), __RD(0), RS1(a0), SIMM12(0))
++#define CBO_FLUSH_A0 \
++	INSN_I(OPCODE_MISC_MEM, FUNC3(2), __RD(0), RS1(a0), SIMM12(2))
++#define CBO_FLUSH_A0		".long 0x0025200f"
++#define CBO_INVAL_A0		".long 0x0005200f"
++
++/*
++ * Placed in .data (not BSS) -- called from start.S before BSS init.
++ * -1 = not yet detected, 0 = new CPU (Zicbom), 1 = legacy C9xx
++ *
++ * Legacy C9xx (c906/c910/c920): mvendorid=0x5b7, marchid=0, mimpid=0
++ * New CPUs (c920v2/c925/c930/c950): mvendorid=0x5b7, marchid!=0
++ */
++static int legacy_c9xx __section(".data") = -1;
++
++static int is_xuantie_legacy_c9xx(void)
++{
++	if (legacy_c9xx < 0) {
++		long mvendorid = 0, marchid = -1, mimpid = -1;
++		int ret = -1;
++#if CONFIG_IS_ENABLED(RISCV_SMODE)
++		ret = sbi_get_mvendorid(&mvendorid);
++		if (!ret)
++			ret = sbi_get_marchid(&marchid);
++		if (!ret)
++			ret = sbi_get_mimpid(&mimpid);
++#elif CONFIG_IS_ENABLED(RISCV_MMODE)
++		mvendorid = csr_read(CSR_MVENDORID);
++		marchid = csr_read(CSR_MARCHID);
++		mimpid = csr_read(CSR_MIMPID);
++		ret = 0;
++#endif
++		if (ret)
++			legacy_c9xx = 0;
++		else
++			legacy_c9xx = (mvendorid == XUANTIE_VENDOR_ID &&
++				       marchid == 0 &&
++				       mimpid == 0) ? 1 : 0;
++	}
++	return legacy_c9xx;
++}
++
++void invalidate_icache_all(void)
++{
++	if (is_xuantie_legacy_c9xx()) {
++		asm volatile (XUANTIE_ICACHE_IALL ::: "memory");
++		asm volatile (XUANTIE_SYNC_I ::: "memory");
++	} else {
++		asm volatile ("fence.i" ::: "memory");
++	}
++}
++
++void flush_dcache_all(void)
++{
++	if (is_xuantie_legacy_c9xx()) {
++		asm volatile (XUANTIE_DCACHE_CALL ::: "memory");
++		asm volatile (XUANTIE_SYNC_S ::: "memory");
++	} else {
++		asm volatile ("fence iorw, iorw" ::: "memory");
++	}
++}
++
++void invalidate_dcache_all(void)
++{
++	if (is_xuantie_legacy_c9xx()) {
++		asm volatile (XUANTIE_DCACHE_IALL ::: "memory");
++		asm volatile (XUANTIE_SYNC_S ::: "memory");
++	} else {
++		asm volatile ("fence iorw, iorw" ::: "memory");
++	}
++}
++
++void flush_dcache_range(unsigned long start, unsigned long end)
++{
++	unsigned long aligned = start & ~(CONFIG_SYS_CACHELINE_SIZE - 1);
++
++	if (is_xuantie_legacy_c9xx()) {
++		register unsigned long i asm("a0") = aligned;
++
++		for (; i < end; i += CONFIG_SYS_CACHELINE_SIZE)
++			asm volatile (XUANTIE_DCACHE_CIPA_A0);
++		asm volatile (XUANTIE_SYNC_S);
++	} else {
++		register unsigned long i asm("a0") = aligned;
++
++		for (; i < end; i += CONFIG_SYS_CACHELINE_SIZE)
++			asm volatile (CBO_FLUSH_A0 ::: "memory");
++		asm volatile ("fence iorw, iorw" ::: "memory");
++	}
++}
++
++void invalidate_dcache_range(unsigned long start, unsigned long end)
++{
++	unsigned long aligned = start & ~(CONFIG_SYS_CACHELINE_SIZE - 1);
++
++	if (is_xuantie_legacy_c9xx()) {
++		register unsigned long i asm("a0") = aligned;
++
++		for (; i < end; i += CONFIG_SYS_CACHELINE_SIZE)
++			asm volatile (XUANTIE_DCACHE_IPA_A0);
++		asm volatile (XUANTIE_SYNC_S);
++	} else {
++		register unsigned long i asm("a0") = aligned;
++
++		for (; i < end; i += CONFIG_SYS_CACHELINE_SIZE)
++			asm volatile (CBO_INVAL_A0 ::: "memory");
++		asm volatile ("fence iorw, iorw" ::: "memory");
++	}
++}
+diff --git a/arch/riscv/cpu/xuantie/cpu.c b/arch/riscv/cpu/xuantie/cpu.c
+new file mode 100644
+index 0000000000..8dd5821f1b
+--- /dev/null
++++ b/arch/riscv/cpu/xuantie/cpu.c
+@@ -0,0 +1,22 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (c) 2026 Alibaba-inc, DAMO
++ */
++
++#include <irq_func.h>
++#include <asm/cache.h>
++
++/*
++ * cleanup_before_linux() is called just before we call linux
++ * it prepares the processor for linux
++ *
++ * we disable interrupt and caches.
++ */
++int cleanup_before_linux(void)
++{
++	disable_interrupts();
++
++	cache_flush();
++
++	return 0;
++}
+diff --git a/arch/riscv/cpu/xuantie/dram.c b/arch/riscv/cpu/xuantie/dram.c
+new file mode 100644
+index 0000000000..627423ba65
+--- /dev/null
++++ b/arch/riscv/cpu/xuantie/dram.c
+@@ -0,0 +1,29 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (c) 2026 Alibaba-inc, DAMO
++ */
++
++#include <fdtdec.h>
++#include <init.h>
++#include <asm/global_data.h>
++#include <linux/sizes.h>
++
++DECLARE_GLOBAL_DATA_PTR;
++
++int dram_init(void)
++{
++	return fdtdec_setup_mem_size_base();
++}
++
++int dram_init_banksize(void)
++{
++	return fdtdec_setup_memory_banksize();
++}
++
++phys_addr_t board_get_usable_ram_top(phys_size_t total_size)
++{
++	if (gd->ram_top > SZ_4G)
++		return SZ_4G;
++
++	return gd->ram_top;
++}
+diff --git a/arch/riscv/include/asm/insn-def.h b/arch/riscv/include/asm/insn-def.h
+new file mode 100644
+index 0000000000..eb99688d77
+--- /dev/null
++++ b/arch/riscv/include/asm/insn-def.h
+@@ -0,0 +1,41 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (C) 2024 Ventana Micro Systems Ltd.
++ *
++ * Ported from linux insn-def.h.
++ */
++
++#ifndef _ASM_RISCV_INSN_DEF_H
++#define _ASM_RISCV_INSN_DEF_H
++
++#include <asm/asm.h>
++
++#define INSN_I_SIMM12_SHIFT		20
++#define INSN_I_RS1_SHIFT		15
++#define INSN_I_FUNC3_SHIFT		12
++#define INSN_I_RD_SHIFT			 7
++#define INSN_I_OPCODE_SHIFT		 0
++
++#define RV_OPCODE(v)		__ASM_STR(v)
++#define RV_FUNC3(v)		__ASM_STR(v)
++#define RV_FUNC7(v)		__ASM_STR(v)
++#define RV_SIMM12(v)		__ASM_STR(v)
++#define RV_RD(v)		__ASM_STR(v)
++#define RV_RS1(v)		__ASM_STR(v)
++#define RV_RS2(v)		__ASM_STR(v)
++#define __RV_REG(v)		__ASM_STR(x ## v)
++#define RV___RD(v)		__RV_REG(v)
++#define RV___RS1(v)		__RV_REG(v)
++#define RV___RS2(v)		__RV_REG(v)
++
++#define RV_OPCODE_MISC_MEM	RV_OPCODE(15)
++#define RV_OPCODE_SYSTEM	RV_OPCODE(115)
++
++#define __INSN_I(opcode, func3, rd, rs1, simm12)	\
++	".insn	i " opcode ", " func3 ", " rd ", " rs1 ", " simm12 "\n"
++
++#define INSN_I(opcode, func3, rd, rs1, simm12)			\
++	__INSN_I(RV_##opcode, RV_##func3, RV_##rd,		\
++		 RV_##rs1, RV_##simm12)
++
++#endif /* _ASM_RISCV_INSN_DEF_H */
+diff --git a/arch/riscv/lib/Makefile b/arch/riscv/lib/Makefile
+index 65dc49f6fa..4541716306 100644
+--- a/arch/riscv/lib/Makefile
++++ b/arch/riscv/lib/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_CMD_BOOTI) += bootm.o image.o
+ obj-$(CONFIG_CMD_GO) += boot.o
+ obj-y	+= cache.o
+ obj-$(CONFIG_SIFIVE_CACHE) += sifive_cache.o
++obj-$(CONFIG_SYS_CACHE_THEAD_CMO) += thead_cmo.o
+ ifeq ($(CONFIG_$(SPL_)RISCV_MMODE),y)
+ obj-$(CONFIG_$(SPL_)RISCV_ACLINT) += aclint_ipi.o
+ obj-$(CONFIG_ANDES_PLICSW) += andes_plicsw.o
+diff --git a/arch/riscv/lib/cache.c b/arch/riscv/lib/cache.c
+index afad7e117f..155914bb5a 100644
+--- a/arch/riscv/lib/cache.c
++++ b/arch/riscv/lib/cache.c
+@@ -5,8 +5,100 @@
+  */
+ 
+ #include <cpu_func.h>
++#include <dm.h>
++#include <asm/insn-def.h>
++#include <linux/const.h>
+ 
+-void invalidate_icache_all(void)
++#define CBO_INVAL(base)						\
++	INSN_I(OPCODE_MISC_MEM, FUNC3(2), __RD(0),		\
++	       RS1(base), SIMM12(0))
++#define CBO_CLEAN(base)						\
++	INSN_I(OPCODE_MISC_MEM, FUNC3(2), __RD(0),		\
++	       RS1(base), SIMM12(1))
++#define CBO_FLUSH(base)						\
++	INSN_I(OPCODE_MISC_MEM, FUNC3(2), __RD(0),		\
++	       RS1(base), SIMM12(2))
++enum {
++	CBO_CLEAN,
++	CBO_FLUSH,
++	CBO_INVAL
++} riscv_cbo_ops;
++static int zicbom_block_size;
++
++static inline void do_cbo_clean(unsigned long base)
++{
++	asm volatile ("add a0, %0, zero\n" CBO_CLEAN(%0) ::
++		      "r"(base) : "memory");
++}
++
++static inline void do_cbo_flush(unsigned long base)
++{
++	asm volatile ("add a0, %0, zero\n" CBO_FLUSH(%0) ::
++		      "r"(base) : "memory");
++}
++
++static inline void do_cbo_inval(unsigned long base)
++{
++	asm volatile ("add a0, %0, zero\n" CBO_INVAL(%0) ::
++		      "r"(base) : "memory");
++}
++
++static void cbo_op(int op_type, unsigned long start,
++		   unsigned long end)
++{
++	unsigned long op_size = end - start, size = 0;
++	void (*fn)(unsigned long base);
++
++	switch (op_type) {
++	case CBO_CLEAN:
++		fn = do_cbo_clean;
++		break;
++	case CBO_FLUSH:
++		fn = do_cbo_flush;
++		break;
++	case CBO_INVAL:
++		fn = do_cbo_inval;
++		break;
++	}
++	start &= ~(UL(zicbom_block_size - 1));
++	while (size < op_size) {
++		fn(start + size);
++		size += zicbom_block_size;
++	}
++}
++
++void cbo_flush(unsigned long start, unsigned long end)
++{
++	if (zicbom_block_size)
++		cbo_op(CBO_FLUSH, start, end);
++}
++
++void cbo_inval(unsigned long start, unsigned long end)
++{
++	if (zicbom_block_size)
++		cbo_op(CBO_INVAL, start, end);
++}
++
++static int riscv_zicbom_init(void)
++{
++	struct udevice *dev;
++
++	if (!CONFIG_IS_ENABLED(RISCV_ISA_ZICBOM) || zicbom_block_size)
++		return 1;
++
++	uclass_first_device(UCLASS_CPU, &dev);
++	if (!dev) {
++		log_debug("Failed to get cpu device!\n");
++		return 0;
++	}
++
++	if (dev_read_u32(dev, "riscv,cbom-block-size", &zicbom_block_size))
++		log_debug("riscv,cbom-block-size DT property not present\n");
++
++	return zicbom_block_size;
++}
++
++__weak void invalidate_icache_all(void)
+ {
+ 	asm volatile ("fence.i" ::: "memory");
+ }
+@@ -17,6 +109,7 @@ __weak void flush_dcache_all(void)
+ 
+ __weak void flush_dcache_range(unsigned long start, unsigned long end)
+ {
++	cbo_flush(start, end);
+ }
+ 
+ __weak void invalidate_icache_range(unsigned long start, unsigned long end)
+@@ -30,6 +123,7 @@ __weak void invalidate_icache_range(unsigned long start, unsigned long end)
+ 
+ __weak void invalidate_dcache_range(unsigned long start, unsigned long end)
+ {
++	cbo_inval(start, end);
+ }
+ 
+ void cache_flush(void)
+@@ -72,4 +166,6 @@ __weak int dcache_status(void)
+ 
+ __weak void enable_caches(void)
+ {
++	if (!riscv_zicbom_init())
++		log_info("Zicbom not initialized.\n");
+ }
+diff --git a/arch/riscv/cpu/cv1800b/cache.c b/arch/riscv/lib/thead_cmo.c
+similarity index 100%
+rename from arch/riscv/cpu/cv1800b/cache.c
+rename to arch/riscv/lib/thead_cmo.c
+diff --git a/configs/qemu-riscv32_smode_defconfig b/configs/qemu-riscv32_smode_defconfig
+index c83454c9f7..976bb83e24 100644
+--- a/configs/qemu-riscv32_smode_defconfig
++++ b/configs/qemu-riscv32_smode_defconfig
+@@ -9,6 +9,7 @@ CONFIG_SYS_MONITOR_LEN=786432
+ CONFIG_SYS_LOAD_ADDR=0x80200000
+ CONFIG_TARGET_QEMU_VIRT=y
+ CONFIG_RISCV_SMODE=y
++CONFIG_RISCV_XUANTIE=y
+ CONFIG_FIT=y
+ CONFIG_SYS_BOOTM_LEN=0x4000000
+ CONFIG_DISTRO_DEFAULTS=y
+diff --git a/configs/qemu-riscv64_smode_defconfig b/configs/qemu-riscv64_smode_defconfig
+index b9a27b49bd..5e502b340c 100644
+--- a/configs/qemu-riscv64_smode_defconfig
++++ b/configs/qemu-riscv64_smode_defconfig
+@@ -9,6 +9,7 @@ CONFIG_SYS_LOAD_ADDR=0x80200000
+ CONFIG_TARGET_QEMU_VIRT=y
+ CONFIG_ARCH_RV64I=y
+ CONFIG_RISCV_SMODE=y
++CONFIG_RISCV_XUANTIE=y
+ CONFIG_FIT=y
+ CONFIG_SYS_BOOTM_LEN=0x4000000
+ CONFIG_DISTRO_DEFAULTS=y
+-- 
+2.34.1
+

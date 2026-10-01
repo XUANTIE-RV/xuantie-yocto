@@ -1,0 +1,35 @@
+From 6f67131b030c4c228cabb33d45ae9330cbf8fa0a Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Tue, 27 Feb 2024 18:05:54 +0000
+Subject: [PATCH] build/hack: allow go 1.20 building
+
+Although k8s checks for, and demands, golang 1.21.x, runtime
+tests show that golang 1.20.x is properly building and providing
+enough for core functionality.
+
+In an effort to see what else may be lurking, we patch out the
+check to allow builds with our 1.20.x toolchain.
+
+Upstream-Status: Inappropriate [embedded specific]
+
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ hack/lib/golang.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hack/lib/golang.sh b/hack/lib/golang.sh
+index 588288285bb..eb2bcc917b8 100755
+--- a/hack/lib/golang.sh
++++ b/hack/lib/golang.sh
+@@ -499,7 +499,7 @@ Detected go version: ${go_version[*]}.
+ Kubernetes requires ${minimum_go_version} or greater.
+ Please install ${minimum_go_version} or later.
+ EOF
+-    return 2
++    return 0
+   fi
+ }
+ 
+-- 
+2.39.2
+

@@ -32,6 +32,28 @@ case "$KERNEL_VERSION" in
 esac
 
 echo "$APT_KERNEL_PATH ./" >> "$APT_SOURCE_FILE"
+
+# cpu
+MODEL_FILE="/proc/device-tree/model"
+if [ -f "$MODEL_FILE" ]; then
+    MODEL_CONTENT=$(cat "$MODEL_FILE" | tr -d '\0')
+    case "$MODEL_CONTENT" in
+        Xuantie\ *)
+            CPU=$(echo "$MODEL_CONTENT" | sed 's/^Xuantie //')
+            if [ -n "$CPU" ]; then
+                if echo "$APT_SOURCE_URIS" | grep -q 'rva23'; then
+                    CPU_PATH="${APT_SOURCE_URIS}/${CPU}"
+                else
+                    CPU_PATH="${APT_SOURCE_URIS}/xuantie/${CPU}"
+                fi
+                sed -i "1i\\$CPU_PATH ./" "$APT_SOURCE_FILE"
+            fi
+            ;;
+        *)
+            ;;
+    esac
+fi
+
 touch "$STATUS_FILE"
 
 exit 0

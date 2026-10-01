@@ -1,0 +1,41 @@
+From 6d4f9f33b51fb3609ae470a88f18a6ecb890eed8 Mon Sep 17 00:00:00 2001
+From: Fix <wb-hx963136@alibaba-inc.com>
+Date: Tue, 19 May 2026 14:00:00 +0800
+Subject: [PATCH] gspawn: handle EPERM from close_range on older kernels
+
+On kernel 5.4, glibc's close_range wrapper returns EPERM instead of
+ENOSYS. Add EPERM to the fallback errno checks so that glib falls back
+to fdwalk-based implementation in this case.
+
+Upstream-Status: Inappropriate [kernel-specific workaround]
+---
+ glib/gspawn.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/glib/gspawn.c b/glib/gspawn.c
+index 0a2cbe5..075e6a5 100644
+--- a/glib/gspawn.c
++++ b/glib/gspawn.c
+@@ -1544,7 +1544,8 @@ safe_fdwalk_set_cloexec (int lowfd)
+    * fall back to safe_fdwalk(). Handle EINVAL in case `CLOSE_RANGE_CLOEXEC`
+    * is not supported. */
+   int ret = close_range (lowfd, G_MAXUINT, CLOSE_RANGE_CLOEXEC);
+-  if (ret == 0 || !(errno == ENOSYS || errno == EINVAL))
++  /* Also handle EPERM which older kernels (e.g. 5.4) may return via glibc */
++  if (ret == 0 || !(errno == ENOSYS || errno == EPERM || errno == EINVAL))
+     return ret;
+ #endif  /* HAVE_CLOSE_RANGE */
+   return safe_fdwalk (set_cloexec, GINT_TO_POINTER (lowfd));
+@@ -1597,7 +1598,8 @@ safe_closefrom (int lowfd)
+    * Handle ENOSYS in case it’s supported in libc but not the kernel; if so,
+    * fall back to safe_fdwalk(). */
+   int ret = close_range (lowfd, G_MAXUINT, 0);
+-  if (ret == 0 || errno != ENOSYS)
++  /* Also handle EPERM which older kernels (e.g. 5.4) may return via glibc */
++  if (ret == 0 || !(errno == ENOSYS || errno == EPERM || errno == EINVAL))
+     return ret;
+ #endif  /* HAVE_CLOSE_RANGE */
+   return safe_fdwalk (close_func, GINT_TO_POINTER (lowfd));
+-- 
+2.34.1
+

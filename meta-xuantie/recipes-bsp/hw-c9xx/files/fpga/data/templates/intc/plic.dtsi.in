@@ -1,0 +1,35 @@
+
+clint0: clint@${CLINT_UNIT_ADDR} {
+    compatible = "thead,c900-clint";
+    interrupts-extended = <
+##REPEAT CORES##
+        &cpu${CORE_ID}_intc  3 &cpu${CORE_ID}_intc  7
+##ENDREPEAT##
+        >;
+    reg = <${CLINT_BASE} ${CLINT_SIZE}>;
+##IF CLINT_NO_64BIT_MMIO##
+    clint,has-no-64bit-mmio;
+##ENDIF##
+};
+
+aclint_sswi: aclint-sswi@${SSWI_UNIT_ADDR} {
+    compatible = "riscv,aclint-sswi";
+    reg = <${SSWI_BASE} ${SSWI_SIZE}>;
+    interrupt-controller;
+};
+
+intc: interrupt-controller@${PLIC_UNIT_ADDR} {
+    #address-cells = <0>;
+    #interrupt-cells = <2>;
+    compatible = "thead,c900-plic";
+    interrupt-controller;
+    interrupts-extended = <
+##REPEAT CORES##
+        &cpu${CORE_ID}_intc  0xffffffff &cpu${CORE_ID}_intc  9
+##ENDREPEAT##
+        >;
+    reg = <${PLIC_BASE} ${PLIC_SIZE}>;
+    reg-names = "control";
+    riscv,max-priority = <${PLIC_MAX_PRIO}>;
+    riscv,ndev = <${PLIC_NDEV}>;
+};

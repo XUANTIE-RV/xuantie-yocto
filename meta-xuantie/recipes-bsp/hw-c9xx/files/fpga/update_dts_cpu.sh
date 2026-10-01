@@ -6,108 +6,148 @@ cd $SCRIPT_DIR
 
 declare -A default_isa
 
-# C906
-default_isa[c906]="rv64imacxtheadc"
-default_isa[c906fd]="rv64imafdc_zfh_xtheadc"
-default_isa[c906fdv]="rv64imafdcv0p7_zfh_xtheadc"
+# Load CPU-ISA mapping from gen-cpu-confs.sh generated files
+# Format: default_isa[cpu]="isa_string" (bash associative array assignments)
+# Source all *.conf files under cpu-isa-configs/ so that every CPU model
+# (including standalone confs such as xt-c9204.conf) is recognized.
+CPU_ISA_CONFIGS_DIR="$(cd "$SCRIPT_DIR/data/cpu-isa-configs" 2>/dev/null && pwd)"
 
-# C910/C920
-default_isa[c910]="rv64imafdc_zfh_xtheadc"
-default_isa[c920]="rv64imafdcv0p7_zfh_xtheadc"
-default_isa[r910]="rv64imafdc_zfh_xtheadc"
-default_isa[r920]="rv64imafdcv0p7_zfh_xtheadc"
+if [ -z "$CPU_ISA_CONFIGS_DIR" ] || [ ! -d "$CPU_ISA_CONFIGS_DIR" ]; then
+    echo "ERROR: CPU-ISA configs directory not found: $SCRIPT_DIR/data/cpu-isa-configs"
+    echo "Please run toolchain-init.sh first to generate the mapping files."
+    exit 1
+fi
 
-# C908
-default_isa[c908]="rv64imafdc_zicbom_zicbop_zicboz_zihintpause_zfh_zba_zbb_zbc_zbs_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
-default_isa[c908i]="rv64imac_zicbom_zicbop_zicboz_zihintpause_zba_zbb_zbc_zbs_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
-default_isa[c908v]="rv64imafdcv_zicbom_zicbop_zicboz_zihintpause_zfh_zba_zbb_zbc_zbs_sscofpmf_svinval_svnapot_svpbmt_xtheadc_xtheadvdot"
-
-# C908v2
-default_isa[c908_v2]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_sstc_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
-default_isa[c908-cp_v2]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_sstc_sscofpmf_svinval_svnapot_svpbmt_xtheadcmo_xtheadsync_xtheadcf_xtheadcei"
-default_isa[c908v_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sstc_sscofpmf_svinval_svnapot_svpbmt_xtheadc_xtheadvdot"
-default_isa[c908v-cp_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-default_isa[c908i_v2]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zca_zcb_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc"
-default_isa[c908i-cp_v2]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zca_zcb_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadsync_xtheadcei"
-default_isa[c908v-cp-xt_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-
-default_isa[c908vk-cp_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zkt_zvbb_zvbc_zvkb_zvkg_zvkned_zvknha_zvknhb_zvksed_zvksh_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-default_isa[c908vk-cp-xt_v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zkt_zvbb_zvbc_zvkb_zvkg_zvkned_zvknha_zvknhb_zvksed_zvksh_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-
-# C910/C920 v2
-default_isa[c910v2]="rv64imafdc_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zfa_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
-default_isa[c920v2]="rv64imafdcv_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zfa_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_sscofpmf_svinval_svpbmt_xtheadc_xtheadvdot"
-
-# C910/C920 v3
-default_isa[c910v3]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadba_xtheadbb_xtheadbs_xtheadc_xtheadcmo_xtheadcondmov_xtheadfmemidx_xtheadfmv_xtheadmac_xtheadmemidx_xtheadmempair_xtheadsync"
-default_isa[c920v3]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvl128b_zvl32b_zvl64b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadba_xtheadbb_xtheadbs_xtheadc_xtheadcmo_xtheadcondmov_xtheadfmemidx_xtheadfmv_xtheadmac_xtheadmemidx_xtheadmempair_xtheadsync_xtheadvdot"
-default_isa[c910v3-cp]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadsync_xtheadcf_xtheadcei"
-default_isa[c920v3-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zawrs_zfa_zfbfmin_zfh_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadsync_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-default_isa[c920v3-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zawrs_zfa_zfbfmin_zfh_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-
-# C907
-default_isa[c907]="rv64imac_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zba_zbb_zbc_zbs_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
-default_isa[c907fd]="rv64imafdc_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zfa_zfbfmin_zfh_zba_zbb_zbc_zbs_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
-default_isa[c907fdv]="rv64imafdcv_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpaue_zawrs_zfa_zfbfmin_zfh_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_sscofpmf_svinval_svnapot_svpbmt_xtheadc_xtheadvdot"
-default_isa[c907fdvm]="rv64imafdcv_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zfa_zfbfmin_zfh_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_sscofpmf_svinval_svnapot_svpbmt_xtheadc_xtheadmatrix_xtheadvdot"
-default_isa[c907-rv32]="rv32imac_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zba_zbb_zbc_zbs_sscofpmf_svinval_svnapot_svpbmt_xtheadc"
-default_isa[c907fd-rv32]="rv32imafdcv_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zfa_zfbfmin_zfh_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_sscofpmf_svinval_svnapot_svpbmt_xtheadc_xtheadvdot"
-default_isa[c907fdv-rv32]="rv32imafdcv_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zfa_zfbfmin_zfh_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_sscofpmf_svinval_svnapot_svpbmt_xtheadc_xtheadvdot"
-default_isa[c907fdvm-rv32]="rv32imafdcv_zicbom_zicbop_zicboz_zicond_zihintntl_zihintpause_zawrs_zfa_zfbfmin_zfh_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_sscofpmf_svinval_svnapot_svpbmt_xtheadc_xtheadmatrix_xtheadvdot"
-
-# R908
-default_isa[r908]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcmop_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadba_xtheadbb_xtheadbs_xtheadc_xtheadcmo_xtheadcondmov_xtheadfmemidx_xtheadfmv_xtheadfpp_xtheadmac_xtheadmemidx_xtheadmempair_xtheadsync"
-default_isa[r908fd]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadba_xtheadbb_xtheadbs_xtheadc_xtheadcmo_xtheadcondmov_xtheadfmemidx_xtheadfmv_xtheadfpp_xtheadmac_xtheadmemidx_xtheadmempair_xtheadsync"
-default_isa[r908fdv]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zve32f_zve32x_zve64d_zve64f_zve64x_zvfh_zvl128b_zvl32b_zvl64b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadba_xtheadbb_xtheadbs_xtheadc_xtheadcmo_xtheadcondmov_xtheadfmemidx_xtheadfmv_xtheadfpp_xtheadmac_xtheadmemidx_xtheadmempair_xtheadsync_xtheadvdot"
-default_isa[r908-cp]="rv64imac_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcmop_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadfpp_xtheadsync_xtheadcei"
-default_isa[r908fd-cp]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadfpp_xtheadsync_xtheadcf_xtheadcei"
-default_isa[r908fd-cp-xt]="rv64imafdc_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadfpp_xtheadcbi_xtheadcei_xtheadcf"
-default_isa[r908fdv-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadcmo_xtheadfpp_xtheadsync_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-default_isa[r908fdv-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zca_zcb_zcd_zcmop_zfh_zba_zbb_zbc_zbs_zvfh_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadfpp_xtheadvdot_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-# R908vk since 2026/03/11 
-default_isa[r908fdvk-cp]="rv64imafdcbv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zmmul_zaamo_zalrsc_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfh_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_sstc_svinval_svnapot_svpbmt_xtheadcbi_xtheadcei_xtheadcf_xtheadcv_xtheadfpp_xxtcsrcacherpl"
-default_isa[r908fdvk-cp-xt]="rv64imafdcbv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zimop_zmmul_zaamo_zalrsc_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfh_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_sstc_svinval_svnapot_svpbmt_xtheadba_xtheadbb_xtheadbs_xtheadc_xtheadcbi_xtheadcei_xtheadcf_xtheadcmo_xtheadcondmov_xtheadcv_xtheadfmemidx_xtheadfmv_xtheadfpp_xtheadmac_xtheadmemidx_xtheadmempair_xtheadsync_xtheadvdot_xxtcsrcacherpl"
-
-# C908X
-default_isa[c908x]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw"
-default_isa[c908x-cp]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-default_isa[c908x-cp-xt]="rv64imafdcv_zicbom_zicbop_zicboz_zicntr_zicsr_zifencei_zihintpause_zihpm_zfbfmin_zfh_zca_zcb_zcd_zba_zbb_zbc_zbs_zvfbfmin_zvfbfwma_zvfh_zvl1024b_sscofpmf_sstc_svinval_svnapot_svpbmt_xtheadc_xtheadvdot_xtheadvsfa_xtheadvfcvt_xtheadvreduction_xtheadlpw_xtheadcbi_xtheadcei_xtheadcf_xtheadcv"
-
-## C925 series
-default_isa[xt-c925-cp]="rv64imafdcbh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zaamo_zabha_zacas_zalasr_zalrsc_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svade_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadaioe_xtheadcbi_xtheadcbop_xtheadcf_xtheadcrc"
-default_isa[xt-c925v-cp]="rv64imafdcbvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zaamo_zabha_zacas_zalasr_zalrsc_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svade_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadaioe_xtheadcbi_xtheadcbop_xtheadcf_xtheadcrc_xtheadcv_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadvfoe8m0min_xtheadvfofp4min_xtheadvfofp8min"
-
-## C930 series
-default_isa[xt-c930]="rv64imafdch_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadser"
-default_isa[xt-c930-cp]="rv64imafdch_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadcf_xtheadcei_xtheadser"
-default_isa[xt-c930v]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadser"
-default_isa[xt-c930v-cp]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smepmp_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadcf_xtheadcei_xtheadcv_xtheadser"
-
-# C950
-default_isa[xt-c950v]="rv64imafdcvh_zic64b_zicbom_zicbop_zicboz_ziccamoa_ziccamoc_ziccif_zicclsm_ziccrse_zicfilp_zicfiss_zicntr_zicond_zicsr_zifencei_zihintntl_zihintpause_zihpm_zimop_zmmul_za64rs_zabha_zacas_zalasr_zama16b_zawrs_zfa_zfbfmin_zfh_zfhmin_zca_zcb_zcd_zcmop_zba_zbb_zbc_zbs_zkr_zkt_ssdtso_zvbb_zvbc_zvbc32e_zve32f_zve32x_zve64d_zve64f_zve64x_zvfbfmin_zvfbfwma_zvfh_zvfhmin_zvkb_zvkg_zvkgs_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt_zvl128b_zvl32b_zvl64b_zvqdotq_shcounterenw_shgatpa_shtvala_shvsatpa_shvstvala_shvstvecd_smaia_smcdeleg_smcntrpmf_smcsrind_smctr_smmpm_smmtt_smnpm_smrnmi_smstateen_ssaia_ssccfg_ssccptr_sscofpmf_sscounterenw_sscsrind_ssctr_ssdbltrp_ssnpm_sspm_ssqosid_ssstateen_ssstrict_sstc_sstvala_sstvecd_ssu64xl_supm_svadu_svbare_svinval_svnapot_svpbmt_svvptc_xtheadcbop_xtheadvarith_xtheadvcoder_xtheadvcrypto_xtheadvdot_xtheadcf_xtheadcei_xtheadcv_xtheadser_xtheadmatrix_xtheadcae_xtheadfxcr"
+echo "Loading CPU-ISA mappings from: $CPU_ISA_CONFIGS_DIR"
+shopt -s nullglob
+for conf_file in "$CPU_ISA_CONFIGS_DIR"/*.conf; do
+    [ -f "$conf_file" ] || continue
+    echo "  - sourcing $(basename "$conf_file")"
+    # Later files may override earlier same-named keys (last-wins is expected).
+    source "$conf_file"
+done
+shopt -u nullglob
+echo "Loaded ${#default_isa[@]} CPU models"
 
 function print_help() {
 	echo "Usage:  update_dts_cpu.sh <soc_platform>  <-cpu>  [-layout 1]  [-isa default]"
+	echo "        (options are single-dash, e.g. -cpu; help: -h | -help | --help | help)"
 	echo
-	echo "<soc_platform>:    Choose one from [ xiaohui | zsb_rv64 | zsb_rv32 ] etc."
+	echo "<soc_platform>:    Choose one from [ xiaohui_v1 | xiaohui_v2 | xiaohui_v1_rv32 ] etc."
+	echo "                   (must match a data/platforms/<name>.json; otherwise the"
+	echo "                    platform is auto-selected from the CPU model)."
+	echo "                   FPGA type is part of the name: '<platform>-<ftype>',"
+	echo "                   e.g. minimesh-hejian (NGF: haps default | hejian);"
+	echo "                   the bare name selects the default FPGA type."
 	echo "<-cpu your_cpu>:   Choose one from [ c910 | c920v2 | c908 | c907 ] etc."
-	echo "[-layout 1]:       Choose one from [ 11 | 110011| 11111111 ] etc."
+	echo "[-layout 1]:       Core layout bitmap, MSB-first (leftmost bit=highest hart,"
+	echo "                   rightmost=hart0). Choose one from [ 11 | 110011 | 11111111 ]"
+	echo "                   etc.; a 0x-prefixed hex bitmap is also accepted and expanded"
+	echo "                   4 bits per hex digit (e.g. 0xC3C30000)."
+	echo "[-clusters N]:     Cluster count; with -cores_num sets the layout width"
+	echo "                   (= clusters × cores_per_cluster). Omit to derive from -cores_num."
+	echo "[-cores_num list]: Comma-separated GLOBAL core indices to enable, e.g."
+	echo "                   4,5,6,7,12,13,14,15. Equivalent alternative to -layout"
+	echo "                   (overrides it). Example: -clusters 2 -cores_num 4,5,6,7,12,13,14,15"
+	echo "                   == -layout 1111000011110000."
 	echo "[-isa default]:    Choose one from [ default | your_customized_isa ] etc."
 	echo "[-timer 25000000]: Input time frequency, default value is 25000000."
-	echo "[-pa PA40]:        Choose one from [ PA48 | PA40 | others(do nothing) ] etc."
-	echo "[-bus ncore]:      Choose one from [ none | stlk | stlk2 | ncore | others(do nothing) ] etc."
-	echo "[-intc plic]:      Choose one from [ plic | aplic | others(do nothing) ] etc."
+	echo "                   Ignored on fixed-SoC platforms (JSON with cpu_block):"
+	echo "                   there timebase-frequency comes from"
+	echo "                   cpu_block.timebase (1000000000 with -emu)."
+	echo "[-bus none]:       Choose one from [ none | stlk | stlk2 | stlk3 | ncore ] (unknown values are rejected)."
+	echo "[-intc plic]:      Choose one from [ plic | aplic ] etc."
 	echo "[-sv 48]:          Choose one from [ 39 | 48 | others(do nothing) ] etc."
-	echo "[-gmac h100]:      Choose one from [ h100 | pro | others(do nothing) ] etc."
-	echo "[-ntrace false]:   Choose one from [ false | v1 | <ntrace cfgfile name> ] etc."
+	echo "[-gmac h100]:      xiaohui gmac controller type: h100 | pro (selects the"
+	echo "                   gmac dtsi template). Not a NIC switch — on NGF platforms"
+	echo "                   it is ignored and the gmac NIC comes from -nic gmac."
+	echo "[-ntrace false]:   false | true | <ntrace-json-name>. 'true' auto-selects"
+	echo "                   ntrace_<家族>_v<版本> from -cpu; a name uses"
+	echo "                   data/ntrace/<name>.json directly (e.g. ntrace_xiaohui_v1 |"
+	echo "                   ntrace_xiaohui_v2; an apb/base change => add a new json)."
+	echo "                   Topology is derived from -layout (8-window)."
+	echo "[-trace-sba]:      v2 sink system-bus-access addressing (flag, no value)."
 	echo "[-memsize 1G]      Input memory size [ 1G, 2G, 3G, 4G ] etc."
 	echo "[-optee false]:    Choose one from [ false | true ] etc."
-	echo "[-pmc false]:      Choose one from [ false | true ] etc."
+	echo "[-emu false]:      false | true. true applies the selected NGF platform's"
+	echo "                   EMU timing/UART, disabled-PCIe, and no-GMAC overlay without changing its name."
+	echo "[-pmc false]:      Choose one from [ false | true | <base-addr> ] (e.g. 0x26900000)."
+	echo "                   Rejected on platforms without pmc.ipmc (e.g. NGF"
+	echo "                   minimesh/fullmesh — per-core release uses pcu_config)."
+	echo "[-complexes list]: Fixed-SoC platforms only (platform JSON with cpu_block):"
+	echo "                   the complex structure to enable — global complex ids,"
+	echo "                   e.g. 0,3,4,7 or 8:11 (slot mask). Mutually exclusive"
+	echo "                   with -layout, which is the equivalent binary bitmap"
+	echo "                   (bit i = core i = complex i//2 slot i%2)."
+	echo "                   IMSIC nodes are rendered inline in the output DTS and"
+	echo "                   scale to the selected logical core count."
+	echo "[-nic pcie]:       Network selection: pcie (default) | pcie<rc> |"
+	echo "                   pcie<rc>-rp<n> (e.g. pcie1-rp2) | gmac, comma-combinable"
+	echo "                   (pcie,gmac = dual-NIC coexist). Plain pcie keeps the"
+	echo "                   platform's default RC (net.pcie.enable) okay; naming a"
+	echo "                   host (pcie0 / pcie1 / pcie0,pcie1) overrides that and"
+	echo "                   puts exactly those declared hosts in okay state — every"
+	echo "                   other declared RC still renders, status disabled."
+	echo "                   RP selection enables INTx/APLIC only, not the physical"
+	echo "                   link; plain pcie leaves RP/RCiEP disabled. gmac = SoC"
+	echo "                   peripheral-bus gmac NIC, interrupt via the RCiEP APLIC"
+	echo "                   to IMSIC_S (AIA), enabling that pair."
+	echo "[-iommu false]:    false | true | all | <instance,...> (e.g. die0-cu1)."
+	echo "                   true/all enables every platform-declared IOMMU instance;"
+	echo "                   names enable selected instances only (validated against"
+	echo "                   the platform). Never enables undeclared instances or RP INTx."
+	echo "[-output file]:    Output dts path (default ./.hw.dts)."
 	echo "leave the optional args blank, as skip the updates"
+	echo
+	echo "Platforms (data/platforms/*.json; append -<fpga type> to pick one):"
+	# One line per platform json: name + its fpga.types keys and the default,
+	# read through the same json structure the generators use (jq first, python3
+	# as fallback; without either the section just stays empty).
+	pf_list() {
+		if command -v jq >/dev/null 2>&1; then
+			jq -r '(.fpga.types // {} | keys | join(" ")) as $t |
+				(.fpga.default // "") as $d |
+				if $t == "" then "" else ($t + "|" + $d) end' "$1" 2>/dev/null || true
+		else
+			python3 -c 'import json,sys
+d=json.load(open(sys.argv[1]))
+f=d.get("fpga") or {}
+t=f.get("types") or {}
+print((" ".join(t)+"|"+(f.get("default") or "")) if t else "")' "$1" 2>/dev/null || true
+		fi
+	}
+	for pf in "${SCRIPT_DIR}"/data/platforms/*.json; do
+		[ -f "$pf" ] || continue
+		pf_name="$(basename "$pf" .json)"
+		pf_info="$(pf_list "$pf")"
+		if [ -n "$pf_info" ]; then
+			printf '  %-18s fpga types: %s (default: %s)\n' "$pf_name" \
+				"${pf_info%|*}" "${pf_info#*|}"
+		else
+			printf '  %-18s\n' "$pf_name"
+		fi
+	done
+	printf '  %-18s %d CPU models known (pass a wrong -cpu to list them)\n' \
+		"" "${#default_isa[@]}"
+	echo
+	echo "Examples:"
+	echo "  # NGF hejian: enable complexes 8,11 -> PCIe rc1 okay with the full"
+	echo "  # interrupt-map (rp0-rp3 + RCiEP) and iommu-map, dependencies disabled"
+	echo "  ./update_dts_cpu.sh minimesh-hejian -cpu xt-c9251fdvkt -intc aplic \\"
+	echo "      -complexes 8,11 -output .hw.dts"
+	echo "  # same board, but actually bring up RP0 INTx and the CU1 IOMMU"
+	echo "  ./update_dts_cpu.sh minimesh-hejian -cpu xt-c9251fdvkt -intc aplic \\"
+	echo "      -complexes 8,11 -nic pcie1-rp0 -iommu die0-cu1"
+	echo "  # hejian rc0 is rendered as a disabled, MSI-only host; bring it up too"
+	echo "  ./update_dts_cpu.sh minimesh-hejian -cpu xt-c9251fdvkt -intc aplic \\"
+	echo "      -complexes 8,11 -nic pcie0,pcie1"
+	echo "  # legacy xiaohui SoC: layout bitmap + -timer still applies"
+	echo "  ./update_dts_cpu.sh xiaohui_v2 -cpu c908v-cp-xt_v2 -intc aplic \\"
+	echo "      -layout 1111 -timer 30000000"
 	exit 1
 }
 
-LINK_MODE=${LINK_MODE:-ncore}
+LINK_MODE=${LINK_MODE:-none}
 
 # ntrace configs, get value from env
 TRACE_CONTEXT=${TRACE_CONTEXT:-"true"}
@@ -118,28 +158,36 @@ TRACE_TIMESTAMP_ENABLE=${TRACE_TIMESTAMP_ENABLE:-"true"}
 TRACE_RUN_IN_DEBUGMODE=${TRACE_RUN_IN_DEBUGMODE:-"false"}
 TRACE_SINK_WORKING_MODE=${TRACE_SINK_WORKING_MODE:-"circulating buffer"}
 
-PA48=
 PLATFORM=zsb_rv64
 CPU=${2,}
 CORE_LAYOUT=1
+LAYOUT_SET=0	# -layout 显式传入才置 1; NGF 缺省 layout=1 不透传给生成器
+CLUSTERS=
+CORES_NUM=
 ISA_STRING=default
 TIME_FREQ=25000000
 INTC=plic
 GMAC=h100
 NTRACE=false
+TRACE_SBA=false
 SV=
 tmp=1
 MEMORY_SIZE=
 OPTEE=false
+EMU=false
 PMC=false
+COMPLEXES=
+NIC=
+NIC_SET=false
+IOMMU=false
+OUT_DTS=
 
 function update_c930
 {
     case "$CPU" in
         *c930*|*c925*)
             echo ">> updating c930/c925"
-            GMAC=c930
-            sed -i 's/ctl_enable_2core == 0/ctl_enable_2core == 2/g' gdbinit/zsb.gdbinit
+            GMAC=h100_v2
             ;;
     esac
 }
@@ -158,6 +206,7 @@ function parse_old_args(){
 	;;
 	3)
 		CORE_LAYOUT=$1
+		LAYOUT_SET=1
 	;;
 	4)
 		ISA_STRING=$1
@@ -171,18 +220,18 @@ function parse_old_args(){
 
 # getopts "hm:p:" opt
 while [ "$#" -gt 0 ] ; do
+	# Tolerate the GNU-ish --long spelling by normalising --cpu → -cpu etc.
+	# before the case runs (in place, so the option is still parsed below).
+	if [[ "$1" == --?* ]]; then
+		set -- "-${1#--}" "${@:2}"
+	fi
 	case $1 in
-	-h)
+	-h|-help|--help|help)
 		print_help
 	;;
 	-bus)
 		LINK_MODE=$2
 		echo "LINK_MODE: $LINK_MODE"
-		shift
-	;;
-	-pa)
-		PA48=$2
-		echo "PA48: $PA48"
 		shift
 	;;
 	-cpu)
@@ -193,7 +242,18 @@ while [ "$#" -gt 0 ] ; do
 	;;
 	-layout)
 		CORE_LAYOUT=$2
+		LAYOUT_SET=1
 		echo "CORE_LAYOUT: $CORE_LAYOUT"
+		shift
+	;;
+	-clusters)
+		CLUSTERS=$2
+		echo "CLUSTERS: $CLUSTERS"
+		shift
+	;;
+	-cores_num)
+		CORES_NUM=$2
+		echo "CORES_NUM: $CORES_NUM"
 		shift
 	;;
 	-isa)
@@ -217,6 +277,11 @@ while [ "$#" -gt 0 ] ; do
 		shift
 	;;
 	-gmac)
+		if [ "$#" -lt 2 ] || [[ "$2" == -* ]]; then
+			echo "Error: -gmac requires h100 | pro (xiaohui gmac controller type);"
+			echo "       the gmac NIC on NGF platforms is selected by -nic gmac."
+			exit 1
+		fi
 		GMAC=$2
 		echo "GMAC: $GMAC"
 		shift
@@ -224,7 +289,27 @@ while [ "$#" -gt 0 ] ; do
 	-ntrace)
 		NTRACE=$2
 		echo "NTRACE: $NTRACE"
+		case "$NTRACE" in
+			true|false) ;;
+			*)
+				if [ ! -f "$SCRIPT_DIR/data/ntrace/$NTRACE.json" ]; then
+					echo "Error: -ntrace accepts false | true | <ntrace-json-name>."
+					echo "       'true' auto-selects the config from -cpu; a name must"
+					echo "       match data/ntrace/<name>.json used directly (an apb/base"
+					echo "       change => add a new json there). Topology comes from"
+					echo "       -layout. Available configs:"
+					for f in "$SCRIPT_DIR"/data/ntrace/*.json; do
+						[ -f "$f" ] && echo "         - $(basename "$f" .json)"
+					done
+					exit 1
+				fi
+			;;
+		esac
 		shift
+	;;
+	-trace-sba)
+		TRACE_SBA=true
+		echo "TRACE_SBA: $TRACE_SBA"
 	;;
 	-memsize)
 		MEMORY_SIZE=$2
@@ -236,26 +321,68 @@ while [ "$#" -gt 0 ] ; do
 		echo "OPTEE: $OPTEE"
 		shift
 	;;
+	-emu)
+		EMU=$2
+		case "$EMU" in
+			true|false) echo "EMU: $EMU" ;;
+			*)
+				echo "Error: -emu accepts false | true."
+				exit 1
+			;;
+		esac
+		shift
+	;;
 	-pmc)
 		PMC=$2
 		echo "PMC: $PMC"
 		shift
 	;;
+	-complexes)
+		COMPLEXES=$2
+		echo "COMPLEXES: $COMPLEXES"
+		shift
+	;;
+	-nic)
+		if [ "$#" -lt 2 ] || [[ "$2" == -* ]]; then
+			echo "Error: -nic requires pcie | pcie<rc> | pcie<rc>-rp<n> | gmac or a comma-separated combination."
+			exit 1
+		fi
+		NIC=$2
+		NIC_SET=true
+		echo "NIC: $NIC"
+		shift
+	;;
+	-iommu)
+		if [ "$#" -lt 2 ] || [[ "$2" == -* ]]; then
+			echo "Error: -iommu requires false | true | all | <instance,...> (e.g. die0-cu1)."
+			exit 1
+		fi
+		IOMMU=$2
+		echo "IOMMU: $IOMMU"
+		shift
+	;;
+	-output)
+		OUT_DTS=$2
+		echo "OUT_DTS: $OUT_DTS"
+		shift
+	;;
 	*)
+		# Positional / legacy argument path. Anything that still looks like an
+		# option must not silently flow into it: the legacy parser would treat
+		# it as <soc_platform>/<cpu>/… and die later with a confusing
+		# "key '' does not exist in the list".
+		if [[ "$1" == -* ]]; then
+			echo "Error: unknown option '$1' (use -h to list all options)"
+			print_help
+		fi
 		parse_old_args $1
 	;;
 	esac
 	shift
 done
 
-DTS=dts/$PLATFORM.dts
 TMP_DTS=.hw.dts
-# check if DTS exist
-if [ ! -f $DTS ]; then
-	echo "Error: dts file '${DTS}' not exist !"
-	echo
-	exit 1
-fi
+[ -n "$OUT_DTS" ] && TMP_DTS="$OUT_DTS"
 
 # check if CPU supported
 if [ -z ${CPU} ] || [[ -z ${default_isa[$CPU]+_} ]]; then
@@ -267,368 +394,176 @@ if [ -z ${CPU} ] || [[ -z ${default_isa[$CPU]+_} ]]; then
 	exit 1
 fi
 
-# use default ISA_STRING
-if [[ $ISA_STRING == "default" ]]; then
-	ISA_STRING=${default_isa[$CPU]}
-fi
-
 if [ "${OPTEE}" = "true" ] ; then
 	ZSB_GDBINIT=gdbinit/zsb_rv64_optee.gdbinit
 else
 	ZSB_GDBINIT=gdbinit/zsb.gdbinit
 fi
 
+# Resolve a <soc_platform> name (with or without the -<fpga type> suffix, e.g.
+# minimesh-hejian) to the platform JSON that actually carries its blocks —
+# the base <platform>.json, since the fpga overlay lives inside it. Silent:
+# callers decide what to print. Empty when the name matches no json (the
+# generators then auto-select the platform from the CPU model).
+resolve_platform_json() {
+	local name="$1"
+	[ -z "$name" ] && return 0
+	if [ -f "${SCRIPT_DIR}/data/platforms/${name}.json" ]; then
+		printf '%s\n' "${SCRIPT_DIR}/data/platforms/${name}.json"
+	elif [[ "$name" == *-* ]] && \
+	     [ -f "${SCRIPT_DIR}/data/platforms/${name%-*}.json" ]; then
+		printf '%s\n' "${SCRIPT_DIR}/data/platforms/${name%-*}.json"
+	fi
+}
+
+# Fixed-SoC platforms (JSON containing a "cpu_block" key; see the schema's
+# cpu_block property) take their timebase-frequency from that JSON: generate_dts.py overrides --timer with
+# cpu_block.timebase (and with emu.cpu_block.timebase under -emu), so -timer
+# has no effect there. Probe the effective value up front to keep the banner
+# and the generated DTS telling the same story.
+# Probe cpu_block.timebase. Nested-merge semantics (generate_dts.apply_fpga_type
+# + the emu overlay) apply the same fields on top of the base block and scalar
+# replace wins, so mirroring that with jq --slurp deep-merge is exact. Prefer
+# jq; without it fall back to python3; if both are missing the banner just
+# prints the -timer value as before (behaviour unchanged, only less chatty).
+probe_cpu_timebase() {
+	local json="$1" emu="$2"
+	if command -v jq >/dev/null 2>&1; then
+		jq -r --argjson emu "$([ "$emu" = "true" ] && echo true || echo false)" \
+			'[.cpu_block // {}, (.emu.cpu_block // {} | if $emu then . else {} end)]
+			 | add | .timebase // empty' \
+			"$json" 2>/dev/null || true
+	else
+		python3 -c 'import json,sys
+d=json.load(open(sys.argv[1]))
+b=dict(d.get("cpu_block") or {})
+if sys.argv[2]=="true": b.update((d.get("emu") or {}).get("cpu_block") or {})
+print(b.get("timebase",""))' "$json" "$emu" 2>/dev/null || true
+	fi
+}
+
+PLAT_JSON_PROBE="$(resolve_platform_json "${PLATFORM_CONFIG:-$PLATFORM}")"
+FIXED_SOC=false
+if [ -n "$PLAT_JSON_PROBE" ] && grep -q '"cpu_block"' "$PLAT_JSON_PROBE"; then
+	FIXED_SOC=true
+fi
+PLAT_TIMEBASE=
+if [ "$FIXED_SOC" = "true" ]; then
+	PLAT_TIMEBASE="$(probe_cpu_timebase "$PLAT_JSON_PROBE" "$EMU")"
+fi
+
 echo "==== update dts CPU settings ===="
 echo "PLATFORM : ${PLATFORM}"
-echo "DTS  : ${DTS}"
 echo "CPU  : ${CPU}"
 echo "CORE_LAYOUT : ${CORE_LAYOUT}"
 echo "ISA_STRING  : ${ISA_STRING}"
-echo "TIME-FREQUENCY  : ${TIME_FREQ}"
+if [ "$FIXED_SOC" = "true" ]; then
+	echo "TIME-FREQUENCY  : ${PLAT_TIMEBASE:-$TIME_FREQ}  (platform JSON cpu_block.timebase; -timer not applicable)"
+else
+	echo "TIME-FREQUENCY  : ${TIME_FREQ}"
+fi
 echo "LINK_MODE  : ${LINK_MODE}"
 echo "OPTEE  : ${OPTEE}"
+echo "EMU  : ${EMU}"
 echo "==== ==== ==== ==== ==== ===="
 echo
 
-function update_dts_mmu
-{
-	if [ "${SV}" = "39" ] ; then
-		echo ">> updating mmu to sv39"
-		sed -i 's/ no4lvl//g' ${DTS}
-		sed -i 's/ no5lvl//g' ${DTS}
-		sed -i 's/norandmaps/norandmaps no4lvl/g' ${DTS}
-	elif [ "${SV}" = "48" ] ; then
-		echo ">> updating mmu to sv48"
-		sed -i 's/ no4lvl//g' ${DTS}
-		sed -i 's/ no5lvl//g' ${DTS}
-		sed -i 's/norandmaps/norandmaps no5lvl/g' ${DTS}
-	elif [ "${SV}" = "57" ] ; then
-		echo ">> updating mmu to sv57"
-		sed -i 's/ no4lvl//g' ${DTS}
-		sed -i 's/ no5lvl//g' ${DTS}
+# ---------------------------------------------------------------------------
+# Thin entry: delegate to the template-driven generators.
+#   1. generator/generate_dts.py    — render the full .hw.dts from templates
+#   2. generator/render_gdbinit.py  — render gdbinit/zsb.gdbinit for the layout
+#   3. generator/render_socinit.py  — render gdbinit/zsb_socinit.gdbinit
+# ---------------------------------------------------------------------------
+
+# Resolve the platform JSON override. Precedence: PLATFORM_CONFIG env wins;
+# otherwise the <soc_platform> positional is used when it names an existing
+# data/platforms/<name>.json (e.g. xiaohui_v1 / xiaohui_v2 / xiaohui_v1_rv32).
+# If neither matches a real json, leave it empty so the generators auto-select
+# the platform from the CPU model (backward compatible with legacy "xiaohui").
+PLATFORM_OVERRIDE="${PLATFORM_CONFIG:-}"
+if [ "$PLATFORM" = "emu-hejian" ] || [ "$PLATFORM_OVERRIDE" = "emu-hejian" ]; then
+	echo "Error: emu-hejian was removed; select minimesh/fullmesh and pass -emu true."
+	exit 1
+fi
+if [ -z "$PLATFORM_OVERRIDE" ] && [ -n "$PLATFORM" ]; then
+	if [ -f "${SCRIPT_DIR}/data/platforms/${PLATFORM}.json" ]; then
+		PLATFORM_OVERRIDE="$PLATFORM"
+		echo "PLATFORM (json): ${PLATFORM_OVERRIDE}"
+	# FPGA-type suffix form <platform>-<ftype> (e.g. minimesh-hejian):
+	# accepted when the base <platform>.json exists. The sysmap overlay
+	# is applied inside generate_dts.py; gdbinit/socinit read the base
+	# json only (their fields carry no FPGA-type differences).
+	elif [[ "$PLATFORM" == *-* ]] && \
+	     [ -f "${SCRIPT_DIR}/data/platforms/${PLATFORM%-*}.json" ]; then
+		PLATFORM_OVERRIDE="$PLATFORM"
+		echo "PLATFORM (json): ${PLATFORM_OVERRIDE}"
 	fi
-}
-function update_dts_intc
-{
-	rm -f dts/aplic.dtsi
-	if [[ "$CPU" == *c930* || "$CPU" == *c925* ]]; then
-		echo ">> updating c930/c925 intc"
-		ln -sr dts/aplic_c930.dtsi dts/aplic.dtsi
-	else
-		echo ">> updating rv64 intc"
-		ln -sr dts/aplic_rv64.dtsi dts/aplic.dtsi
-	fi
+fi
 
-	rm -f dts/intc.dtsi
-	if [ "${INTC}" = "plic" ] ; then
-		echo ">> updating intc to plic"
-		ln -sr dts/plic.dtsi dts/intc.dtsi
-	elif [ "${INTC}" = "aplic" ] ; then
-		echo ">> updating intc to aplic"
-		ln -sr dts/aplic.dtsi dts/intc.dtsi
-	elif [ "${INTC}" = "aplic2core" ] ; then
-		echo ">> updating intc to aplic2core"
-		ln -sr dts/aplic_2cores.dtsi dts/intc.dtsi
-	fi
-}
-function update_dts_gmac
-{
-	if [ "${GMAC}" = "h100" ] ; then
-		echo ">> updating gmac to h100"
-		rm -f dts/gmac.dtsi
-		ln -sr dts/gmac_haps.dtsi dts/gmac.dtsi
-		sed -i "s/set \$net_mode = .*/set \$net_mode = 0/g" gdbinit/zsb_socinit.gdbinit
-	elif [ "${GMAC}" = "c930" ] ; then
-		echo ">> updating gmac to c930"
-		rm -f dts/gmac.dtsi
-		ln -sr dts/gmac_c930.dtsi dts/gmac.dtsi
-		sed -i "s/set \$net_mode = .*/set \$net_mode = 1/g" gdbinit/zsb_socinit.gdbinit
-	elif [ "${GMAC}" = "pro" ] ; then
-		echo ">> updating gmac to pro"
-		rm -f dts/gmac.dtsi
-		ln -sr dts/gmac_pro.dtsi dts/gmac.dtsi
-	fi
-}
+# Feature-probe json (cpu_block / ipmc): a suffixed name points at the
+# base platform json where all the blocks (incl. the fpga overlays) live.
+PLAT_JSON="$(resolve_platform_json "$PLATFORM_OVERRIDE")"
 
-function update_dts_ntrace
-{
-	rm -rf dts/ntrace-memory.dtsi dts/ntrace.dtsi
-	touch  dts/ntrace-memory.dtsi dts/ntrace.dtsi
-	if [ "${NTRACE}" = "false" ] ; then 
-		echo ">> no ntrace..."
-	elif [ "${NTRACE}" = "v1" ] ; then
-		## for c908/c907 old arch of trace
-		echo ">> Please select a valid ntrace configuration for c908/c907..."
-		exit 1
-	else
-		## for  v1/v2 arch configuration of trace
-		trace_config_file="./script/trace-configs/$NTRACE.json"
-		if [ ! -f "$trace_config_file" ]; then
-			echo "Error: NTrace config file '$trace_config_file' not found!"
-			exit 1
-		fi
-		echo ">> updating ntrace by config: $trace_config_file"
-		./script/generate_trace_dts.sh -c "$trace_config_file"
-		ntrace_file=dts/ntrace.dtsi
-		sed -i "s|trace_encoder_context = .*|trace_encoder_context = \"${TRACE_CONTEXT}\";|g" "${ntrace_file}" && \
-		sed -i "s|trace_encoder_inst_stall_enable = .*|trace_encoder_inst_stall_enable = \"${TRACE_STALL}\";|g" "${ntrace_file}" && \
-		sed -i "s|trace_encoder_inhibit_src = .*|trace_encoder_inhibit_src = \"${TRACE_INHIBIT_SRC}\";|g" "${ntrace_file}" && \
-		sed -i "s|trace_encoder_inst_trigger_enable = .*|trace_encoder_inst_trigger_enable = \"${TRACE_TRIGGER_ENABLE}\";|g" "${ntrace_file}" && \
-		sed -i "s|trace_timestamp_enable = .*|trace_timestamp_enable = \"${TRACE_TIMESTAMP_ENABLE}\";|g" "${ntrace_file}" && \
-		sed -i "s|trace_timestamp_runindebugmode = .*|trace_timestamp_runindebugmode = \"${TRACE_RUN_IN_DEBUGMODE}\";|g" "${ntrace_file}" && \
-		sed -i "s|working_mode = .*|working_mode = \"${TRACE_SINK_WORKING_MODE}\";|g" "${ntrace_file}"
-	fi
-}
+# Build generate_dts.py args from the parsed options.
+# --timer is only meaningful on platforms that take the timebase from the CLI;
+# fixed-SoC platforms (cpu_block) override it from cpu_block.timebase inside
+# generate_dts.py, so not passing it keeps one obvious source of truth (the
+# JSON) instead of a silently discarded CLI value.
+GEN_ARGS=(--cpu "$CPU"
+          --bus "$LINK_MODE" --intc "$INTC" --gmac "$GMAC" --output "$TMP_DTS")
+[ "$FIXED_SOC" != "true" ] && GEN_ARGS+=(--timer "$TIME_FREQ")
+# -layout 只在显式传入时透传(生成器缺省 "1"); NGF 固定 SoC 平台收到后
+# 会把位串换算成 complex/slot 集合(与 -complexes 二选一)。
+[ "$LAYOUT_SET" = 1 ] && GEN_ARGS+=(--layout "$CORE_LAYOUT")
+# -clusters/-cores_num is an equivalent alternative to -layout; when -cores_num
+# is set the generators derive the layout from it (overriding --layout).
+[ -n "$CLUSTERS" ] && GEN_ARGS+=(--clusters "$CLUSTERS")
+[ -n "$CORES_NUM" ] && GEN_ARGS+=(--cores-num "$CORES_NUM")
+[ "$ISA_STRING" != "default" ] && GEN_ARGS+=(--isa "$ISA_STRING")
+[ -n "$SV" ] && GEN_ARGS+=(--sv "$SV")
+[ "$NTRACE" != "false" ] && GEN_ARGS+=(--ntrace "$NTRACE")
+[ "$TRACE_SBA" = "true" ] && GEN_ARGS+=(--trace-sba)
+[ -n "$MEMORY_SIZE" ] && GEN_ARGS+=(--memsize "$MEMORY_SIZE")
+[ "$OPTEE" = "true" ] && GEN_ARGS+=(--optee)
+[ "$EMU" = "true" ] && GEN_ARGS+=(--emu)
+[ "$PMC" != "false" ] && GEN_ARGS+=(--pmc "$PMC")
+[ -n "$PLATFORM_OVERRIDE" ] && GEN_ARGS+=(--platform "$PLATFORM_OVERRIDE")
+[ -n "$COMPLEXES" ] && GEN_ARGS+=(--complexes "$COMPLEXES")
+[ "$NIC_SET" = "true" ] && GEN_ARGS+=(--nic "$NIC")
+[ "$IOMMU" != "false" ] && GEN_ARGS+=(--iommu "$IOMMU")
 
-function update_mem_addr
-{
-	if [ "${OPTEE}" = "true" ] ; then
-		sed -i "s/linux,initrd-start = <0x00 .*/linux,initrd-start = <0x00 0x84000000>;/g" ${DTS}
-	else
-		sed -i "s/linux,initrd-start = <0x00 .*/linux,initrd-start = <0x00 0x64000000>;/g" ${DTS}
-	fi
-	if [ "x${PA48}" = "xPA48" ] ; then
-		echo ">> updating run.sh to adapt PA48"
-		sed -i "s/<0x00/<0xfffe/g" run.sh
-		echo ">> updating gdbinit to adapt PA48"
-		sed -i "s/set \$opensbi_addr = .*/set \$opensbi_addr = 0xfffe00000000/g" ${ZSB_GDBINIT}
-		echo ">> updating dts to adapt PA48"
-		y=`awk '/memory@*/{getline a;print NR}' ${DTS}`
-		let y=$y+1
-		sed -i ''$y','$y's/reg = .*/reg = <0xfffe 0x00000000 0x1 0x00000000>;/g' ${DTS}
-		sed -i "s/linux,initrd-start = <0x00 .*/linux,initrd-start = <0xfffe 0x04000000>;/g" ${DTS}
-		sed -i "s/linux,initrd-end = <0x00 .*/linux,initrd-end = <0xfffe 0x0>;/g" ${DTS}
-	elif [ "x${PA48}" = "xPA40" ] ; then
-		echo ">> updating run.sh to adapt PA40"
-		sed -i "s/<0xfffe/<0x00/g" run.sh
-		echo ">> updating gdbinit to adapt PA40"
-		sed -i "s/set \$opensbi_addr = .*/set \$opensbi_addr = 0x60000000/g" ${ZSB_GDBINIT}
-		echo ">> updating dts to adapt PA40"
-		y=`awk '/memory@*/{getline a;print NR}' ${DTS}`
-		let y=$y+1
-		sed -i ''$y','$y's/reg = .*/reg = <0x0 0x60000000 0x1 0x00000000>;/g' ${DTS}
-		sed -i "s/linux,initrd-start = .*/linux,initrd-start = <0x00 0x64000000>;/g" ${DTS}
-		sed -i "s/linux,initrd-end = .*/linux,initrd-end = <0x00 0x0>;/g" ${DTS}
-	fi
-	if [ "${PLATFORM}" = "zsb_ilp32" ] ; then
-		y=`awk '/memory@*/{getline a;print NR}' ${DTS}`
-		let y=$y+1
-		sed -i ''$y','$y's/reg = .*/reg = <0x0 0x60000000 0x0 0x40000000>;/g' ${DTS}
-	fi
-}
+# Fixed-SoC platforms (cpu_block): -complexes is passed to the DTS and
+# gdbinit renderers; enabled cores and inline IMSIC windows are derived from
+# the complex structure/pcu_config without an auxiliary output directory.
 
-function update_cpu_socinit
-{
-	if [[ $CPU =~ c906.* ]]; then
-		echo ">> updating socinit ncore to noncore"
-		sed -i "s/set \$link_mode = .*/set \$link_mode = 0/g" gdbinit/zsb_socinit.gdbinit
-	elif [ "$LINK_MODE" = "ncore" ]; then
-		echo ">> updating socinit to ncore"
-		sed -i "s/set \$link_mode = .*/set \$link_mode = 1/g" gdbinit/zsb_socinit.gdbinit
-	elif [ "$LINK_MODE" = "stlk" ]; then
-		echo ">> updating socinit to stlk"
-		sed -i "s/set \$link_mode = .*/set \$link_mode = 2/g" gdbinit/zsb_socinit.gdbinit
-	elif [ "$LINK_MODE" = "stlk2" ]; then
-		echo ">> updating socinit to stlk2"
-		sed -i "s/set \$link_mode = .*/set \$link_mode = 2/g" gdbinit/zsb_socinit.gdbinit
-		sed -i "s/set \$stl3_base = .*/set \$stl3_base = 0xfffffffff000/g" gdbinit/zsb_socinit.gdbinit
-	elif [ "$LINK_MODE" = "none" ]; then
-		echo ">> updating socinit to stlk"
-		sed -i "s/set \$link_mode = .*/set \$link_mode = 0/g" gdbinit/zsb_socinit.gdbinit
-	fi
-}
+# 无 pmc/ipmc 的平台(NGF minimesh/fullmesh)不接受 -pmc:
+# 没有 pmc 硬件,per-core release 一律走 pcu_config(socinit 无条件输出)。
+if [ "$PMC" != "false" ] && [ -n "$PLAT_JSON" ] && \
+   ! grep -q '"ipmc"' "$PLAT_JSON"; then
+	echo "Error: platform '${PLATFORM_OVERRIDE}' 无 pmc/ipmc,不支持 -pmc"
+	echo "       (per-core release 走 pcu_config,无需 -pmc 门控)"
+	exit 1
+fi
 
-function update_gdbinit_cp
-{
-	echo ">> clear gdbinit cp xt flag"
-	sed -i "s/set \*(unsigned int \*)\$flag_addr = 0x0 .*/set \*(unsigned int \*)\$flag_addr = 0x0/g" ${ZSB_GDBINIT}
-	sed -i "s/set \*(unsigned int \*)\$flag_addr = 0x1 .*/set \*(unsigned int \*)\$flag_addr = 0x1/g" ${ZSB_GDBINIT}
+python3 "${SCRIPT_DIR}/generator/generate_dts.py" "${GEN_ARGS[@]}" || exit 1
 
-	if [[ $CPU =~ -cp-xt ]]; then
-		echo ">> updating gdbinit flag & 0x2 | 0x4"
-		sed -i "s/set \*(unsigned int \*)\$flag_addr = 0x0/set \*(unsigned int \*)\$flag_addr = 0x0 \| 0x2 \| 0x4/g" ${ZSB_GDBINIT}
-		sed -i "s/set \*(unsigned int \*)\$flag_addr = 0x1/set \*(unsigned int \*)\$flag_addr = 0x1 \| 0x2 \| 0x4/g" ${ZSB_GDBINIT}
-	elif [[ $CPU =~ -cp ]]; then
-		echo ">> updating gdbinit flag & 0x2"
-		sed -i "s/set \*(unsigned int \*)\$flag_addr = 0x0/set \*(unsigned int \*)\$flag_addr = 0x0 \| 0x2/g" ${ZSB_GDBINIT}
-		sed -i "s/set \*(unsigned int \*)\$flag_addr = 0x1/set \*(unsigned int \*)\$flag_addr = 0x1 \| 0x2/g" ${ZSB_GDBINIT}
-	fi
-}
+# gdbinit: core layout + flag (--optee selects the OP-TEE template);
+# 固定 SoC 的核使能由 -complexes/-layout/pcu_config 推导
+GDB_ARGS=(--cpu "$CPU" --gdbinit "$ZSB_GDBINIT")
+[ "$LAYOUT_SET" = 1 ] && GDB_ARGS+=(--layout "$CORE_LAYOUT")
+[ -n "$CLUSTERS" ] && GDB_ARGS+=(--clusters "$CLUSTERS")
+[ -n "$CORES_NUM" ] && GDB_ARGS+=(--cores-num "$CORES_NUM")
+[ -n "$COMPLEXES" ] && GDB_ARGS+=(--complexes "$COMPLEXES")
+[ "$OPTEE" = "true" ] && GDB_ARGS+=(--optee)
+[ -n "$PLATFORM_OVERRIDE" ] && GDB_ARGS+=(--platform "$PLATFORM_OVERRIDE")
+python3 "${SCRIPT_DIR}/generator/render_gdbinit.py" "${GDB_ARGS[@]}" || exit 1
 
-function update_dts_cpu
-{
-	# if $CPU is defined then update it
-	if [ ! -z $CPU ]; then
-		echo ">> updating cpu string to $CPU"
-		sed -i "s/model = .*/model = \"Xuantie $CPU\";/g" ${DTS}
-	else
-		echo "WARNING: CPU not set, skip update CPU"
-	fi
-}
+# socinit: link_mode / net_mode / pmc_init
+SOC_ARGS=(--cpu "$CPU" --bus "$LINK_MODE" --gmac "$GMAC")
+[ "$EMU" = "true" ] && SOC_ARGS+=(--emu)
+[ "$PMC" != "false" ] && SOC_ARGS+=(--pmc)
+[ -n "$PLATFORM_OVERRIDE" ] && SOC_ARGS+=(--platform "$PLATFORM_OVERRIDE")
+python3 "${SCRIPT_DIR}/generator/render_socinit.py" "${SOC_ARGS[@]}" || exit 1
 
-function update_dts_time_freq
-{
-	# if $TIME_FREQ is defined then update it
-	if [ ! -z $TIME_FREQ ]; then
-	echo ">> updating timebase-frequency to $TIME_FREQ"
-	sed -i "s/timebase-frequency = .*/timebase-frequency = <$TIME_FREQ>;/g" ${DTS}
-	else
-	echo "WARNING: TIME-FREQUENCY not set, skip update timebase-frequency"
-	fi
-}
-
-function update_dts_support_32cores
-{
-	if [ ${#CORE_LAYOUT} -gt 8 ];then
-		sed -i 's|// /include/ "32cores.dtsi"|/include/ "32cores.dtsi"|g' ${DTS}
-	else
-		sed -i 's|^/include/ "32cores.dtsi"|// /include/ "32cores.dtsi"|g' ${DTS}
-	fi
-}
-
-function update_dts_core_layout
-{
-	# if $CORE_LAYOUT is defined then update it
-	if [ ! -z $CORE_LAYOUT ]; then
-		if [ $CORE_LAYOUT -eq 1 ];then
-			sed -i '/^\s*set\s*\*0x18030000 = .*/s/^\(\s*\)\(set\)/\1# \2/' ${ZSB_GDBINIT}
-		elif [ ${#CORE_LAYOUT} -gt 8 ];then
-			sed -i "s/.*set \*0x18030000 = .*/	set \*0x18030000 = 0xffffffff/g" ${ZSB_GDBINIT}
-		else
-			sed -i "s/.*set \*0x18030000 = .*/	set \*0x18030000 = 0xff/g" ${ZSB_GDBINIT}
-		fi
-		echo ">> updating core layout to $CORE_LAYOUT"
-		decimal=$((2#$CORE_LAYOUT))
-		length=$(grep -o "cpu@" ${TMP_DTS} | wc -l)
-
-		for (( i=0; i<${length}; i++ )); do
-			y=`awk '/cpu@'$i' \{/{getline a;print NR}' ${TMP_DTS}`
-			let y=$y+2
-			if ((decimal & 1 == 1)); then
-				sed -i ''$y','$y's/skip/okay/g' ${TMP_DTS}
-			else
-				sed -i ''$y','$y's/okay/skip/g' ${TMP_DTS}
-			fi
-		decimal=$((decimal >> 1))
-		done
-	else
-		echo "WARNING: CORE_LAYOUT not set, skip update CORE_LAYOUT"
-	fi
-}
-
-
-function update_dts_isa
-{
-	# if $ISA_STRING is defined then update it
-	if [ ! -z $ISA_STRING ]; then
-		echo ">> updating isa string to $ISA_STRING"
-		sed -i "s/riscv,isa = .*/riscv,isa = \"$ISA_STRING\";/g" ${TMP_DTS}
-
-		local ext_part="${ISA_STRING#rv64}"
-		
-		# basic part 
-		local base_part="${ext_part%%_*}"
-		local ext_list="${ext_part#*_}"
-		[ "$ext_part" = "$ext_list" ] && ext_list="" 
-		local base_fmt=""
-		for (( i=0; i<${#base_part}; i++ )); do
-			base_fmt+="\"${base_part:$i:1}\", "
-		done
-		base_fmt="${base_fmt%, }" 
-
-		# ext part
-		local ext_fmt=""
-		if [ -n "$ext_list" ]; then
-			ext_fmt=$(echo "$ext_list" | sed 's/_/", "/g')
-			ext_fmt="\"$ext_fmt\""
-		fi
-
-		# merge
-		local isa_ext_val=""
-		if [ -n "$base_fmt" ] && [ -n "$ext_fmt" ]; then
-			isa_ext_val="$base_fmt, $ext_fmt"
-		elif [ -n "$base_fmt" ]; then
-			isa_ext_val="$base_fmt"
-		else
-			isa_ext_val="$ext_fmt"
-		fi
-
-		echo ">> updating isa-extensions to: $isa_ext_val"
-		sed -i "s|riscv,isa-extensions = .*|riscv,isa-extensions = ${isa_ext_val};|g" "${TMP_DTS}"
-
-	else
-		echo "WARNING: ISA_STRING not set, skip update ISA_STRING"
-	fi
-}
-
-function update_dts_memory_size() {
-	if [[ -z "$MEMORY_SIZE" ]]; then
-		return
-	fi
-
-	# Extract numerical value and unit
-	NUM=$(echo "$MEMORY_SIZE" | sed 's/G//')
-
-	# Check if input is a valid number followed by G
-	if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
-		echo "Invalid input: $MEMORY_SIZE must be a number followed by G"
-		exit 1
-	fi
-
-	# Calculate memory size in bytes (1G = 1024^3 bytes)
-	BYTES=$((NUM * 1024 * 1024 * 1024))
-
-	# Convert to high and low 32-bit values
-	HIGH=$((BYTES >> 32))
-	LOW=$((BYTES & 0xFFFFFFFF))
-
-	# Format as hexadecimal with leading zeros
-	HEX_HIGH=$(printf "0x%X" $HIGH)
-	HEX_LOW=$(printf "0x%X" $LOW)
-
-	# Use sed to update the 'reg' field in the DTS file
-	sed -i "s/\(reg = <0x[[:xdigit:]]\+[[:space:]]\+0x60000000[[:space:]]\+\).*/\1${HEX_HIGH} ${HEX_LOW}>;/g" ${TMP_DTS}
-
-	echo ">> updating memory size to ${MEMORY_SIZE}"
-}
-
-function update_dts_pmc() {
-	if [ "${PMC}" = "true" ] ; then
-		sed -i 's/status = "[^"]*"/status = "okay"/g' dts/pmc.dtsi
-		sed -i "s/set \$pmc_init = .*/set \$pmc_init = 1/g" gdbinit/zsb_socinit.gdbinit
-	else
-		sed -i 's/status = "[^"]*"/status = "skip"/g' dts/pmc.dtsi
-		sed -i "s/set \$pmc_init = .*/set \$pmc_init = 0/g" gdbinit/zsb_socinit.gdbinit
-	fi
-}
-function update_dts_pmu
-{
-	rm -f dts/pmu.dtsi
-	if [[ "$CPU" == *c930* || "$CPU" == *c925* ]]; then
-		echo ">> updating c930/c925 pmu"
-		ln -sr dts/pmu_c930.dtsi dts/pmu.dtsi
-	else
-		echo ">> updating rv64 pmu"
-		ln -sr dts/pmu_rv64.dtsi dts/pmu.dtsi
-	fi
-}
-
-# update origin dts file
-update_cpu_socinit
-update_gdbinit_cp
-update_dts_time_freq
-update_mem_addr
-update_dts_cpu
-update_dts_intc
-update_dts_gmac
-update_dts_ntrace
-update_dts_mmu
-update_dts_support_32cores
-update_dts_pmc
-update_dts_pmu
-
-# update $TMP_DTS file
-./dtc -I dts -O dts $DTS > $TMP_DTS
-update_dts_core_layout
-update_dts_isa
-update_dts_memory_size
+echo
+echo ">> done: ${TMP_DTS}, ${ZSB_GDBINIT}, gdbinit/zsb_socinit.gdbinit"

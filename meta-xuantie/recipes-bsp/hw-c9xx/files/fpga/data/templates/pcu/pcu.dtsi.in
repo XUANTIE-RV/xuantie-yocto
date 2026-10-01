@@ -1,0 +1,11 @@
+	xuantie_pcu {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		compatible = "xuantie,pcu";
+##REPEAT PCU_CORES##
+		pcu_core${PCU_HARTID}: pcu-core@${PCU_UNIT_ADDR} {
+			reg = <${PCU_BASE} ${PCU_SIZE}>;
+			hartid = <${PCU_HARTID}>;
+		};
+##ENDREPEAT##
+	};

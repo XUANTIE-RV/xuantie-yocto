@@ -1,0 +1,9 @@
+build*/
+pyshtables.py
+*.swp
+*.orig
+*.rej
+/*.patch
+*~
+scripts/lib/wic/plugins/source/__pycache__
+lib/oeqa/runtime/cases/__pycache__

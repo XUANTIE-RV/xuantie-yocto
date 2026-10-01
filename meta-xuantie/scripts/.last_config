@@ -1,0 +1,91 @@
+{
+  "updates": [
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-5.10"
+      ],
+      "new_url": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V3.5.0.tar.gz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-6.6"
+      ],
+      "new_url": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-gcc-linux-6.6.36-glibc-x86_64-V3.5.0.tar.gz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-clang-5.10"
+      ],
+      "new_url": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-llvm-linux-5.10.4-glibc-x86_64-V2.5.0.tar.gz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-clang-6.6"
+      ],
+      "new_url": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-llvm-linux-6.6.36-glibc-x86_64-V2.5.0.tar.gz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-muslc64-6.6"
+      ],
+      "new_url": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-gcc-linux-6.6.36-musl64-x86_64-V3.5.0.tar.gz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-muslc32-6.6"
+      ],
+      "new_url": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-gcc-linux-6.6.36-musl32-x86_64-V3.5.0.tar.gz"
+    },
+    {
+      "type": "bb",
+      "file": [
+        "../recipes-devtools/gdb/gdb_15.2.90.bb"
+      ],
+      "files": {
+        "rv64_510": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-gcc-linux-5.10.4-glibc-native_gdb-rv64gc-lp64d-V3.5.0.tar.gz",
+        "rv64_66": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-gcc-linux-6.6.36-glibc-native_gdb-rv64gc-lp64d-V3.5.0.tar.gz",
+        "rv32_66": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/Xuantie-900-gcc-linux-6.6.36-glibc-native_gdb-rv32gc-ilp32d-V3.5.0.tar.gz"
+      }
+    },
+    {
+      "type": "bb",
+      "file": [
+        "../recipes-devtools/gcc/gcc_14.3.0.bb",
+        "../recipes-devtools/binutils-tools/binutils-tools_2.42.bb"
+      ],
+      "files": {
+        "rv64_510": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/gcc_14.3.0_riscv64-5.10.4-rv64gc-lp64d.deb",
+        "rv64_66": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/gcc_14.3.0_riscv64-6.6.36-rv64gc-lp64d.deb",
+        "rv32_66": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/gcc_14.3.0_riscv32-6.6.36-rv32gc-ilp32d.deb"
+      }
+    },
+    {
+      "type": "bb",
+      "file": [
+        "../recipes-devtools/clang/clang_18.1.8.bb"
+      ],
+      "files": {
+        "rv64_510": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/clang_18.1.8_riscv64-5.10.4-rv64gc-lp64d.deb",
+        "rv64_66": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/clang_18.1.8_riscv64-6.6.36-rv64gc-lp64d.deb",
+        "rv32_66": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/clang_18.1.8_riscv32-6.6.36-rv32gc-ilp32d.deb"
+      }
+    },
+    {
+      "type": "bb",
+      "file": [
+        "../recipes-devtools/bpf/bpf_18.1.8.bb"
+      ],
+      "files": {
+        "rv64_510": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/bpf_18.1.8_riscv64-5.10.4-rv64gc-lp64d.tar.gz",
+        "rv64_66": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/bpf_18.1.8_riscv64-6.6.36-rv64gc-lp64d.tar.gz",
+        "rv32_66": "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/bpf_18.1.8_riscv32-6.6.36-rv32gc-ilp32d.tar.gz"
+      }
+    }
+  ]
+}

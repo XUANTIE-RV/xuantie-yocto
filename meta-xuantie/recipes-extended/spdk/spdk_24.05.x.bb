@@ -71,7 +71,7 @@ do_install:append() {
 
 PACKAGES += "${PN}-examples"
 FILES:${PN}-dev += "${libdir}/dpdk/pmds-24.1/*.so"
-FILES:${PN} += "${libdir}/python3.10 ${libdir}/dpdk/pmds-24.1"
+FILES:${PN} += "${libdir}/python${PYTHON_BASEVERSION} ${libdir}/dpdk/pmds-24.1"
 FILES:${PN}-examples = "${datadir}"
 RDEPENDS:${PN} += "pciutils python3-core"
 RDEPENDS:${PN}-examples += "${PN} bash"

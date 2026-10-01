@@ -1,0 +1,173 @@
+From a02ad015400995e5055a72248127876cfae589ed Mon Sep 17 00:00:00 2001
+From: "yanan.he" <yanan.he@linux.alibaba.com>
+Date: Wed, 10 Jun 2026 18:12:00 +0800
+Subject: [PATCH 2/3] net: designware: add snps,dwmac compatible and parse
+ snps,axi-config
+
+Add "snps,dwmac" to the DesignWare driver compatible table for XuanTie
+FPGA platforms.
+
+Program the DMA AXI Bus Mode register (offset 0x28) from the
+"snps,axi-config" DT phandle, mirroring the Linux stmmac driver. On
+non-coherent FPGA platforms (e.g. XuanTie C930), the hardware-default
+AXI burst configuration causes DMA transfer failures during large TFTP
+transfers while small ping packets succeed.
+
+DT bindings parsed: snps,blen (burst lengths), snps,wr_osr_lmt and
+snps,rd_osr_lmt (outstanding request limits).
+
+Falls back to legacy CONFIG_DW_AXI_BURST_LEN when DT phandle absent.
+
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ drivers/net/designware.c | 61 +++++++++++++++++++++++++++++++++++++++-
+ drivers/net/designware.h | 17 +++++++++++
+ 2 files changed, 77 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/designware.c b/drivers/net/designware.c
+index 07b0f49ef5..319651622e 100644
+--- a/drivers/net/designware.c
++++ b/drivers/net/designware.c
+@@ -24,6 +24,7 @@
+ #include <dm/device_compat.h>
+ #include <dm/device-internal.h>
+ #include <dm/devres.h>
++#include <dm/ofnode.h>
+ #include <dm/lists.h>
+ #include <linux/compiler.h>
+ #include <linux/delay.h>
+@@ -374,7 +375,9 @@ int designware_eth_init(struct dw_eth_dev *priv, u8 *enetaddr)
+ {
+ 	struct eth_mac_regs *mac_p = priv->mac_regs_p;
+ 	struct eth_dma_regs *dma_p = priv->dma_regs_p;
++	struct dw_eth_pdata *dw_pdata = dev_get_plat(priv->dev);
+ 	unsigned int start;
++	u32 axi_bus_mode;
+ 	int ret;
+ 
+ 	writel(readl(&dma_p->busmode) | DMAMAC_SRST, &dma_p->busmode);
+@@ -419,8 +422,39 @@ int designware_eth_init(struct dw_eth_dev *priv, u8 *enetaddr)
+ 
+ 	writel(readl(&dma_p->opmode) | RXSTART | TXSTART, &dma_p->opmode);
+ 
++	/*
++	 * Program the DMA AXI Bus Mode register from the "snps,axi-config"
++	 * device tree node when available. This matches the Linux stmmac
++	 * driver and is required on non-coherent platforms whose
++	 * interconnect does not accept the hardware-default burst lengths.
++	 */
++	if (dw_pdata->has_axi_config) {
++		axi_bus_mode = readl(&dma_p->axibus);
++		if (dw_pdata->axi_blen[0])
++			axi_bus_mode |= DMA_AXI_BLEN256;
++		if (dw_pdata->axi_blen[1])
++			axi_bus_mode |= DMA_AXI_BLEN128;
++		if (dw_pdata->axi_blen[2])
++			axi_bus_mode |= DMA_AXI_BLEN64;
++		if (dw_pdata->axi_blen[3])
++			axi_bus_mode |= DMA_AXI_BLEN32;
++		if (dw_pdata->axi_blen[4])
++			axi_bus_mode |= DMA_AXI_BLEN16;
++		if (dw_pdata->axi_blen[5])
++			axi_bus_mode |= DMA_AXI_BLEN8;
++		if (dw_pdata->axi_blen[6])
++			axi_bus_mode |= DMA_AXI_BLEN4;
++		axi_bus_mode &= ~(DMA_AXI_WR_OSR_LMT | DMA_AXI_RD_OSR_LMT);
++		axi_bus_mode |= (dw_pdata->wr_osr_lmt <<
++				 DMA_AXI_WR_OSR_LMT_SHIFT) & DMA_AXI_WR_OSR_LMT;
++		axi_bus_mode |= (dw_pdata->rd_osr_lmt <<
++				 DMA_AXI_RD_OSR_LMT_SHIFT) & DMA_AXI_RD_OSR_LMT;
++		writel(axi_bus_mode, &dma_p->axibus);
++	}
+ #ifdef CONFIG_DW_AXI_BURST_LEN
+-	writel((CONFIG_DW_AXI_BURST_LEN & 0x1FF >> 1), &dma_p->axibus);
++	else {
++		writel((CONFIG_DW_AXI_BURST_LEN & 0x1FF >> 1), &dma_p->axibus);
++	}
+ #endif
+ 
+ 	/* Start up the PHY */
+@@ -839,6 +873,8 @@ int designware_eth_of_to_plat(struct udevice *dev)
+ #if CONFIG_IS_ENABLED(DM_GPIO)
+ 	int reset_flags = GPIOD_IS_OUT;
+ #endif
++	struct ofnode_phandle_args axi_args;
++	ofnode axi_node;
+ 	int ret = 0;
+ 
+ 	pdata->iobase = dev_read_addr(dev);
+@@ -862,6 +898,28 @@ int designware_eth_of_to_plat(struct udevice *dev)
+ 	}
+ #endif
+ 
++	/*
++	 * Optional "snps,axi-config" phandle: parse burst lengths and
++	 * outstanding-request limits exactly like the Linux stmmac driver.
++	 * Absence of the phandle leaves has_axi_config = false and the
++	 * driver keeps the legacy CONFIG_DW_AXI_BURST_LEN behaviour.
++	 */
++	if (!ofnode_parse_phandle_with_args(dev_ofnode(dev), "snps,axi-config",
++					    NULL, 0, 0, &axi_args)) {
++		axi_node = axi_args.node;
++
++		if (ofnode_read_u32_array(axi_node, "snps,blen",
++					  dw_pdata->axi_blen, 7)) {
++			debug("%s: failed to parse snps,blen, skip axi-config\n",
++			      dev->name);
++		} else {
++			dw_pdata->wr_osr_lmt = ofnode_read_u32_default(axi_node,
++					"snps,wr_osr_lmt", 1);
++			dw_pdata->rd_osr_lmt = ofnode_read_u32_default(axi_node,
++					"snps,rd_osr_lmt", 1);
++			dw_pdata->has_axi_config = true;
++		}
++	}
+ 	return ret;
+ }
+ 
+@@ -871,6 +929,7 @@ static const struct udevice_id designware_eth_ids[] = {
+ 	{ .compatible = "st,stm32-dwmac" },
+ 	{ .compatible = "snps,arc-dwmac-3.70a" },
+ 	{ .compatible = "sophgo,cv1800b-dwmac" },
++	{ .compatible = "snps,dwmac" },
+ 	{ }
+ };
+ 
+diff --git a/drivers/net/designware.h b/drivers/net/designware.h
+index e47101ccaf..b52c6dd817 100644
+--- a/drivers/net/designware.h
++++ b/drivers/net/designware.h
+@@ -97,6 +97,19 @@ struct eth_dma_regs {
+ #define RXHIGHPRIO		(1 << 1)
+ #define DMAMAC_SRST		(1 << 0)
+ 
++/* AXI bus mode register definitions (offset 0x28) */
++#define DMA_AXI_BLEN256			BIT(7)
++#define DMA_AXI_BLEN128			BIT(6)
++#define DMA_AXI_BLEN64			BIT(5)
++#define DMA_AXI_BLEN32			BIT(4)
++#define DMA_AXI_BLEN16			BIT(3)
++#define DMA_AXI_BLEN8			BIT(2)
++#define DMA_AXI_BLEN4			BIT(1)
++#define DMA_AXI_RD_OSR_LMT		GENMASK(19, 16)
++#define DMA_AXI_RD_OSR_LMT_SHIFT	16
++#define DMA_AXI_WR_OSR_LMT		GENMASK(23, 20)
++#define DMA_AXI_WR_OSR_LMT_SHIFT	20
++
+ /* Poll demand definitions */
+ #define POLL_DATA		(0xFFFFFFFF)
+ 
+@@ -252,6 +265,10 @@ extern const struct eth_ops designware_eth_ops;
+ struct dw_eth_pdata {
+ 	struct eth_pdata eth_pdata;
+ 	u32 reset_delays[3];
++	u32 axi_blen[7];
++	u32 wr_osr_lmt;
++	u32 rd_osr_lmt;
++	bool has_axi_config;
+ };
+ 
+ int designware_eth_init(struct dw_eth_dev *priv, u8 *enetaddr);
+-- 
+2.34.1
+

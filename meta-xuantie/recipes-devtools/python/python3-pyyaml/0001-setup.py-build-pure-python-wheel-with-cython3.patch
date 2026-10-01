@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: XuanTie Yocto <yocto-linux-sdk@list.alibaba-inc.com>
+Date: Tue, 5 Aug 2026 00:00:00 +0800
+Subject: [PATCH] setup.py: build pure-python wheel with Cython 3 / Python 3.13
+
+PyYAML 6.0 setup.py calls build_ext.cython_sources(), removed in
+Cython 3 (AttributeError: cython_sources), and the shipped
+pre-cythonized ext/_yaml.c (Cython 0.29) does not support Python 3.13.
+Build the pure-python wheel instead; yaml functionality is identical
+for native build-time use.
+
+Upstream-Status: Inappropriate [oe-core langdale pins PyYAML 6.0; fixed upstream in 6.0.1]
+Signed-off-by: XuanTie Yocto <yocto-linux-sdk@list.alibaba-inc.com>
+---
+ setup.py | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
+
+--- a/setup.py
++++ b/setup.py
+@@ -82,10 +82,9 @@
+ try:
+     from Cython.Distutils.extension import Extension as _Extension
+     from Cython.Distutils import build_ext as _build_ext
+-    with_cython = True
+ except ImportError:
+-    if with_cython:
+-        raise
++    pass
++with_cython = False
+ 
+ try:
+     from wheel.bdist_wheel import bdist_wheel
+@@ -301,11 +300,7 @@
+ 
+         package_dir={'': 'lib'},
+         packages=['yaml', '_yaml'],
+-        ext_modules=[
+-            Extension('yaml._yaml', ['yaml/_yaml.pyx'],
+-                'libyaml', "LibYAML bindings", LIBYAML_CHECK,
+-                libraries=['yaml']),
+-        ],
++        ext_modules=[],
+ 
+         distclass=Distribution,
+         cmdclass=cmdclass,
+-- 
+2.34.1

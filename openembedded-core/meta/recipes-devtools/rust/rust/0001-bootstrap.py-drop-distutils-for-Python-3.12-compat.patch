@@ -1,0 +1,43 @@
+From: XuanTie Linux SDK CICD <yocto-linux-sdk@alibaba-inc.com>
+Subject: [PATCH] bootstrap.py: drop distutils.version for Python 3.12+ compat
+
+distutils was removed from the standard library in Python 3.12 (PEP 632).
+The rust 1.63 bootstrap only uses distutils.version.LooseVersion to compare
+the installed git version against 2.11.0, so replace it with a small tuple
+parse that has no external dependency. This unblocks building rust-native
+with a Python >= 3.12 interpreter (e.g. the meta-xuantie python3 3.13.4).
+
+Upstream-Status: Inappropriate [distutils dependency removed upstream in rust 1.74]
+Signed-off-by: XuanTie Linux SDK CICD <yocto-linux-sdk@alibaba-inc.com>
+--- a/src/bootstrap/bootstrap.py
++++ b/src/bootstrap/bootstrap.py
+@@ -2,7 +2,6 @@
+ import argparse
+ import contextlib
+ import datetime
+-import distutils.version
+ import hashlib
+ import json
+ import os
+@@ -833,7 +832,7 @@
+             cwd=self.rust_root, verbose=self.verbose)
+ 
+         update_args = ["git", "submodule", "update", "--init", "--recursive", "--depth=1"]
+-        if self.git_version >= distutils.version.LooseVersion("2.11.0"):
++        if self.git_version >= (2, 11, 0):
+             update_args.append("--progress")
+         update_args.append(module)
+         try:
+@@ -872,7 +871,11 @@
+ 
+         # check the existence and version of 'git' command
+         git_version_str = require(['git', '--version']).split()[2].decode(default_encoding)
+-        self.git_version = distutils.version.LooseVersion(git_version_str)
++        # distutils was removed in Python 3.12 (PEP 632); parse the leading
++        # numeric components of the git version into a comparable tuple.
++        git_version_nums = [int(x) for x in re.findall(r"\d+", git_version_str)][:3]
++        git_version_nums += [0] * (3 - len(git_version_nums))
++        self.git_version = tuple(git_version_nums)
+ 
+         start_time = time()
+         print('Updating only changed submodules')

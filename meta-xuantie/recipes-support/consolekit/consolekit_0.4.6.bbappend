@@ -1,1 +1,1 @@
-inherit xuantie-gcc14-compatible
+inherit xuantie-gcc-compatible

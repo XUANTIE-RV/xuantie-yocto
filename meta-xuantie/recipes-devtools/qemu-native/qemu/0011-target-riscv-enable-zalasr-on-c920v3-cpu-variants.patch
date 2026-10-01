@@ -1,0 +1,54 @@
+From c77e93fa0082ebd08a653882fb1c6839844cc9cb Mon Sep 17 00:00:00 2001
+From: Yanan He <yanan.he@linux.alibaba.com>
+Date: Fri, 14 Aug 2026 11:00:02 +0800
+Subject: [PATCH] target/riscv: enable zalasr on c920v3 cpu variants
+
+GCC emits zalasr instructions (lb.aq/sb.rl etc.) when the ISA
+includes zalasr1p0, e.g. xt-c9204fdvkt distros. The zalasr
+translation already exists in this tree (trans_rvzalasr.c.inc)
+but ext_zalasr is not set for any vendor cpu model, so running
+such binaries in linux-user mode dies with Illegal instruction
+(SIGILL), breaking cross builds that run target codegen tools via
+qemu usermode (e.g. mysql 8.4 gen_lex_token/protoc).
+
+Enable ext_zalasr for the c920v3 family used by
+CMAKE_CROSSCOMPILING_EMULATOR.
+Upstream-Status: Pending
+
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+
+---
+ target/riscv/cpu.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/target/riscv/cpu.c b/target/riscv/cpu.c
+index 9e7b8d1..f740368 100644
+--- a/target/riscv/cpu.c
++++ b/target/riscv/cpu.c
+@@ -1002,6 +1002,7 @@ static void rv64_c920v3_cpu_init(Object *obj)
+     env->priv_ver = PRIV_VERSION_1_13_0;
+     cpu->cfg.ext_zimop = true;
+     cpu->cfg.ext_zcmop = true;
++    cpu->cfg.ext_zalasr = true;
+ }
+ 
+ static void rv64_c920v3_cp_cpu_init(Object *obj)
+@@ -1012,6 +1013,7 @@ static void rv64_c920v3_cp_cpu_init(Object *obj)
+     env->priv_ver = PRIV_VERSION_1_13_0;
+     cpu->cfg.ext_zimop = true;
+     cpu->cfg.ext_zcmop = true;
++    cpu->cfg.ext_zalasr = true;
+     cpu->cfg.ext_xtheadcei = true;
+     cpu->cfg.ext_xtheadcef = true;
+     cpu->cfg.ext_xtheadcev = true;
+@@ -1034,6 +1036,7 @@ static void rv64_c920v3_cp_xt_cpu_init(Object *obj)
+     env->priv_ver = PRIV_VERSION_1_13_0;
+     cpu->cfg.ext_zimop = true;
+     cpu->cfg.ext_zcmop = true;
++    cpu->cfg.ext_zalasr = true;
+     cpu->cfg.ext_xtheadcei = true;
+     cpu->cfg.ext_xtheadcef = true;
+     cpu->cfg.ext_xtheadcev = true;
+-- 
+2.34.1
+

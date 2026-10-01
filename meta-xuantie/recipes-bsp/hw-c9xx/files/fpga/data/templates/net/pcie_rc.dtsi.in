@@ -1,0 +1,26 @@
+		${PCIE_LABEL}: ${PCIE_NODE}@${PCIE_UNIT} {
+			compatible = "pci-host-ecam-generic";
+			#address-cells = <0x03>;
+			#size-cells = <0x02>;
+			device_type = "pci";
+			bus-range = <0x00 0xff>;
+			linux,pci-domain = <${PCIE_DOMAIN}>;
+##IF PCIE_NUMA##
+			numa-node-id = <${PCIE_NUMA}>;
+##ENDIF##
+			dma-coherent;
+			status = "${PCIE_STATUS}";
+			reg = <${PCIE_REG}>;
+			ranges = ${PCIE_RANGES};
+			msi-parent = <&imsics_s>;
+##IF PCIE_IOMMU_MAP##
+			${PCIE_IOMMU_MAP}
+##ENDIF##
+##IF PCIE_INTX_MAP##
+			${PCIE_INTX_MAP}
+##ENDIF##
+##IF PCIE_INTX_STATIC##
+			interrupt-map-mask = <0x1800 0x00 0x00 0x07>;
+			#interrupt-cells = <0x01>;
+##ENDIF##
+		};

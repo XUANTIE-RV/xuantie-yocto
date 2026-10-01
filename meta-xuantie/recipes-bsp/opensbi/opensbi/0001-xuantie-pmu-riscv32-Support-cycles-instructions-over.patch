@@ -12,7 +12,7 @@ diff --git a/lib/sbi/sbi_pmu.c b/lib/sbi/sbi_pmu.c
 index e38fb64..c461a91 100644
 --- a/lib/sbi/sbi_pmu.c
 +++ b/lib/sbi/sbi_pmu.c
-@@ -308,7 +308,12 @@ static int pmu_ctr_enable_irq_hw(int ctr_idx)
+@@ -335,7 +335,12 @@ static int pmu_ctr_enable_irq_hw(int ctr_idx)
  		return SBI_EFAIL;
  
  #if __riscv_xlen == 32
@@ -28,4 +28,3 @@ index e38fb64..c461a91 100644
  	if (ctr_idx == 0)
 -- 
 2.25.1
-

@@ -1,7 +1,7 @@
 From 2ee0d5e1693d849157c1aac1f86b737d9f5f408b Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?=E6=81=92=E7=95=85?= <dongkaiyuan.dky@alibaba-inc.com>
 Date: Tue, 19 Nov 2024 07:35:32 +0000
-Subject: [PATCH] xuantie-fpga
+Subject: [PATCH] add xuantie fpga board
 
 ---
  arch/riscv/Kconfig                           |  5 +++
@@ -9,12 +9,12 @@ Subject: [PATCH] xuantie-fpga
  board/xuantie/xuantie_fpga/Kconfig           | 35 ++++++++++++++++++
  board/xuantie/xuantie_fpga/MAINTAINERS       | 10 ++++++
  board/xuantie/xuantie_fpga/Makefile          |  7 ++++
- board/xuantie/xuantie_fpga/xuantie_fpga.c    | 15 ++++++++
- configs/fpga_xuantie_riscv32_smode_defconfig |  2 +-
- configs/fpga_xuantie_riscv64_smode_defconfig |  4 ++-
+ board/xuantie/xuantie_fpga/xuantie_fpga.c    | 29 +++++++++++++++
+ configs/fpga_xuantie_riscv32_smode_defconfig |  3 ++
+ configs/fpga_xuantie_riscv64_smode_defconfig |  3 ++
  doc/board/xuantie/fpga.rst                   | 38 ++++++++++++++++++++
  include/configs/xuantie_fpga.h               | 25 +++++++++++++
- 10 files changed, 140 insertions(+), 3 deletions(-)
+ 10 files changed, 156 insertions(+), 1 deletion(-)
  create mode 100644 board/xuantie/xuantie_fpga/Kconfig
  create mode 100644 board/xuantie/xuantie_fpga/MAINTAINERS
  create mode 100644 board/xuantie/xuantie_fpga/Makefile
@@ -77,7 +77,7 @@ index 0000000000..8df62f5bdb
 +	default "xuantie"
 +
 +config SYS_CPU
-+	default "generic"
++	default "xuantie"
 +
 +config SYS_CONFIG_NAME
 +	default "xuantie_fpga"
@@ -130,10 +130,10 @@ index 0000000000..4ac0c8a38a
 +obj-y += xuantie_fpga.o
 diff --git a/board/xuantie/xuantie_fpga/xuantie_fpga.c b/board/xuantie/xuantie_fpga/xuantie_fpga.c
 new file mode 100644
-index 0000000000..7f9d96a672
+index 0000000000..02b2b8a34b
 --- /dev/null
 +++ b/board/xuantie/xuantie_fpga/xuantie_fpga.c
-@@ -0,0 +1,15 @@
+@@ -0,0 +1,29 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright (c) 2024, Alibaba-inc, Damo
@@ -142,6 +142,10 @@ index 0000000000..7f9d96a672
 + */
 +
 +#include <cpu_func.h>
++#include <asm/global_data.h>
++#include <asm/sections.h>
++
++DECLARE_GLOBAL_DATA_PTR;
 +
 +int board_init(void)
 +{
@@ -149,34 +153,44 @@ index 0000000000..7f9d96a672
 +
 +	return 0;
 +}
++
++void *board_fdt_blob_setup(int *err)
++{
++	*err = 0;
++
++	if (gd->arch.firmware_fdt_addr)
++		return (ulong *)(uintptr_t)gd->arch.firmware_fdt_addr;
++
++	return (ulong *)_end;
++}
 diff --git a/configs/fpga_xuantie_riscv32_smode_defconfig b/configs/fpga_xuantie_riscv32_smode_defconfig
-index f7ea6a9344..5f12eb9118 100644
+index 593ae0481a..18cd1066c6 100644
 --- a/configs/fpga_xuantie_riscv32_smode_defconfig
 +++ b/configs/fpga_xuantie_riscv32_smode_defconfig
-@@ -9,7 +9,7 @@ CONFIG_SYS_NS16550_SERIAL=y
+@@ -9,6 +9,9 @@ CONFIG_SYS_NS16550_SERIAL=y
  CONFIG_SYS_NS16550=y
  CONFIG_DEFAULT_DEVICE_TREE="fpga-xuantie-riscv32"
  CONFIG_SYS_LOAD_ADDR=0x60800000
--CONFIG_TARGET_TH1520_LPI4A=y
++CONFIG_SYS_VENDOR="xuantie"
++CONFIG_SYS_BOARD="xuantie_fpga"
 +CONFIG_TARGET_XUANTIE_FPGA=y
  CONFIG_ARCH_RV32I=y
  CONFIG_RISCV_SMODE=y
- CONFIG_FIT=y
+ CONFIG_RISCV_XUANTIE=y
 diff --git a/configs/fpga_xuantie_riscv64_smode_defconfig b/configs/fpga_xuantie_riscv64_smode_defconfig
-index ceffe180a8..164f3596e8 100644
+index 6b1afa0b1d..7d84fdcf8a 100644
 --- a/configs/fpga_xuantie_riscv64_smode_defconfig
 +++ b/configs/fpga_xuantie_riscv64_smode_defconfig
-@@ -9,7 +9,9 @@ CONFIG_SYS_NS16550_SERIAL=y
+@@ -9,6 +9,9 @@ CONFIG_SYS_NS16550_SERIAL=y
  CONFIG_SYS_NS16550=y
  CONFIG_DEFAULT_DEVICE_TREE="fpga-xuantie-riscv64"
  CONFIG_SYS_LOAD_ADDR=0x60800000
--CONFIG_TARGET_TH1520_LPI4A=y
 +CONFIG_SYS_VENDOR="xuantie"
 +CONFIG_SYS_BOARD="xuantie_fpga"
 +CONFIG_TARGET_XUANTIE_FPGA=y
  CONFIG_ARCH_RV64I=y
  CONFIG_RISCV_SMODE=y
- CONFIG_FIT=y
+ CONFIG_RISCV_XUANTIE=y
 diff --git a/doc/board/xuantie/fpga.rst b/doc/board/xuantie/fpga.rst
 new file mode 100644
 index 0000000000..31709d3086

@@ -1,0 +1,17 @@
+		${FN_NAME}: xtntrace_funnel@${FN_UNIT} {
+			compatible = "xuantie_ntrace,funnel-controller";
+			reg = <${FN_REG} ${FN_SIZE}>;
+			level = <${FN_LEVEL}>;
+			input_port {
+##REPEAT PORTS##
+				port${PORT_IDX} {
+					endpoint = <&${PORT_EP}>;
+				};
+##ENDREPEAT##
+			};
+			output_port {
+				port0 {
+					endpoint = <&${FN_OUT}>;
+				};
+			};
+		};

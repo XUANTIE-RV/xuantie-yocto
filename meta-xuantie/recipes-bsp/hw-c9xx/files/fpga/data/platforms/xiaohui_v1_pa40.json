@@ -1,0 +1,149 @@
+{
+  "_comment": "xiaohui_v1 的 PA40 变体 (rv64, 用于 C9205 等 PA40 器件): 唯一差异是 aplic 的 IMSIC 基址落在 PA40(40 位物理地址)范围 — imsics_m 0xf000000000 / imsics_s 0xf010000000, 对应 xiaohui_v1 PA48 的 0xf00000000000 / 0xf00010000000。plic 块与 v1 一致, 故须配 -intc aplic 才体现差异。默认 DDR = 7G (--memsize 8G 可改)。",
+  "max_cores": 32,
+  "cores_per_cluster": 8,
+  "memory": {
+    "base": "0x60000000", "size": "0x1C0000000", "desc": "DDR memory (7G default; --memsize 8G for 8G)"
+  },
+  "peripherals": {
+    "serial": { "base": "0x1900d000", "size": "0x1000",
+                "irq": 20, "irq_type": 4, "clock_frequency": 36000000,
+                "desc": "DesignWare APB UART" },
+    "gmac":   { "base": "0x18010000", "size": "0x2000",
+                "irq": 21, "irq_type": 4,
+                "desc": "GMAC ethernet controller",
+                "_comment": "GMAC 有三种模式(由 -gmac 选项 / CPU 自动决定):h100 = 默认 HAPS/H100 FPGA 网卡,socinit 用 init.mode_h100 写序列(net_mode=0);h100_v2 = c930/c925 自动切换的变体,socinit 用 init.mode_haps_v2 写序列(net_mode=1);pro = 独立 pro 网卡(-gmac pro),走 gmac_pro dtsi 模板、无此处 init 写序列。",
+                "init": {
+                  "base": "0x1900e000",
+                  "mode_h100": [
+                    { "offset": "0x1c", "value": "0x0" },
+                    { "offset": "0x04", "value": "0x2000" },
+                    { "offset": "0x08", "value": "0x2000" },
+                    { "offset": "0x00", "value": "0x7e" },
+                    { "offset": "0x0c", "value": "0x4" },
+                    { "offset": "0x0c", "value": "0x80000004" }
+                  ],
+                  "mode_haps_v2": [
+                    { "offset": "0x1c", "value": "0x1" },
+                    { "offset": "0x04", "value": "0x2000" },
+                    { "offset": "0x08", "value": "0x2200" },
+                    { "offset": "0x00", "value": "0x7e" },
+                    { "offset": "0x0c", "value": "0x4" },
+                    { "offset": "0x20", "value": "0x1" },
+                    { "offset": "0x0c", "value": "0x80000004" }
+                  ]
+                } }
+  },
+  "hsm": {
+    "_comment": "HSM/power-management config: hsm.pmc drives the DTS pmc node (-pmc) and the socinit IPMC writes; hsm.pcu.boot_release drives the gdbinit reset/release sequence. xiaohui_v1_pa40 has no hsm.pcu (no PCU hardware).",
+    "pmc": {
+      "base": "0x26900000", "size": "0x00010000", "desc": "Power management controller",
+      "ipmc": {
+        "base_addr":     "0x26900100",
+        "release_stride": "0x1000",
+        "release_offset": "0x0",
+        "clock_offset":   "0x4",
+        "release_value":  "0x18",
+        "clock_value":    "0x11",
+        "n_cores":        4
+      }
+    },
+    "pcu": {
+      "boot_release": {
+        "_comment": "Boot hart-release config (v1 = PMC-v1-style hart release, used by c906/c907/c908/c920). reset_addrs = per-hart reset vector regs (set to $zsb_addr). Global release reg (release_addr) defaults to 0xff (<=8 cores) and widens to release_layout (>8 cores). v1 has no per-hart release/config writes (no release_addrs). NOTE: boot_release v1/v2 names the hart-release generation, distinct from both the -pmc DTS node (hsm.pmc) and the PCU HSM node version (hsm.pcu.version).",
+        "reset_addrs":    ["0x18030010", "0x18030018", "0x18030020", "0x18030028",
+                           "0x18030030", "0x18030038", "0x18030040", "0x18030048"],
+        "release_addr":   "0x18030000",
+        "release_default": "0xff",
+        "release_layout": "0xffffffff"
+      }
+    }
+  },
+  "intc": {
+    "_comment": "v1 supports both PLIC (default) and APLIC (--intc aplic override), each in its own sub-block. The aplic.mtimer node is emitted only on CPUs lacking Sstc (extension-driven); Sstc CPUs use stimecmp and omit it.",
+    "plic": {
+      "clint":      { "base": "0x0c000000", "size": "0x04000000",
+                      "has_64bit_mmio": false, "desc": "T-Head c900 CLINT" },
+      "sswi":       { "base": "0x0c00c000", "size": "0x00010000",
+                      "desc": "ACLINT SSWI" },
+      "controller": { "base": "0x08000000", "size": "0x04000000",
+                      "ndev": "80", "max_priority": "7",
+                      "desc": "T-Head c900 PLIC" }
+    },
+    "aplic": {
+      "aplic_s":  { "base": "0x08004000", "size": "0x4000",
+                    "desc": "APLIC S-mode controller" },
+      "aplic_m":  { "base": "0x08000000", "size": "0x4000",
+                    "num_sources": "0x60", "delegate_range": "0x01 0x60",
+                    "desc": "APLIC M-mode controller" },
+      "imsics_m": { "base": "0xf000000000", "size_per_core": "0x1000",
+                    "desc": "IMSIC M-mode, base 属 PA40 地址范围 (size scales with core count)" },
+      "imsics_s": { "base": "0xf010000000", "size_per_core": "0x40000",
+                    "num_ids": "0xff", "guest_index_bits": "6",
+                    "desc": "IMSIC S-mode, base 属 PA40 地址范围 (size scales with core count)" },
+      "mtimer":   { "base": "0x26800000", "mtimecmp_addr": "0x26807ff8",
+                    "mtime_size": "0x7ff8",
+                    "desc": "ACLINT mtimer (APLIC path on non-Sstc CPUs)" }
+    }
+  },
+  "link_ip": {
+    "_comment": "Interconnect/link IP by generation. ncore=NCore coherence bus (--bus ncore); xl200=XuanTie Link 200 (--bus stlk/stlk2); xl100 reserved. xl300 (--bus stlk3) is v2-only and intentionally absent here.",
+    "ncore": {
+      "_comment": "Snoop/DVM regs derived as cluster_base + i*snoop_stride + snoop_offset (snoop) and cluster_base + dvm_offset (dvm). cluster0 has 4 snoop regs, cluster1 has 1.",
+      "cluster0_base":        "0x26880000",
+      "cluster1_base":        "0x26b80000",
+      "snoop_offset":         "0x40",
+      "snoop_stride":         "0x1000",
+      "cluster0_snoop_count": 4,
+      "cluster1_snoop_count": 1,
+      "dvm_offset":           "0x7f040",
+      "enable_value":         "0x3"
+    },
+    "xl100": {},
+    "xl200": {
+      "stl3_base":       "0xfffffff000",
+      "stl3_base_stlk2": "0xfffffffff000",
+      "pmu": [
+        { "index": 0, "base": "0xfffffffff000", "size": "0x1000", "irq": 22, "irq_type": 4, "desc": "XL200 Link PMU" }
+      ]
+    }
+  },
+  "chosen": {
+    "bootargs": "console=ttyS0,115200 norandmaps no_check_unaligned_access earlycon=sbi",
+    "_comment_initrd": "initrd.end is a placeholder (0x0); the boot script backfills the real end address after it computes the rootfs size.",
+    "initrd": { "start": "0x64000000", "end": "0x0" },
+    "stdout_path":  "/soc/serial@1900D000:115200"
+  },
+  "images_layout": {
+    "_comment": "Boot image load addresses consumed by the gdb scripts (zsb.gdbinit + zsb_socinit.gdbinit).",
+    "kernel_5_10": {
+      "opensbi_addr":      "0x60000000",
+      "uboot_addr":        "0x60400000",
+      "vmlinux_addr":      { "no-uboot": "0x60400000", "u-boot": "0x60800000" },
+      "dtb_addr":          "0x63f00000",
+      "zsb_addr":          "0x63ff8000",
+      "flag_addr":         "0x603FFF00",
+      "rootfs_addr":       "0x64000000",
+      "plic_delegate_addr": "0x081ffffc"
+    },
+    "kernel_6_6": {
+      "opensbi_addr":      "0x60000000",
+      "uboot_addr":        "0x60400000",
+      "vmlinux_addr":      { "no-uboot": "0x60400000", "u-boot": "0x60800000" },
+      "dtb_addr":          "0x60300000",
+      "zsb_addr":          "0x603F8000",
+      "flag_addr":         "0x603FFF00",
+      "rootfs_addr":       "0x64000000"
+    },
+    "optee": {
+      "_comment": "OP-TEE boot: kernel/rootfs in the 0x8xxxxxxx window (matches optee DTS linux,initrd-start=0x84000000); bl31 secure monitor + tee-os secure.",
+      "vmlinux_addr":      "0x80200000",
+      "rootfs_addr":       "0x84000000",
+      "zsb_addr":          "0x603F8000",
+      "dtb_addr":          "0x60300000",
+      "bl31_addr":         "0x60000000",
+      "teeos_addr":        "0xef000000",
+      "flag_addr":         "0x603FFF00"
+    }
+  }
+}

@@ -1,0 +1,39 @@
+From: yanan.he <yanan.he@linux.alibaba.com>
+Subject: [PATCH] libbtrfsutil/python: replace private _PyObject_LookupSpecial
+
+_Py_IDENTIFIER and _PyObject_LookupSpecial are private CPython APIs
+removed in Python 3.13, so the btrfsutil extension fails to compile:
+
+  module.c:70:24: error: implicit declaration of function
+  '_PyObject_LookupSpecial'
+
+Use the public equivalents: PyObject_GetAttrString(o, "__fspath__") to
+look up the bound method and PyObject_CallNoArgs (>= 3.9) to invoke it.
+Upstream master rewrote path_converter around PyUnicode_FSConverter;
+this is the minimal backport for 5.19.1.
+
+Upstream-Status: Inappropriate [upstream rewrote the function in 6.x]
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ libbtrfsutil/python/module.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+--- a/libbtrfsutil/python/module.c	2026-07-31 11:51:09.881418984 +0800
++++ b/libbtrfsutil/python/module.c	2026-07-31 11:51:09.897419118 +0800
+@@ -64,14 +64,13 @@
+ 	is_unicode = PyUnicode_Check(o);
+ 
+ 	if (!is_index && !is_bytes && !is_unicode) {
+-		_Py_IDENTIFIER(__fspath__);
+ 		PyObject *func;
+ 
+-		func = _PyObject_LookupSpecial(o, &PyId___fspath__);
++		func = PyObject_GetAttrString(o, "__fspath__");
+ 		if (func == NULL)
+ 			goto err_format;
+ 		Py_DECREF(o);
+-		o = PyObject_CallFunctionObjArgs(func, NULL);
++		o = PyObject_CallNoArgs(func);
+ 		Py_DECREF(func);
+ 		if (o == NULL)
+ 			return 0;

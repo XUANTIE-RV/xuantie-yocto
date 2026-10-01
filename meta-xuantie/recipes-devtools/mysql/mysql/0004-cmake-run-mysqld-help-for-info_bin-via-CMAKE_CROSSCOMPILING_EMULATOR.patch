@@ -1,0 +1,58 @@
+From 8d4b2c0e3f5a7b9d1e6c8a0b2d4f6a8c0e2b4d6f Mon Sep 17 00:00:00 2001
+From: yanan.he <yanan.he@linux.alibaba.com>
+Date: Thu, 06 Aug 2026 10:30:00 +0800
+Subject: [PATCH] cmake: run mysqld for INFO_BIN through emulator wrapper
+
+info_bin.cmake is executed in "cmake -P" script mode to generate
+Docs/INFO_BIN. Script mode does not load the toolchain file, so
+CMAKE_CROSSCOMPILING_EMULATOR is unknown there and CREATE_INFO_BIN
+executes the freshly linked target mysqld directly on the build host.
+On cross builds this fails:
+
+  mysqld --no-defaults --help failed:
+  .../runtime_output_directory/mysqld:
+  1: Syntax error: word unexpected (expecting ")")
+
+Passing the emulator as a -D argument is not an option: the list value
+('qemu-riscv64;-L;<sysroot>') would land unescaped on the /bin/sh
+command line and be split at ';'.
+
+Instead, when cross compiling with an emulator, generate a tiny wrapper
+script that re-enters the emulator for mysqld, and point
+MYSQLD_EXECUTABLE at the wrapper. Native builds keep using the mysqld
+target file directly.
+
+Upstream-Status: Inappropriate [cross compilation specific]
+
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ CMakeLists.txt | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1111111..2222222 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2541,6 +2541,20 @@ UNSET(MYSQLD_EXECUTABLE_FOR_INFO_BIN)
+ IF(HAVE_BUILD_ID_SUPPORT AND NOT WITHOUT_SERVER)
+   SET(MYSQLD_EXECUTABLE_FOR_INFO_BIN
+     "-DMYSQLD_EXECUTABLE=$<TARGET_FILE:mysqld>")
++  # Cross build with an emulator: info_bin.cmake runs in "cmake -P"
++  # script mode on the build host, where the target mysqld cannot run
++  # directly. The emulator list cannot be passed as a -D argument (';'
++  # would break the shell command line), so route mysqld through a
++  # wrapper script that re-enters the emulator.
++  IF(CMAKE_CROSSCOMPILING AND CMAKE_CROSSCOMPILING_EMULATOR)
++    STRING(REPLACE ";" " " INFO_BIN_EMULATOR "${CMAKE_CROSSCOMPILING_EMULATOR}")
++    FILE(GENERATE
++      OUTPUT "${CMAKE_BINARY_DIR}/mysqld_info_bin_wrapper.sh"
++      CONTENT "#!/bin/sh\nexec ${INFO_BIN_EMULATOR} $<TARGET_FILE:mysqld> \"$@\"\n"
++      FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
++    SET(MYSQLD_EXECUTABLE_FOR_INFO_BIN
++      "-DMYSQLD_EXECUTABLE=${CMAKE_BINARY_DIR}/mysqld_info_bin_wrapper.sh")
++  ENDIF()
+ ENDIF()
+ 
+ # Build flags: This must be postponed to the make phase.
+-- 
+2.43.0

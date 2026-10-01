@@ -1,0 +1,39 @@
+From 903bb882a44eb5567f8b1fc7f7c4857c2f03579d Mon Sep 17 00:00:00 2001
+From: Chen Qi <Qi.Chen@windriver.com>
+Date: Wed, 13 Mar 2024 03:41:47 -0700
+Subject: [PATCH] delete install-layout=deb
+
+Upstream-Status: Pending
+
+Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+---
+ cmake/modules/Distutils.cmake | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/cmake/modules/Distutils.cmake b/cmake/modules/Distutils.cmake
+index daaae4ba6..e606e3890 100644
+--- a/cmake/modules/Distutils.cmake
++++ b/cmake/modules/Distutils.cmake
+@@ -30,9 +30,6 @@ function(distutils_install_module name)
+   install(CODE "
+     set(options --prefix=${CMAKE_INSTALL_PREFIX})
+     if(DEFINED ENV{DESTDIR})
+-      if(EXISTS /etc/debian_version)
+-        list(APPEND options --install-layout=deb)
+-      endif()
+       list(APPEND options
+         --root=\$ENV{DESTDIR}
+         --single-version-externally-managed)
+@@ -136,9 +133,6 @@ function(distutils_install_cython_module name)
+ 
+     set(options --prefix=${CMAKE_INSTALL_PREFIX})
+     if(DEFINED ENV{DESTDIR})
+-      if(EXISTS /etc/debian_version)
+-        list(APPEND options --install-layout=deb)
+-      endif()
+       list(APPEND options --root=\$ENV{DESTDIR})
+     else()
+       list(APPEND options --root=/)
+-- 
+2.42.0
+

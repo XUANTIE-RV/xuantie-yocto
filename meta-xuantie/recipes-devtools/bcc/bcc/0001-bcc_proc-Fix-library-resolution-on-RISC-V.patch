@@ -1,0 +1,66 @@
+From b4524400762e9967b8af9e4d26fd0baf6236966d Mon Sep 17 00:00:00 2001
+From: "yanan.he" <yanan.he@alibaba-inc.com>
+Date: Mon, 24 Aug 2026 09:25:27 +0800
+Subject: [PATCH] Fix library resolution on RISC-V
+
+match_so_flags() has no case for the RISC-V float-ABI bits
+(FLAG_RISCV_FLOAT_ABI_SOFT/DOUBLE, glibc ldconfig.h), so every
+ld.so.cache entry on RISC-V falls through to the 32-bit default and
+bcc_procutils_which_so() returns NULL. Tools such as argdist then fall
+back to BPF.find_exe(), which crashes on Python 3 with
+"Can't mix strings and bytes in path components" because
+os.path.join(path.encode(), bin_path) mixes bytes PATH entries with a
+str binary name.
+
+Add RISC-V cases to match_so_flags() and make find_exe() encode the
+PATH entry only when the binary name is bytes.
+---
+ src/cc/bcc_proc.c          | 9 +++++++++
+ src/python/bcc/__init__.py | 4 +++-
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/src/cc/bcc_proc.c b/src/cc/bcc_proc.c
+index 89de4fd8..b9564dd6 100644
+--- a/src/cc/bcc_proc.c
++++ b/src/cc/bcc_proc.c
+@@ -447,6 +447,10 @@ static int load_ld_cache(const char *cache_path) {
+ #define ABI_S390_LIB64 0x0400
+ #define ABI_POWERPC_LIB64 0x0500
+ #define ABI_AARCH64_LIB64 0x0a00
++/* glibc ldconfig.h: FLAG_RISCV_FLOAT_ABI_SOFT/DOUBLE. Every RISC-V
++ * ld.so.cache entry carries one of these bits (rv32 and rv64 alike). */
++#define ABI_RISCV_FLOAT_ABI_SOFT 0x0f00
++#define ABI_RISCV_FLOAT_ABI_DOUBLE 0x1000
+ 
+ static bool match_so_flags(int flags) {
+   if ((flags & FLAG_TYPE_MASK) != TYPE_ELF_LIBC6)
+@@ -460,6 +464,11 @@ static bool match_so_flags(int flags) {
+   case ABI_POWERPC_LIB64:
+   case ABI_AARCH64_LIB64:
+     return (sizeof(void *) == 8);
++  case ABI_RISCV_FLOAT_ABI_SOFT:
++  case ABI_RISCV_FLOAT_ABI_DOUBLE:
++    /* The ldconfig cache of a RISC-V rootfs only contains libraries
++     * matching the installed bitness, so accept them as-is. */
++    return true;
+   }
+ 
+   return sizeof(void *) == 4;
+diff --git a/src/python/bcc/__init__.py b/src/python/bcc/__init__.py
+index cc59b229..7dfee77f 100644
+--- a/src/python/bcc/__init__.py
++++ b/src/python/bcc/__init__.py
+@@ -403,7 +403,9 @@ class BPF(object):
+         else:
+             for path in os.environ["PATH"].split(os.pathsep):
+                 path = path.strip('"')
+-                exe_file = os.path.join(path.encode(), bin_path)
++                if isinstance(bin_path, bytes):
++                    path = path.encode()
++                exe_file = os.path.join(path, bin_path)
+                 if is_exe(exe_file):
+                     return exe_file
+         return None
+-- 
+2.34.1
+

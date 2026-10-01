@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: XuanTie Linux SDK CI <noreply@linux.alibaba.com>
+Date: Sat, 2 Aug 2026 00:00:00 +0800
+Subject: [PATCH] six: add find_spec to vendored six importer for Python 3.13
+
+poetry-core 1.0.8 prepends its bundled _vendor directory to sys.path[0]
+(poetry/core/__init__.py), so every bare `import six` resolves to the
+vendored six 1.15.0 rather than the system python3-six 1.16.0. That
+1.15.0 ships a _SixMetaPathImporter that only implements the legacy
+find_module()/load_module() finder protocol and has no find_spec().
+
+Since CPython 3.12 the import system no longer falls back to a meta path
+finder's legacy find_module() (importlib._bootstrap._find_spec only calls
+finder.find_spec and skips finders lacking it). The six.moves virtual
+namespace therefore never gets registered and any vendored consumer that
+does `from six.moves import ...` (poetry.core itself, the vendored
+pyrsistent and jsonschema, etc.) fails on python3 3.13 with:
+
+    ModuleNotFoundError: No module named 'six.moves'
+
+Backport the fix upstream six shipped in 1.16.0: give the importer
+find_spec()/create_module()/exec_module() (importlib Loader protocol) and
+the spec_from_loader import. This restores the six.moves namespace for all
+consumers at once, instead of rewriting each call site. Behaviour on
+Python <= 3.11 is unchanged (spec_from_loader is imported defensively).
+
+Upstream-Status: Backport [https://github.com/benjaminp/six commit 6c8dcc1 ; vendored copy]
+---
+--- a/poetry/core/_vendor/six.py
++++ b/poetry/core/_vendor/six.py
+@@ -31,6 +31,11 @@
+ __author__ = "Benjamin Peterson <benjamin@python.org>"
+ __version__ = "1.15.0"
+ 
++try:
++    from importlib.util import spec_from_loader
++except ImportError:
++    spec_from_loader = None
++
+ 
+ # Useful for very coarse version differentiation.
+ PY2 = sys.version_info[0] == 2
+@@ -186,6 +191,11 @@
+             return self
+         return None
+ 
++    def find_spec(self, fullname, path, target=None):
++        if fullname in self.known_modules:
++            return spec_from_loader(fullname, self)
++        return None
++
+     def __get_module(self, fullname):
+         try:
+             return self.known_modules[fullname]
+@@ -223,6 +233,12 @@
+         return None
+     get_source = get_code  # same as get_code
+ 
++    def create_module(self, spec):
++        return self.load_module(spec.name)
++
++    def exec_module(self, module):
++        pass
++
+ _importer = _SixMetaPathImporter(__name__)
+ 
+ 

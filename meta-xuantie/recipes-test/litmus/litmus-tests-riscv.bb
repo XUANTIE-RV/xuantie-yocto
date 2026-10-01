@@ -14,7 +14,7 @@ SRCREV = "1fe2afdcc121566fda2c97d324c26c58a33ea56d"
 
 S = "${WORKDIR}/git"
 
-inherit xuantie-clang18-compatible
+inherit xuantie-clang-compatible
 
 DEPENDS += "bc-native herdtools7-native"
 

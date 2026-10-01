@@ -7,7 +7,7 @@ LICENSE = "GPL-2.0-only & LGPL-2.1-only"
 SECTION = "apps"
 
 inherit autotools-brokensep ptest
-inherit xuantie-gcc14-compatible
+inherit xuantie-gcc-compatible
 LIC_FILES_CHKSUM = "file://README.md;beginline=19;endline=32;md5=9f34c3af4ed6f3f5df0da5f3c0835a43"
 
 SRCREV = "10285f1a1bad49306839b2c463936460b604e3ea"

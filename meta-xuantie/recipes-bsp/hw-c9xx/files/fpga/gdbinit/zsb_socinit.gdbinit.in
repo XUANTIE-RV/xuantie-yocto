@@ -1,0 +1,88 @@
+# Set gdb environment
+set height 0
+set confirm off
+
+
+# GMAC configuration
+set $net_mode = ${NET_MODE}
+if ($net_mode == 0)
+##REPEAT GMAC_H100_WRITES##
+	set *(${GMAC_WR_ADDR})=${GMAC_WR_VAL}
+##ENDREPEAT##
+end
+if ($net_mode == 1)
+##REPEAT GMAC_C930_WRITES##
+	set *(${GMAC_WR_ADDR})=${GMAC_WR_VAL}
+##ENDREPEAT##
+end
+
+set $link_mode = ${LINK_MODE}
+set $pmc_init = ${PMC_INIT}
+
+if ($link_mode == 1)
+	printf "Link Mode : %d,  Use NCore\n", $link_mode
+	# Old Ncore configuration
+	#   [0x0] close all; [0x3] enable snoop to cluster0 and cluster1
+##REPEAT NCORE_C0_SNOOP##
+	set *${NCORE_SNOOP_ADDR} = ${NCORE_ENABLE}
+##ENDREPEAT##
+	#   [0x0] disable;   [0x3] enable DVM req to cluster0 and cluster1
+	set *${NCORE_C0_DVM} = ${NCORE_ENABLE}
+
+	# New ncore configuration
+##REPEAT NCORE_C1_SNOOP##
+	set *${NCORE_SNOOP_ADDR} = ${NCORE_ENABLE}
+##ENDREPEAT##
+	set *${NCORE_C1_DVM} = ${NCORE_ENABLE}
+end
+
+if ($link_mode == 2)
+	printf "Link Mode : %d,  Use Xuantie Link\n", $link_mode
+	# Prepare Starlink v3
+	set $stl3_base = ${STL3_BASE}
+	set $l3prxcr = $stl3_base + 0xc0
+	set $l3smpr = $stl3_base + 0x810
+	# Enable Cluster 0
+	set *($l3prxcr) = 0x01
+	set *($l3smpr) = 0x1
+	# Enable Cluster 1
+	set *($l3prxcr) = 0x11
+	set *($l3smpr) = 0x1
+	# Enable Cluster 2
+	set *($l3prxcr) = 0x21
+	set *($l3smpr) = 0x1
+	# Enable Cluster 3
+	set *($l3prxcr) = 0x31
+	set *($l3smpr) = 0x1
+	# Disable proxy
+	set *($l3prxcr) = 0x0
+	## Close L3
+	#set $l3decr = $stl3_base + 0x300
+	#set $l3desr = $stl3_base + 0x308
+	#set *($l3decr) = 0x0
+	#set $cur_l3state = *($l3desr)
+	#while($cur_l3state !=0)
+	#	$cur_l3state = *($l3desr)
+	#
+end
+
+printf "PMC init : %d\n", $pmc_init
+if ($pmc_init == 1)
+	# IPMC configuration(If no SBA)s
+##REPEAT IPMC_CORES##
+
+	## Release Core${IPMC_CORE_ID}
+	set *${IPMC_RELEASE_ADDR} = ${IPMC_RELEASE_VAL}
+##IF HAS_CLOCK##
+	set *${IPMC_CLOCK_ADDR} = ${IPMC_CLOCK_VAL}
+##ENDIF##
+##ENDREPEAT##
+end
+##REPEAT PCU_RELEASE##
+
+	## PCU Release Core${IPMC_CORE_ID} (platforms without pmc/ipmc, e.g. NGF)
+	set *${IPMC_RELEASE_ADDR} = ${IPMC_RELEASE_VAL}
+##ENDREPEAT##
+
+shell $(sleep 2)
+echo Finished SOCINIT\n\n

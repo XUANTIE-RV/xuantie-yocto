@@ -37,23 +37,30 @@ python add_ml_symlink:tcmode-external () {
     import pathlib
 
     def get_links(p):
-        return (c for c in p.iterdir() if c.is_symlink())
+        try:
+            return (c for c in p.iterdir() if c.is_symlink())
+        except NotADirectoryError:
+            return []
 
     if not d.getVar('EXTERNAL_TOOLCHAIN'):
         return
 
     libroot = d.getVar('EXTERNAL_TOOLCHAIN_LIBROOT')
     if libroot != 'UNKNOWN':
-        sysroot = pathlib.Path(d.getVar('EXTERNAL_TOOLCHAIN_SYSROOT')).resolve()
-        libroot = pathlib.Path(libroot)
-        for child in get_links(libroot):
-            link_dest = child.resolve(strict=True)
-            for other_child in get_links(link_dest):
-                if other_child.resolve() == libroot.resolve():
-                    other = other_child.parent.resolve() / other_child.name
-                    relpath = other.relative_to(sysroot)
-                    d.appendVar('SYSROOT_DIRS', ' /' + str(relpath.parent))
-                    d.appendVar('FILES:${PN}-dev', ' /' + str(relpath))
+        try:
+            sysroot = pathlib.Path(d.getVar('EXTERNAL_TOOLCHAIN_SYSROOT')).resolve()
+            libroot = pathlib.Path(libroot)
+            for child in get_links(libroot):
+                link_dest = child.resolve(strict=True)
+                for other_child in get_links(link_dest):
+                    if other_child.resolve() == libroot.resolve():
+                        other = other_child.parent.resolve() / other_child.name
+                        relpath = other.relative_to(sysroot)
+                        d.appendVar('SYSROOT_DIRS', ' /' + str(relpath.parent))
+                        d.appendVar('FILES:${PN}-dev', ' /' + str(relpath))
+        except NotADirectoryError:
+            # Skip if libroot is not a directory (e.g., clang toolchain with different layout)
+            pass
 }
 add_ml_symlink[eventmask] = "bb.event.RecipePreFinalise"
 addhandler add_ml_symlink

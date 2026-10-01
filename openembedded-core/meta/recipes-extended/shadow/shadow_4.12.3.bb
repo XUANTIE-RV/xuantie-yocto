@@ -5,7 +5,7 @@ require shadow.inc
 BUILD_LDFLAGS:append:class-target = " ${@bb.utils.contains('DISTRO_FEATURES', 'pam', '-lcrypt', '', d)}"
 
 BBCLASSEXTEND = "native nativesdk"
-inherit xuantie-gcc14-compatible
+inherit xuantie-gcc-compatible
 # Severity is low and marked as closed and won't fix.
 # https://bugzilla.redhat.com/show_bug.cgi?id=884658
 CVE_CHECK_IGNORE += "CVE-2013-4235"

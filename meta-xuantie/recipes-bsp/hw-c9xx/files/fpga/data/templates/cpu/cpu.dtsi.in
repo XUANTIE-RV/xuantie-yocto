@@ -1,0 +1,46 @@
+
+	cpus: cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		timebase-frequency = <${TIMEBASE}>;
+##REPEAT CORES##
+		cpu@${CORE_ID} {
+			device_type = "cpu";
+			reg = <${CORE_ID}>;
+			status = "${CORE_STATUS}";
+			compatible = "riscv";
+			riscv,isa = "${ISA}";
+			riscv,isa-base = "${ISA_BASE}";
+			riscv,isa-extensions = ${ISA_EXT};
+			mmu-type = "${MMU_TYPE}";
+			riscv,cbom-block-size = <0x40>;
+			riscv,cboz-block-size = <0x40>;
+			riscv,cbop-block-size = <0x40>;
+##IF HAS_L3##
+			i-cache-size = <0x10000>;
+			i-cache-sets = <0x100>;
+			i-cache-block-size = <0x40>;
+			d-cache-size = <0x10000>;
+			d-cache-sets = <0x100>;
+			d-cache-block-size = <0x40>;
+			next-level-cache = <&${CORE_L3}>;
+##ENDIF##
+			cpu${CORE_ID}_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+##ENDREPEAT##
+	};
+##REPEAT L3CACHE##
+
+	${L3_LABEL}: ${L3_NODE} {
+		compatible = "cache";
+		cache-level = <${L3_LEVEL}>;
+		cache-unified;
+		cache-block-size = <${L3_BLOCK_SIZE}>;
+		cache-sets = <${L3_SETS}>;
+		cache-size = <${L3_SIZE}>;
+	};
+##ENDREPEAT##

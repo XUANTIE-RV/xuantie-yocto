@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdk.example.com/schemas/ntrace-schema.json",
+  "title": "XuanTie FPGA N-Trace per-version constant schema",
+  "description": "描述 data/ntrace/{version}.json 的结构(render_ntrace_dts.py 消费)。硬件常量按 trace 版本分文件;每个文件用 topology_model 声明其拓扑算法,render_ntrace_dts 按此字段经 TOPOLOGY_MODELS 注册表分派。本 schema 的 per-model required-key 也按 topology_model 分组(非版本字符串),故复用已有 model 的新版本无需改本 schema。jsonschema 可选:装了则强校验,未装则跳过。",
+  "type": "object",
+  "required": ["topology_model", "dmi_apb_base",
+               "node_size", "reserved_mem_start", "reserved_mem_size",
+               "default_sink_type"],
+  "additionalProperties": false,
+
+  "$defs": {
+    "hexOrDec": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "string", "pattern": "^(0x[0-9a-fA-F]+|[0-9]+)$" }
+      ]
+    },
+    "sinkOffsetMap": {
+      "type": "object",
+      "required": ["smem", "sram", "pib"],
+      "additionalProperties": false,
+      "properties": {
+        "smem": { "$ref": "#/$defs/hexOrDec" },
+        "sram": { "$ref": "#/$defs/hexOrDec" },
+        "pib":  { "$ref": "#/$defs/hexOrDec" }
+      }
+    }
+  },
+
+  "properties": {
+    "_comment": {
+      "description": "人类可读的版本说明(拓扑差异与适用 CPU),不被生成器消费。string 或 string[]。",
+      "type": ["string", "array"],
+      "items": { "type": "string" }
+    },
+    "topology_model": { "enum": ["single-l2-funnel", "chained-dmi"] },
+    "dmi_apb_base":  { "$ref": "#/$defs/hexOrDec" },
+    "node_size":     { "$ref": "#/$defs/hexOrDec" },
+    "reserved_mem_start": { "$ref": "#/$defs/hexOrDec" },
+    "reserved_mem_size":  { "$ref": "#/$defs/hexOrDec" },
+    "default_sink_type": { "enum": ["smem", "sram", "pib"] },
+    "sink_offset": { "$ref": "#/$defs/sinkOffsetMap" },
+
+    "cluster_stride":  { "$ref": "#/$defs/hexOrDec" },
+    "encoder_offset":  { "$ref": "#/$defs/hexOrDec" },
+    "funnel1_offset":  { "$ref": "#/$defs/hexOrDec" },
+    "funnel2_offset":  { "$ref": "#/$defs/hexOrDec" },
+
+    "dmi_scale":              { "$ref": "#/$defs/hexOrDec" },
+    "cluster_dmi_stride":     { "$ref": "#/$defs/hexOrDec" },
+    "funnel2_dmi_offset":     { "$ref": "#/$defs/hexOrDec" },
+    "funnel1_dmi_base":       { "$ref": "#/$defs/hexOrDec" },
+    "funnel1_dmi_core_stride":{ "$ref": "#/$defs/hexOrDec" },
+    "encoder_dmi_base":       { "$ref": "#/$defs/hexOrDec" },
+    "encoder_dmi_core_stride":{ "$ref": "#/$defs/hexOrDec" },
+    "sink_dmi_offset":        { "$ref": "#/$defs/sinkOffsetMap" },
+    "sink_sba_dmi_offset":    { "$ref": "#/$defs/hexOrDec" },
+    "sink_partial_dmi_base":  { "$ref": "#/$defs/hexOrDec" }
+  },
+
+  "allOf": [
+    {
+      "if": { "properties": { "topology_model": { "const": "single-l2-funnel" } } },
+      "then": {
+        "required": ["sink_offset", "cluster_stride", "encoder_offset",
+                     "funnel1_offset", "funnel2_offset"]
+      }
+    },
+    {
+      "if": { "properties": { "topology_model": { "const": "chained-dmi" } } },
+      "then": {
+        "required": ["dmi_scale", "cluster_dmi_stride", "funnel2_dmi_offset",
+                     "funnel1_dmi_base", "funnel1_dmi_core_stride",
+                     "encoder_dmi_base", "encoder_dmi_core_stride",
+                     "sink_dmi_offset", "sink_sba_dmi_offset",
+                     "sink_partial_dmi_base"]
+      }
+    }
+  ]
+}

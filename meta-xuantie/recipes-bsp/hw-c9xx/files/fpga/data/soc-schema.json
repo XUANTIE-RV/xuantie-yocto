@@ -1,0 +1,1686 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdk.example.com/schemas/soc-schema.json",
+  "title": "XuanTie FPGA DTS generator platform description schema",
+  "description": "描述 dts/platforms/*.json 的实际结构(generate_dts.py / render_intc_dtsi.py 消费的格式)。generate_dts 加载平台 JSON 时用本 schema 做运行时校验(jsonschema 可选依赖:装了则强校验,未装则跳过)。",
+  "type": "object",
+  "required": [
+    "max_cores",
+    "cores_per_cluster",
+    "memory",
+    "peripherals",
+    "intc",
+    "link_ip",
+    "chosen",
+    "images_layout"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "hexOrDec": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "string",
+          "pattern": "^(0x[0-9a-fA-F]+|[0-9]+)$"
+        }
+      ]
+    },
+    "hexPair": {
+      "type": "string",
+      "pattern": "^(0x[0-9a-fA-F]+|[0-9]+) +(0x[0-9a-fA-F]+|[0-9]+)$",
+      "description": "空格分隔的两个数值,如 delegate_range \"0x01 0x60\""
+    },
+    "pcie_rc": {
+      "type": "object",
+      "description": "一个 PCIe RC 端口 (ECAM): base/size 定 reg, domain 定 linux,pci-domain, ranges 为逐字透传的 ranges 属性值; numa_node_id 定 numa-node-id (模板声明该属性时必填)。",
+      "required": [
+        "base",
+        "size",
+        "domain",
+        "ranges"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ranges": {
+          "type": "string"
+        },
+        "node_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "DT 节点名 (缺省 pcie; 如 pci)"
+        },
+        "numa_node_id": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "mmioNode": {
+      "type": "object",
+      "description": "一个 MMIO 控制器节点的平台声明: base/size 定 unit-address 与 reg, label 为 DTS 节点标签 (节点定义与 phandle 引用共用同一来源); num_sources/delegate_range 为 APLIC 节点的可选声明。",
+      "required": [
+        "base",
+        "size",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+        },
+        "num_sources": {
+          "$ref": "#/$defs/hexOrDec"
+        },
+        "delegate_range": {
+          "$ref": "#/$defs/hexPair"
+        }
+      }
+    },
+    "intxPort": {
+      "type": "object",
+      "description": "一个 PCIe RP 的 INTx APLIC 声明: id 为 -nic pcie<rc>-rp<id> 的端口号, device 为该 RP 在 RC 根总线上的 BDF device 号 (interrupt-map 匹配值 = device << 11), m/s 为 M/S 域 APLIC 的 MMIO 与标签; rc 标注该端口归属的 PCIe 主机 (缺省 rc1, 即平台 net.pcie.enable 指向的主机)。",
+      "required": [
+        "id",
+        "device",
+        "m",
+        "s"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rc": {
+          "enum": [
+            "rc0",
+            "rc1"
+          ],
+          "description": "端口归属的 PCIe 主机；缺省 rc1。map_keep 出行与 -nic pcie<rc>-rp<n> 选择都按该归属判定。"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "device": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "m": {
+          "$ref": "#/$defs/mmioNode"
+        },
+        "s": {
+          "$ref": "#/$defs/mmioNode"
+        }
+      }
+    },
+    "iommuInstance": {
+      "type": "object",
+      "description": "一个 IOMMU 实例 (如 cu1): base/size/label 定节点, numa_node_id 定 numa-node-id, rc 定其服务的 PCIe RC (iommu-map 挂到该 RC), rid_base/rid_count 为该 RC 的 requester-ID 翻译窗口 (非 MMIO)。",
+      "required": [
+        "label",
+        "base",
+        "size",
+        "numa_node_id",
+        "rc",
+        "rid_base",
+        "rid_count",
+        "interrupts",
+        "cu_top"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+        },
+        "base": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "numa_node_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rc": {
+          "enum": [
+            "rc0",
+            "rc1"
+          ]
+        },
+        "cu_top": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "description": "所属 CU-top APLIC 对的名字 (net.iommu.cu_tops 的 key, 同 die 实例共享)"
+        },
+        "interrupts": {
+          "type": "string",
+          "description": "逐字透传的 interrupts 属性值 (事件中断挂 CU-top APLIC_S)"
+        },
+        "rid_base": {
+          "type": "string",
+          "pattern": "^(0x[0-9a-fA-F]+|[0-9]+)$"
+        },
+        "rid_count": {
+          "type": "string",
+          "pattern": "^(0x[0-9a-fA-F]+|[0-9]+)$"
+        }
+      }
+    },
+    "addrList": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/hexOrDec"
+      }
+    },
+    "gmacWriteSeq": {
+      "type": "array",
+      "minItems": 1,
+      "description": "有序的 GMAC 初始化写序列;每项 {offset, value},按数组顺序写 base+offset=value。",
+      "items": {
+        "type": "object",
+        "required": [
+          "offset",
+          "value"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "offset": {
+            "$ref": "#/$defs/hexOrDec"
+          },
+          "value": {
+            "$ref": "#/$defs/hexOrDec"
+          }
+        }
+      }
+    },
+    "pmuEntry": {
+      "type": "object",
+      "required": [
+        "index",
+        "base",
+        "size",
+        "irq",
+        "irq_type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "base": {
+          "$ref": "#/$defs/hexOrDec"
+        },
+        "size": {
+          "$ref": "#/$defs/hexOrDec"
+        },
+        "irq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "irq_type": {
+          "type": "integer"
+        },
+        "desc": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "dts_template": {
+      "type": "string",
+      "description": "可选: 主 dts 骨架模板文件名 (data/templates/<name>), 缺省 zsb.dts.in。新平台 (如 NGF) 需要不同骨架 (model/compatible/固定节点) 时声明。"
+    },
+    "fpga": {
+      "type": "object",
+      "description": "可选: FPGA 类型轴 (与 SoC 平台正交, 如 NGF 同 SoC 有 haps / hejian 两种 FPGA 类型, sysmap 有差异)。default = 缺省类型 (即本 JSON 基线, 无覆盖); types.<name> = 深合并到基线上的覆盖子树 (字典递归合并, 标量/数组整体替换, null 删除键)。FPGA 类型写在平台名里选择 ('<平台>-<类型>', 如 minimesh-hejian); 裸平台名 = 缺省类型; 合并结果再做一次 schema 校验。无本块的平台只有一种隐含 FPGA 类型, 带类型后缀的名字会被拒绝。",
+      "required": [
+        "default"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "default": {
+          "type": "string",
+          "description": "缺省 FPGA 类型名; 平台名不带类型后缀 (或后缀即本类型) 时直接用基线 JSON, 不做合并。"
+        },
+        "types": {
+          "type": "object",
+          "description": "非缺省类型的覆盖子树, 键 = 类型名。子树结构与平台 JSON 相同路径 (memory / peripherals / intc / net ...) 的部分子集; 仅列出差异字段。",
+          "additionalProperties": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "emu": {
+      "type": "object",
+      "description": "可选: EMU 覆盖。由 --emu 在选定 SoC/FPGA 类型配置之上深合并，只允许时钟、串口、console 与禁用 PCIe/移除 GMAC 的网络差异。",
+      "required": [
+        "cpu_block",
+        "peripherals",
+        "chosen",
+        "net"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "cpu_block": {
+          "type": "object",
+          "required": [
+            "timebase"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "timebase": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "peripherals": {
+          "type": "object",
+          "required": [
+            "serial"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "serial": {
+              "type": "object",
+              "required": [
+                "clock_frequency",
+                "current_speed"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "clock_frequency": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "current_speed": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "chosen": {
+          "type": "object",
+          "required": [
+            "bootargs",
+            "stdout_path"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "bootargs": {
+              "type": "string"
+            },
+            "stdout_path": {
+              "type": "string"
+            }
+          }
+        },
+        "net": {
+          "type": "object",
+          "description": "EMU 只保留禁用的 PCIe ECAM，且不允许选择 GMAC。",
+          "required": [
+            "modes",
+            "pcie"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "modes": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "const": "pcie"
+              }
+            },
+            "pcie": {
+              "type": "object",
+              "required": [
+                "enable"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "enable": {
+                  "const": "disabled"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "cpu_block": {
+      "type": "object",
+      "description": "可选: 固定 SoC 的 CPU 核清单(NGF fullsoc/minisoc 收编)。存在时 ${CPU_CORES_BLOCK} 由 cores 列表驱动渲染(ISA 原样透传、status 原样透传含非标准 'skip', 供 build_dtb.sh sed 翻转), ${TIMEBASE} 取本块 timebase; 骨架模板自带 cpus{} 包装/l2_cache/cpu-map。无本块的平台 ${CPU_CORES_BLOCK} 为空。",
+      "required": [
+        "timebase",
+        "mmu_type",
+        "cores"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string",
+          "description": "核节点模板, 缺省 cpu/cpu_ngf.dtsi.in。"
+        },
+        "timebase": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mmu_type": {
+          "type": "string"
+        },
+        "cores": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "status"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "status": {
+                "type": "string"
+              },
+              "numa_node": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "net": {
+      "type": "object",
+      "description": "可选: 网卡声明。--nic 仅接受 pcie | pcie<rc> | pcie<rc>-rp<n> 及逗号组合; gmac 网卡由 -gmac 选择类型并使能, --nic/-gmac 同时给出时双网卡共存。pcie 缺省 = 平台 net.pcie.enable 的 RC ECAM okay(RP/RCiEP APLIC 全部 disabled); 选中 RP 时对应 RP APLIC 对使能并输出 INTx 映射。",
+      "additionalProperties": false,
+      "required": [
+        "modes"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "modes": {
+                "contains": {
+                  "const": "gmac"
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "gmac"
+            ]
+          }
+        }
+      ],
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "modes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "pcie",
+              "gmac"
+            ]
+          }
+        },
+        "gmac": {
+          "type": "object",
+          "required": [
+            "base",
+            "size",
+            "irq",
+            "irq_type"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "base": {
+              "type": "string"
+            },
+            "size": {
+              "type": "string"
+            },
+            "irq": {
+              "type": "integer"
+            },
+            "irq_type": {
+              "type": "integer"
+            },
+            "template": {
+              "type": "string"
+            },
+            "desc": {
+              "type": "string"
+            }
+          }
+        },
+        "pcie": {
+          "type": "object",
+          "description": "pcie_rc0/rc1 子模块 (共用 net/pcie_rc.dtsi.in); enable 选择 status okay 的端口, 另一端口保持 disabled。",
+          "additionalProperties": false,
+          "required": [
+            "enable"
+          ],
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "enable": {
+              "description": "缺省处于 okay 的 PCIe 主机 (对应 bitstream PCIE_RC0/RC1 ON/OFF)：单个 RC、RC 列表（双 RC 板）或 disabled（全部 disabled）。-nic pcie<rc> 可在命令行覆盖本声明，未选中的已声明 RC 渲染为 disabled。",
+              "oneOf": [
+                {
+                  "enum": [
+                    "rc0",
+                    "rc1",
+                    "disabled"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "rc0",
+                      "rc1"
+                    ]
+                  }
+                }
+              ]
+            },
+            "template": {
+              "type": "string"
+            },
+            "map_keep": {
+              "type": "boolean",
+              "description": "true = RC 的 interrupt-map / iommu-map 按平台声明整份常驻输出 (全部 intx.ports + intx.map_extra 行, 全部本 RC 的 iommu 实例), 不随 -nic pcie-rp<n> / --iommu 选择变化; 被引用节点 (RP/RCiEP APLIC、CU-top、IOMMU) 的 status 仍按选择独立控制, 缺省 disabled。需配合 net/pcie_rc_keep_map.dtsi.in (未显式声明 template 时自动切换)。"
+            },
+            "intx": {
+              "type": "object",
+              "description": "RP INTx APLIC 组: ports 为逐端口声明 (基址/标签/BDF device), rciep_m/s 为可选的 RCiEP APLIC 对 (成对声明); 全部缺省 disabled, -nic pcie-rp<id> 只使能对应端口。map_extra 为 ports 之外的常驻 interrupt-map 行 (如 RCiEP INTx), 仅在 map_keep 时渲染。",
+              "required": [
+                "template",
+                "ports"
+              ],
+              "dependentRequired": {
+                "rciep_m": [
+                  "rciep_s"
+                ],
+                "rciep_s": [
+                  "rciep_m"
+                ]
+              },
+              "additionalProperties": false,
+              "properties": {
+                "_comment": {
+                  "type": "string"
+                },
+                "template": {
+                  "type": "string"
+                },
+                "ports": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/$defs/intxPort"
+                  }
+                },
+                "rciep_m": {
+                  "$ref": "#/$defs/mmioNode"
+                },
+                "rciep_s": {
+                  "$ref": "#/$defs/mmioNode"
+                },
+                "map_extra": {
+                  "type": "array",
+                  "description": "map_keep 时常驻进 RC interrupt-map 的额外行: target 引用同级的 rciep_m/rciep_s 或 ports 之外的其它已声明节点标签来源, device/pin/irq/type 逐字合成一行映射。",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "target",
+                      "device",
+                      "pin",
+                      "irq"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "rc": {
+                        "enum": [
+                          "rc0",
+                          "rc1"
+                        ],
+                        "description": "该行落入的 PCIe 主机；缺省 rc1（平台 net.pcie.enable 指向的主机）。"
+                      },
+                      "desc": {
+                        "type": "string"
+                      },
+                      "target": {
+                        "enum": [
+                          "rciep_s",
+                          "rciep_m"
+                        ]
+                      },
+                      "device": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "pin": {
+                        "$ref": "#/$defs/hexOrDec"
+                      },
+                      "irq": {
+                        "$ref": "#/$defs/hexOrDec"
+                      },
+                      "type": {
+                        "$ref": "#/$defs/hexOrDec"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "rc0": {
+              "$ref": "#/$defs/pcie_rc"
+            },
+            "rc1": {
+              "$ref": "#/$defs/pcie_rc"
+            }
+          }
+        },
+        "iommu": {
+          "type": "object",
+          "description": "IOMMU 组: cu_tops 为按名字 (die0 等) 声明的 CU-top APLIC M/S 对 (同 die 实例共享), instances 为按 diex-cux 名字声明的 IOMMU 实例 (die0-cu1 等), 实例经 cu_top 字段引用所属 CU-top; -iommu <名字,...>|true|all 选择使能, 缺省全部 disabled。",
+          "required": [
+            "cu_top_template",
+            "instance_template",
+            "cu_tops",
+            "instances"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "cu_top_template": {
+              "type": "string"
+            },
+            "instance_template": {
+              "type": "string"
+            },
+            "cu_tops": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": {
+                "pattern": "^[a-z][a-z0-9_-]*$"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "required": [
+                  "m",
+                  "s"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "m": {
+                    "$ref": "#/$defs/mmioNode"
+                  },
+                  "s": {
+                    "$ref": "#/$defs/mmioNode"
+                  }
+                }
+              }
+            },
+            "instances": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": {
+                "pattern": "^[a-z][a-z0-9_-]*$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/iommuInstance"
+              }
+            }
+          }
+        },
+        "aplic_rc1_template": {
+          "type": "string"
+        },
+        "aplic_rc1": {
+          "type": "object",
+          "description": "rc1 rciep APLIC M/S 对的平台声明 (基址/大小/标签); gmac 的 interrupt-parent 引用 s.label。",
+          "required": [
+            "m",
+            "s"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "m": {
+              "$ref": "#/$defs/mmioNode"
+            },
+            "s": {
+              "$ref": "#/$defs/mmioNode"
+            }
+          }
+        }
+      }
+    },
+    "max_cores": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "该平台支持的最大核数(--layout 位宽上限)"
+    },
+    "cores_per_cluster": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "一个 cluster 的核槽数 = --layout 的窗口大小(cluster = pos // cores_per_cluster)。现有 xiaohui 系列为 8。cpu 节点/cbqri/ntrace 共用此值,是 cluster 边界的唯一真源。"
+    },
+    "memory": {
+      "type": "object",
+      "required": [
+        "base",
+        "size"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/hexOrDec",
+          "description": "DDR 起始地址"
+        },
+        "size": {
+          "$ref": "#/$defs/hexOrDec",
+          "description": "DDR 大小(bytes)"
+        },
+        "desc": {
+          "type": "string"
+        }
+      }
+    },
+    "peripherals": {
+      "type": "object",
+      "required": [
+        "serial"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "serial": {
+          "type": "object",
+          "required": [
+            "base",
+            "size",
+            "irq",
+            "irq_type",
+            "clock_frequency"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "base": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "size": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "irq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "irq_type": {
+              "type": "integer"
+            },
+            "clock_frequency": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "current_speed": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "desc": {
+              "type": "string"
+            }
+          }
+        },
+        "gmac": {
+          "type": "object",
+          "required": [
+            "base",
+            "size",
+            "irq",
+            "irq_type"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "base": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "size": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "irq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "irq_type": {
+              "type": "integer"
+            },
+            "desc": {
+              "type": "string"
+            },
+            "init": {
+              "type": "object",
+              "description": "GMAC 上电初始化寄存器写序列。mode_* 是有序的一组写操作,每项 {offset, value} 表示往 base+offset 写 value;数组顺序即写入顺序(同一 offset 可出现多次,如 0x0c 前后各写一次)。",
+              "required": [
+                "base"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "mode_h100": {
+                  "$ref": "#/$defs/gmacWriteSeq"
+                },
+                "mode_haps_v2": {
+                  "$ref": "#/$defs/gmacWriteSeq"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "hsm": {
+      "type": "object",
+      "description": "HSM/电源管理统一配置块(optional)。pmc 子块驱动 DTS pmc 节点(-pmc)与 socinit IPMC 写序列;pcu 子块含 boot_release(gdbinit 复位/释放写序列)、version(PCU HSM 节点生成开关,可被 platform-selection.csv 的 pcu 列按 CPU 覆盖)与 nodes(PCU 地址常量,驱动 xuantie,pcu / xuantie,pcu-v2 DTS 节点生成)。整块及子块均 optional,缺失合法(无配置=不生成对应节点/序列)。",
+      "additionalProperties": false,
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "pmc": {
+          "type": "object",
+          "description": "Power Management Controller + IPMC 复位释放寄存器块。",
+          "required": [
+            "base",
+            "size"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "base": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "size": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "desc": {
+              "type": "string"
+            },
+            "ipmc": {
+              "type": "object",
+              "description": "IPMC 每核复位释放/时钟寄存器,render_socinit 按 base_addr + 步进派生:对 i∈[0,n_cores),release 寄存器 = base_addr + i*release_stride + release_offset(写 release_value),clock 寄存器 = base_addr + i*release_stride + clock_offset(写 clock_value)。",
+              "required": [
+                "base_addr",
+                "release_stride",
+                "release_offset",
+                "clock_offset",
+                "release_value",
+                "clock_value",
+                "n_cores"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base_addr": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "core0 IPMC 派生基址。"
+                },
+                "release_stride": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "相邻 core 间的地址步进:core i 基址 = base_addr + i*release_stride。"
+                },
+                "release_offset": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "release 寄存器相对 core 基址的偏移。"
+                },
+                "clock_offset": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "clock 寄存器相对 core 基址的偏移。"
+                },
+                "release_value": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "写入 release 寄存器的值。"
+                },
+                "clock_value": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "写入 clock 寄存器的值。"
+                },
+                "n_cores": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "派生的 core 数(i 上界)。"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "pcu": {
+          "type": "object",
+          "description": "PCU 电源控制配置。boot_release = boot 放核时序(gdbinit/socinit 消费,原顶层 pcu_config);version = PCU HSM 节点生成开关(xuantie,pcu / xuantie,pcu-v2,可被 platform-selection.csv pcu 列覆盖);nodes = PCU 地址常量(DTS 节点生成,未登记则不生成)。注意 boot_release 的 v1/v2 指放核时序代际,与 version(HSM 节点版本)是两套概念。",
+          "additionalProperties": false,
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "version": {
+              "enum": [
+                "v1",
+                "v2"
+              ],
+              "description": "PCU HSM 节点版本开关:v1 = xuantie,pcu(每活跃核一子节点);v2 = xuantie,pcu-v2(每活跃组一子节点,组 master 偶数 hartid)。platform-selection.csv 的 pcu 列按 CPU 覆盖本默认值。"
+            },
+            "boot_release": {
+              "type": "object",
+              "description": "复位向量基址配置。reset_addrs=每 hart 复位向量寄存器;release_addr=全局释放寄存器;释放掩码按核数二选一:release_default(窄掩码,<=8 核 / 单核基线)vs release_layout(宽掩码,>8 核);release_addrs/release_value=v2 专属每 hart 释放/配置写。",
+              "required": [
+                "reset_addrs",
+                "release_addr",
+                "release_default",
+                "release_layout"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "_comment": {
+                  "type": "string"
+                },
+                "reset_addrs": {
+                  "$ref": "#/$defs/addrList"
+                },
+                "release_addr": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "release_default": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "全局释放寄存器窄掩码:n_cores<=8(含单核注释基线)时写入此值,>8 核时改写 release_layout。"
+                },
+                "release_layout": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "全局释放寄存器宽掩码:n_cores>8 时写入此值。"
+                },
+                "release_addrs": {
+                  "$ref": "#/$defs/addrList"
+                },
+                "release_value": {
+                  "$ref": "#/$defs/hexOrDec"
+                }
+              }
+            },
+            "nodes": {
+              "type": "object",
+              "description": "PCU DTS 节点地址常量(SoC 级固定地址表)。派生公式:complex_idx = hartid/2(2 核一 complex);pcu_base = complex_base + complex_idx*complex_stride + core{0|1}_pcu_offset(complex 内位置 0/1 选 core0/core1 偏移);每节点 reg size = pcu_size。未登记本块则不生成 PCU 节点(opensbi 无节点自动降级 wfi)。",
+              "required": [
+                "complex_base",
+                "complex_stride",
+                "core0_pcu_offset",
+                "core1_pcu_offset",
+                "pcu_size"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "complex_base": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "complex0 基址(派生起点)。"
+                },
+                "complex_stride": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "相邻 complex 间距:complex i 基址 = complex_base + i*complex_stride。"
+                },
+                "core0_pcu_offset": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "complex 内 core0(偶数 hartid)的 PCU 偏移;pcu-v2 组 master 亦用此偏移。"
+                },
+                "core1_pcu_offset": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "complex 内 core1(奇数 hartid)的 PCU 偏移。"
+                },
+                "tpe_pcu_offset": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "可选:TPE PCU 偏移(当前生成器不消费,登记备查)。"
+                },
+                "pcu_size": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "每 PCU 节点 reg size。"
+                },
+                "_comment": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "intc": {
+      "type": "object",
+      "description": "中断控制器。plic(CLINT+SSWI+PLIC)与 aplic(APLIC+IMSIC[+mtimer])两个子块,平台可含其一或两者;实际选择由 generate_dts.select_intc_kind(按 CPU)或 --intc 决定。",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "plic": {
+          "type": "object",
+          "required": [
+            "clint",
+            "sswi",
+            "controller"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "clint": {
+              "type": "object",
+              "required": [
+                "base",
+                "size"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "size": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "has_64bit_mmio": {
+                  "type": "boolean"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            },
+            "sswi": {
+              "type": "object",
+              "required": [
+                "base",
+                "size"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "size": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            },
+            "controller": {
+              "type": "object",
+              "required": [
+                "base",
+                "size",
+                "ndev",
+                "max_priority"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "size": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "ndev": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "max_priority": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "aplic": {
+          "type": "object",
+          "required": [
+            "aplic_s",
+            "aplic_m",
+            "imsics_m",
+            "imsics_s"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "aplic_s": {
+              "type": "object",
+              "required": [
+                "base",
+                "size"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "size": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            },
+            "aplic_m": {
+              "type": "object",
+              "required": [
+                "base",
+                "size",
+                "num_sources",
+                "delegate_range"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "size": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "num_sources": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "delegate_range": {
+                  "$ref": "#/$defs/hexPair"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            },
+            "imsics_m": {
+              "type": "object",
+              "description": "IMSIC M 模式。reg 大小随核数派生:size = size_per_core * slots,slots 为 num_cores 向上取整到 {2,4,16,32}(匹配 legacy aplic_{2,4,16}core overlay)。",
+              "required": [
+                "base",
+                "size_per_core"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "IMSIC-M 基址(固定,不随核数变)。"
+                },
+                "size_per_core": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "每 slot 大小;总 reg size = size_per_core * slots(slots=核数向上取整到 2/4/16/32)。"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            },
+            "imsics_s": {
+              "type": "object",
+              "description": "IMSIC S 模式。reg 大小同 imsics_m 规则:size = size_per_core * slots(核数向上取整到 {2,4,16,32})。",
+              "required": [
+                "base",
+                "size_per_core",
+                "num_ids",
+                "guest_index_bits"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "IMSIC-S 基址(固定,不随核数变)。"
+                },
+                "size_per_core": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "每 slot 大小;总 reg size = size_per_core * slots(slots=核数向上取整到 2/4/16/32)。"
+                },
+                "num_ids": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "riscv,num-ids。"
+                },
+                "guest_index_bits": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "riscv,guest-index-bits。"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            },
+            "mtimer": {
+              "type": "object",
+              "description": "ACLINT mtimer(APLIC 路径在无 Sstc CPU 上使用)。",
+              "required": [
+                "base",
+                "mtimecmp_addr",
+                "mtime_size"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "mtimecmp_addr": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "mtime_size": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            },
+            "mtimer_percore": {
+              "type": "object",
+              "description": "可选: 每核一个 ACLINT mtimer 节点(NGF fullsoc/minisoc 固定 SoC 收编)。地址二选一: addrs 逐核列出, 或 complex 派生(core=(complex c, slot j) -> base + c*complex_stride + j*core_stride, 使能 complex 列表取 default_complexes 或 --complexes 覆盖)。reg_split=[a,b] 把 reg 切成 <base a> <base+a b> 两段; labels=true 时节点带 mtimer_c<i>: 标签。渲染进 ${MTIMER_BLOCK}, 无本块的平台该宏为空。",
+              "required": [
+                "reg_split"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "_comment": {
+                  "type": "string"
+                },
+                "addrs": {
+                  "$ref": "#/$defs/addrList"
+                },
+                "complex": {
+                  "type": "object",
+                  "description": "complex 编址规格: 全局 complex id 按 complexes_per_die 分解为 (die, die 内 complex), mtimer = base + die*die_stride + cin*complex_stride + slot*core_stride(die_stride 缺省 = complexes_per_die*complex_stride 即连续编址; 未声明 complexes_per_die 时退化为 base + c*complex_stride + j*core_stride)。使能集合取 default_complexes(整 complex) 或 --complexes 覆盖(支持 <complex>:<mask> 每核掩码, mask 最右位=slot0)。",
+                  "required": [
+                    "base",
+                    "complex_stride",
+                    "core_stride",
+                    "default_complexes"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "base": {
+                      "$ref": "#/$defs/hexOrDec",
+                      "description": "die0 complex0 slot0 的 mtimer 基址。"
+                    },
+                    "complex_stride": {
+                      "$ref": "#/$defs/hexOrDec"
+                    },
+                    "core_stride": {
+                      "$ref": "#/$defs/hexOrDec"
+                    },
+                    "cores_per_complex": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "缺省 2。"
+                    },
+                    "dies": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "die 数(仅用于 --complexes 范围校验)。"
+                    },
+                    "complexes_per_die": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "每 die 的 complex 数; 声明后全局 complex id 分解出 die 维度。"
+                    },
+                    "die_stride": {
+                      "$ref": "#/$defs/hexOrDec",
+                      "description": "die 间地址步进, 缺省 complexes_per_die*complex_stride(连续)。"
+                    },
+                    "default_complexes": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "description": "缺省使能的 complex 列表(--complexes 可覆盖)。"
+                    },
+                    "desc": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "reg_split": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": {
+                    "$ref": "#/$defs/hexOrDec"
+                  },
+                  "description": "[mtimecmp 窗口大小, mtime 窗口大小]"
+                },
+                "irq": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "labels": {
+                  "type": "boolean"
+                },
+                "template": {
+                  "type": "string"
+                },
+                "desc": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "link_ip": {
+      "type": "object",
+      "description": "互连/Link IP,按代际:ncore / xl100 / xl200 / xl300。",
+      "additionalProperties": false,
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "ncore": {
+          "type": "object",
+          "description": "NCore 一致性总线(--bus ncore)。render_socinit 按 per-cluster base + 步进派生 snoop/DVM 寄存器地址:snoop 寄存器 i = cluster<c>_base + i*snoop_stride + snoop_offset(i∈[0,cluster<c>_snoop_count));DVM 寄存器 = cluster<c>_base + dvm_offset;每寄存器写 enable_value。",
+          "additionalProperties": false,
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "cluster0_base": {
+              "$ref": "#/$defs/hexOrDec",
+              "description": "cluster0 snoop/DVM 派生基址。"
+            },
+            "cluster1_base": {
+              "$ref": "#/$defs/hexOrDec",
+              "description": "cluster1 snoop/DVM 派生基址。"
+            },
+            "snoop_offset": {
+              "$ref": "#/$defs/hexOrDec",
+              "description": "snoop 寄存器相对 cluster base 的固定偏移(加在步进之后)。"
+            },
+            "snoop_stride": {
+              "$ref": "#/$defs/hexOrDec",
+              "description": "同 cluster 内相邻 snoop 寄存器的地址步进:reg i = cluster_base + i*snoop_stride + snoop_offset。"
+            },
+            "cluster0_snoop_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "cluster0 派生的 snoop 寄存器个数(i 上界)。"
+            },
+            "cluster1_snoop_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "cluster1 派生的 snoop 寄存器个数(i 上界)。"
+            },
+            "dvm_offset": {
+              "$ref": "#/$defs/hexOrDec",
+              "description": "DVM 寄存器相对 cluster base 的偏移:dvm = cluster_base + dvm_offset。"
+            },
+            "enable_value": {
+              "$ref": "#/$defs/hexOrDec",
+              "description": "写入各 snoop/DVM 寄存器的使能值。"
+            },
+            "desc": {
+              "type": "string"
+            }
+          }
+        },
+        "xl100": {
+          "type": "object"
+        },
+        "xl200": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stl3_base": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "stl3_base_stlk2": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "pmu": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/pmuEntry"
+              }
+            }
+          }
+        },
+        "xl300": {
+          "type": "object",
+          "description": "单 cluster 原型 + 步进。脚本按 i∈[0,clusters) 派生每 cluster 实例:pmu/cbqri 地址 = base + i*cluster_stride,pmu irq = irq_base + i*irq_stride,cbqri cache phandle = &l3_cache_<i>(l3_cache_ 前缀硬编码在模板 link_xl300.dtsi.in 里,按 cluster i 取下标);每节点 status = 该 cluster 是否被 -layout 填充(core//cores_per_cluster==i)。cbqri 存在与否即 v2-only 开关。v2-only:仅 xiaohui_v2 声明本块,v1/rv32 无本块且传 -bus stlk3 时 fail-fast。",
+          "required": [
+            "clusters",
+            "cluster_stride",
+            "pmu"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "clusters": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "物理 cluster 数,即派生实例数(i∈[0,clusters))。"
+            },
+            "cluster_stride": {
+              "$ref": "#/$defs/hexOrDec",
+              "description": "cluster 间地址步进:实例 i 的 pmu/cbqri base = 原型 base + i*cluster_stride。"
+            },
+            "pmu": {
+              "type": "object",
+              "description": "单 cluster PMU 原型;实例 i:reg=base+i*cluster_stride,interrupts=<irq_base+i*irq_stride irq_type>。",
+              "required": [
+                "base",
+                "size",
+                "irq_base",
+                "irq_stride",
+                "irq_type"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "cluster0 PMU 基址(派生起点)。"
+                },
+                "size": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "每实例 reg 大小(各 cluster 相同)。"
+                },
+                "irq_base": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "cluster0 中断号(派生起点)。"
+                },
+                "irq_stride": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "cluster 间中断号步进:实例 i irq = irq_base + i*irq_stride。"
+                },
+                "irq_type": {
+                  "type": "integer",
+                  "description": "中断触发类型(各 cluster 相同)。"
+                }
+              }
+            },
+            "cbqri": {
+              "type": "object",
+              "description": "单 cluster CBQRI 原型(v2-only,存在即开关);实例 i:reg=base+i*cluster_stride,cache phandle=&l3_cache_<i>(l3_cache_ 前缀硬编码在模板里,按 cluster i 取下标)。",
+              "required": [
+                "base",
+                "size",
+                "rcid",
+                "mcid"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "base": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "cluster0 CBQRI 基址(派生起点)。"
+                },
+                "size": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "每实例 reg 大小(各 cluster 相同)。"
+                },
+                "rcid": {
+                  "type": "integer",
+                  "description": "riscv,cbqri-rcid(各 cluster 相同)。"
+                },
+                "mcid": {
+                  "type": "integer",
+                  "description": "riscv,cbqri-mcid(各 cluster 相同)。"
+                }
+              }
+            },
+            "l3_cache": {
+              "type": "object",
+              "description": "单 cluster L3 cache 原型(存在即在 xl300 上派生 l3_cache_<i>/l3-cache-<i> 节点,i∈[0,clusters));被 cbqri 及每核 next-level-cache 引用。仅 xl300(-bus stlk3)发射;非 xl300 RV64 build 无 L3。",
+              "required": [
+                "level",
+                "block-size",
+                "sets",
+                "size"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "level": {
+                  "type": "integer",
+                  "description": "cache-level(L3=3,各 cluster 相同)。"
+                },
+                "block-size": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "cache-block-size(各 cluster 相同)。"
+                },
+                "sets": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "cache-sets(各 cluster 相同)。"
+                },
+                "size": {
+                  "$ref": "#/$defs/hexOrDec",
+                  "description": "cache-size(各 cluster 相同)。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "chosen": {
+      "type": "object",
+      "required": [
+        "bootargs",
+        "initrd",
+        "stdout_path"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bootargs": {
+          "type": "string"
+        },
+        "_comment_initrd": {
+          "type": "string"
+        },
+        "initrd": {
+          "type": "object",
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "start": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "end": {
+              "$ref": "#/$defs/hexOrDec"
+            }
+          }
+        },
+        "stdout_path": {
+          "type": "string"
+        }
+      }
+    },
+    "images_layout": {
+      "type": "object",
+      "description": "boot 镜像加载地址,供 gdb 脚本消费。按 kernel 版本分块。",
+      "required": [
+        "kernel_5_10",
+        "kernel_6_6"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "kernel_5_10": {
+          "$ref": "#/properties/images_layout/$defs/kernelBlock"
+        },
+        "kernel_6_6": {
+          "$ref": "#/properties/images_layout/$defs/kernelBlock"
+        },
+        "optee": {
+          "$ref": "#/properties/images_layout/$defs/opteeBlock"
+        }
+      },
+      "$defs": {
+        "opteeBlock": {
+          "type": "object",
+          "description": "OP-TEE boot 地址(render_gdbinit --optee 消费):kernel/rootfs 落在 0x8xxxxxxx 窗口,bl31 + tee-os 为安全侧镜像。",
+          "required": [
+            "vmlinux_addr",
+            "rootfs_addr",
+            "zsb_addr",
+            "dtb_addr",
+            "bl31_addr",
+            "teeos_addr",
+            "flag_addr"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "_comment": {
+              "type": "string"
+            },
+            "vmlinux_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "rootfs_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "zsb_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "dtb_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "bl31_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "teeos_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "flag_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            }
+          }
+        },
+        "kernelBlock": {
+          "type": "object",
+          "required": [
+            "opensbi_addr",
+            "uboot_addr",
+            "vmlinux_addr",
+            "dtb_addr",
+            "zsb_addr",
+            "flag_addr",
+            "rootfs_addr"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "opensbi_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "uboot_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "vmlinux_addr": {
+              "type": "object",
+              "required": [
+                "no-uboot",
+                "u-boot"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "no-uboot": {
+                  "$ref": "#/$defs/hexOrDec"
+                },
+                "u-boot": {
+                  "$ref": "#/$defs/hexOrDec"
+                }
+              }
+            },
+            "dtb_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "zsb_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "flag_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "rootfs_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            },
+            "plic_delegate_addr": {
+              "$ref": "#/$defs/hexOrDec"
+            }
+          }
+        }
+      }
+    }
+  }
+}

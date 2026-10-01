@@ -2,6 +2,10 @@ require rust-target.inc
 require rust-source.inc
 require rust-snapshot.inc
 
+# bootstrap.py imports distutils, removed in Python 3.12+ (PEP 632). Applied to
+# all variants (incl. native) so the build works with python3 >= 3.12.
+SRC_URI += "file://0001-bootstrap.py-drop-distutils-for-Python-3.12-compat.patch"
+
 INSANE_SKIP:${PN}:class-native = "already-stripped"
 FILES:${PN} += "${libdir}/rustlib"
 FILES:${PN} += "${libdir}/*.so"

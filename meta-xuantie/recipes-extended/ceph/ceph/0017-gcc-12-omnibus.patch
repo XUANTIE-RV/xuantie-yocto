@@ -1,0 +1,42 @@
+--- ceph-16.2.7/src/common/LogEntry.cc.orig	2022-01-17 13:52:10.799134159 -0500
++++ ceph-16.2.7/src/common/LogEntry.cc	2022-01-17 13:52:47.244469274 -0500
+@@ -183,7 +183,7 @@
+       return "crit";
+     default:
+       ceph_abort();
+-      return 0;
++      return "";
+   }
+ }
+ 
+--- ceph-16.2.7/src/test/librados/tier_cxx.cc.orig	2022-01-19 09:30:47.209459506 -0500
++++ ceph-16.2.7/src/test/librados/tier_cxx.cc	2022-01-19 10:02:47.783240298 -0500
+@@ -120,7 +120,7 @@
+ }
+ 
+ void check_fp_oid_refcount(librados::IoCtx& ioctx, std::string foid, uint64_t count,
+-			   std::string fp_algo = NULL)
++			   std::string fp_algo = "")
+ {
+   bufferlist t;
+   int size = foid.length();
+@@ -148,7 +148,7 @@
+   ASSERT_LE(count, refs.count());
+ }
+ 
+-string get_fp_oid(string oid, std::string fp_algo = NULL)
++string get_fp_oid(string oid, std::string fp_algo = "")
+ {
+   if (fp_algo == "sha1") {
+     unsigned char fingerprint[CEPH_CRYPTO_SHA1_DIGESTSIZE + 1];
+--- ceph-17.0.0-10335-gfd206722/src/s3select/include/s3select_functions.h.orig	2022-02-11 17:21:40.268627997 -0500
++++ ceph-17.0.0-10335-gfd206722/src/s3select/include/s3select_functions.h	2022-02-11 17:21:57.155325437 -0500
+@@ -466,7 +466,7 @@
+ 
+   std::string  print(int ident) override
+   {
+-    return std::string(0);
++    return std::string("");
+   }
+ 
+   void push_argument(base_statement* arg)

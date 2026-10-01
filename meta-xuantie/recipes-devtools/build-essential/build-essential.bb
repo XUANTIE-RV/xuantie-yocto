@@ -10,7 +10,8 @@ RDEPENDS:${PN} += " \
     gdb \
     glibc \
     libc6-dev \
-    libstdc++-dev \
+    libgcc-dev \
+    libcxx-dev \
     make \
 "
 INSANE_SKIP:${PN} += "dev-deps"

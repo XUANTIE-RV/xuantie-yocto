@@ -21,7 +21,7 @@ SRC_URI = "${SOURCEFORGE_MIRROR}/infozip/Zip%203.x%20%28latest%29/3.0/zip30.tar.
            file://0002-unix.c-Do-not-redefine-DIR-as-FILE.patch \
            "
 UPSTREAM_VERSION_UNKNOWN = "1"
-inherit xuantie-gcc14-compatible
+inherit xuantie-gcc-compatible
 
 SRC_URI[md5sum] = "7b74551e63f8ee6aab6fbc86676c0d37"
 SRC_URI[sha256sum] = "f0e8bb1f9b7eb0b01285495a2699df3a4b766784c1765a8f1aeedf63c0806369"

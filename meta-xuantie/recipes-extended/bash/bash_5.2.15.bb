@@ -19,4 +19,17 @@ SRC_URI[tarball.sha256sum] = "13720965b5f4fc3a0d4b61dd37e7565c741da9a5be24edc2ae
 DEBUG_OPTIMIZATION:append:armv4 = " ${@bb.utils.contains('TUNE_CCARGS', '-mthumb', '-fomit-frame-pointer', '', d)}"
 DEBUG_OPTIMIZATION:append:armv5 = " ${@bb.utils.contains('TUNE_CCARGS', '-mthumb', '-fomit-frame-pointer', '', d)}"
 
+# Pre-compile loadable builtins outside of pseudo fakeroot.
+# The loadables Makefile's install target has an 'all' prerequisite that
+# triggers compilation. When this happens during do_install (under pseudo),
+# compiler temp files in /tmp pollute pseudo's inode DB with 'NAMELESS FILE'
+# entries. On XFS with inode64, rapid inode reuse then causes pseudo path
+# mismatch aborts (ino N db 'NAMELESS FILE' req '/path/to/file').
+do_compile:append() {
+    oe_runmake -C ${B}/examples/loadables all
+}
+
 BBCLASSEXTEND = "nativesdk"
+
+# GCC 15 (C23): bash K&R 函数声明 + 不兼容指针类型
+CFLAGS:append = "${@' -std=gnu17 -Wno-error=incompatible-pointer-types' if (d.getVar('GCC_VERSION') or '').startswith('15') else ''}"

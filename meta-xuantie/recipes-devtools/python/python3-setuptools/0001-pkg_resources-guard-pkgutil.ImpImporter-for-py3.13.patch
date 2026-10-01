@@ -1,0 +1,49 @@
+From: meta-xuantie <noreply@xuantie.invalid>
+Date: Wed, 29 Jul 2026 00:00:00 +0000
+Subject: [PATCH] pkg_resources: guard pkgutil.ImpImporter for Python 3.13
+
+setuptools 65.0.2 targets CPython <= 3.11. pkg_resources registers finders
+and namespace handlers keyed on pkgutil.ImpImporter, which was deprecated in
+3.3 and REMOVED in 3.12. Because both registrations run at module import
+time, merely importing pkg_resources (and thus setuptools) aborts with
+"AttributeError: module 'pkgutil' has no attribute 'ImpImporter'" on the
+python 3.13 backport, breaking every native recipe that uses setuptools
+(meson-native, glib-2.0-native, btrfs-tools, ...).
+
+Guard both registrations behind hasattr(pkgutil, 'ImpImporter'). The
+FileFinder registrations immediately below already cover the real import
+system on 3.3+, so the ImpImporter path is pure legacy and safe to skip.
+This mirrors what upstream setuptools did when dropping ImpImporter support.
+
+Note: the sibling `import imp` fallback (line ~48) is already guarded by a
+`try: import _imp` that succeeds on 3.13, and the two `import cgi` uses are
+lazy imports on the PyPI upload/classifier-download paths only (never hit
+during a wheel build), so no further changes are needed for the build path.
+
+Upstream-Status: Inappropriate [langdale ships setuptools 65.0.2; a real fix
+is a version bump to a py3.13-compatible setuptools]
+
+--- a/pkg_resources/__init__.py
++++ b/pkg_resources/__init__.py
+@@ -2188,7 +2188,10 @@ def resolve_egg_link(path):
+     return next(dist_groups, ())
+
+
+-register_finder(pkgutil.ImpImporter, find_on_path)
++if hasattr(pkgutil, 'ImpImporter'):
++    # pkgutil.ImpImporter was removed in Python 3.12; the FileFinder
++    # registration below covers the real import system on 3.3+.
++    register_finder(pkgutil.ImpImporter, find_on_path)
+
+ if hasattr(importlib_machinery, 'FileFinder'):
+     register_finder(importlib_machinery.FileFinder, find_on_path)
+@@ -2345,7 +2348,8 @@ def file_ns_handler(importer, path_item, packageName, module):
+         return subpath
+
+
+-register_namespace_handler(pkgutil.ImpImporter, file_ns_handler)
++if hasattr(pkgutil, 'ImpImporter'):
++    register_namespace_handler(pkgutil.ImpImporter, file_ns_handler)
+ register_namespace_handler(zipimport.zipimporter, file_ns_handler)
+
+ if hasattr(importlib_machinery, 'FileFinder'):

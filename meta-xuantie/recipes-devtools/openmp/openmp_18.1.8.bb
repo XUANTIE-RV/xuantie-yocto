@@ -5,6 +5,13 @@ PV = "18.1.8"
 TOOLCHAIN = "clang"
 LICENSE = "CLOSED"
 
+python () {
+    import os
+    tc = d.getVar('EXTERNAL_TOOLCHAIN_CLANG') or ''
+    if not os.path.isfile(os.path.join(tc, 'lib', 'libomp.so')):
+        raise bb.parse.SkipRecipe("OpenMP runtime not found in clang toolchain")
+}
+
 do_install() {
     install -d ${D}${libdir}
     install -d ${D}${includedir}

@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yanan He <yanan.he@linux.dev>
+Date: Thu, 4 Sep 2026 12:00:00 +0800
+Subject: [PATCH] alsactl: skip custom strlcpy/strlcat fallbacks on glibc >= 2.38
+
+glibc 2.38 added strlcpy/strlcat to <string.h>, so the static fallback
+definitions in init_sysdeps.c now conflict with the libc declarations
+("static declaration of 'strlcpy' follows non-static declaration") and
+break the build. Only compile the fallbacks when the libc is known to
+lack the functions.
+
+Upstream fixed this the same way in alsa-utils 1.2.8.
+
+Upstream-Status: Backport [alsa-utils 1.2.8]
+Signed-off-by: Yanan He <yanan.he@linux.dev>
+---
+ alsactl/init_sysdeps.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/alsactl/init_sysdeps.c b/alsactl/init_sysdeps.c
+index 1111111..2222222 100644
+--- a/alsactl/init_sysdeps.c
++++ b/alsactl/init_sysdeps.c
+@@ -18,7 +18,8 @@
+  *
+  */
+
+-#if defined(__GLIBC__) && !(defined(__UCLIBC__) && defined(__USE_BSD))
++#if defined(__GLIBC__) && !(defined(__UCLIBC__) && defined(__USE_BSD)) && \
++	(__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 38))
+ static size_t strlcpy(char *dst, const char *src, size_t size)
+ {
+ 	size_t bytes = 0;
+--
+2.34.1

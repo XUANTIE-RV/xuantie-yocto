@@ -13,6 +13,8 @@ PR = "r1"
 
 PACKAGECONFIG ??= "python tui libtraceevent jevents"
 PACKAGECONFIG:append = " bfd"
+# riscv64 needs a DWARF post unwinder; perf falls back to the libdw backend
+PACKAGECONFIG:append:riscv64 = " libunwind"
 PACKAGECONFIG[perl] = ",NO_LIBPERL=1,perl"
 PACKAGECONFIG[python] = ",NO_LIBPYTHON=1,python3 python3-setuptools-native"
 # gui support was added with kernel 3.6.35

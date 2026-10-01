@@ -14,22 +14,18 @@ Upstream-Status: Submitted [https://marc.info/?l=linux-nfs&m=170254661824522&w=2
 Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
 ---
  support/reexport/reexport.h | 1 +
- 1 files changed, 1 insertions(+)
+ 1 file changed, 1 insertion(+)
 
 diff --git a/support/reexport/reexport.h b/support/reexport/reexport.h
-index 3bed03a..f46245e 100644
 --- a/support/reexport/reexport.h
 +++ b/support/reexport/reexport.h
-@@ -1,6 +1,9 @@
+@@ -1,6 +1,7 @@
  #ifndef REEXPORT_H
  #define REEXPORT_H
  
 +#include <unistd.h>
-+#include "nfslib.h"
-+
  enum {
-        REEXP_NONE = 0,
-        REEXP_AUTO_FSIDNUM,
--- 
+ 	REEXP_NONE = 0,
+ 	REEXP_AUTO_FSIDNUM,
+--
 2.42.0
-

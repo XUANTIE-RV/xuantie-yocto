@@ -1,0 +1,74 @@
+{
+  "updates": [
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-6.6-glibc64"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv64-glibc-ubuntu-22.04-gcc.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-6.6-glibc32"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv32-glibc-ubuntu-22.04-gcc.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-clang-6.6-glibc64"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv64-glibc-ubuntu-22.04-llvm.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-clang-6.6-glibc32"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv32-glibc-ubuntu-22.04-llvm.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-6.6-muslc64"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv64-musl-ubuntu-22.04-gcc.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-6.6-muslc32"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv32-musl-ubuntu-22.04-gcc.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-clang-6.6-muslc64"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv64-musl-ubuntu-22.04-llvm.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-clang-6.6-muslc32"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv32-musl-ubuntu-22.04-llvm.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-6.6-uclibc-ng64"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv64-uclibc-ng-ubuntu-22.04-gcc.tar.xz"
+    },
+    {
+      "type": "conf",
+      "file": [
+        "../conf/distro/include/config-gcc-6.6-uclibc-ng32"
+      ],
+      "new_url": "https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv32-uclibc-ng-ubuntu-22.04-gcc.tar.xz"
+    }
+  ]
+}

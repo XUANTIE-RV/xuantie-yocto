@@ -1,0 +1,59 @@
+	pmu {
+		compatible = "riscv,pmu";
+		riscv,event-to-mhpmevent =
+			/* PMU_HW_BRANCH_INSTRUCTIONS -> inst_branch */
+			<0x00005 0x00000000 0x00000036>,
+			/* PMU_HW_BRANCH_MISSES -> inst_branch_mispredict */
+			<0x00006 0x00000000 0x00000038>,
+			/* PMU_HW_STALLED_CYCLES_FRONTEND -> ifu_stalled_cycle */
+			<0x00008 0x00000000 0x00000027>,
+			/* PMU_HW_STALLED_CYCLES_BACKEND -> idu_stalled_cycle */
+			<0x00009 0x00000000 0x00000028>,
+			/* L1D_READ_ACCESS -> l1_dcache_read_access */
+			<0x10000 0x00000000 0x0000000c>,
+			/* L1D_READ_MISS -> l1_dcache_read_miss */
+			<0x10001 0x00000000 0x0000000d>,
+			/* L1D_WRITE_ACCESS -> l1_dcache_write_access */
+			<0x10002 0x00000000 0x0000000e>,
+			/* L1D_WRITE_MISS -> l1_dcache_write_miss */
+			<0x10003 0x00000000 0x0000000f>,
+			/* L1I_READ_ACCESS -> l1_icache_access */
+			<0x10008 0x00000000 0x00000001>,
+			/* L1I_READ_MISS -> l1_icache_miss */
+			<0x10009 0x00000000 0x00000002>,
+			/* LL_READ_ACCESS -> ll_cache_read_access */
+			<0x10010 0x00000000 0x00000010>,
+			/* LL_READ_MISS -> ll_cache_read_miss */
+			<0x10011 0x00000000 0x00000011>,
+			/* LL_WRITE_ACCESS -> ll_cache_write_access */
+			<0x10012 0x00000000 0x00000012>,
+			/* LL_WRITE_MISS -> ll_cache_write_miss */
+			<0x10013 0x00000000 0x00000013>,
+			/* BPU_READ_ACCESS -> branch_direction_prediction */
+			<0x10030 0x00000000 0x0000001c>,
+			/* BPU_READ_MISS -> branch_direction_misprediction */
+			<0x10031 0x00000000 0x0000001b>;
+		riscv,event-to-mhpmcounters =
+			/* The Xuantie processor only implements 18 mhpmcounters, so the bitmap is 0x7fff8 */
+			<0x00005 0x00005 0x7fff8>,
+			<0x00006 0x00006 0x7fff8>,
+			<0x00008 0x00008 0x7fff8>,
+			<0x00009 0x00009 0x7fff8>,
+			<0x10000 0x10000 0x7fff8>,
+			<0x10001 0x10001 0x7fff8>,
+			<0x10002 0x10002 0x7fff8>,
+			<0x10003 0x10003 0x7fff8>,
+			<0x10008 0x10008 0x7fff8>,
+			<0x10009 0x10009 0x7fff8>,
+			<0x10010 0x10010 0x7fff8>,
+			<0x10011 0x10011 0x7fff8>,
+			<0x10012 0x10012 0x7fff8>,
+			<0x10013 0x10013 0x7fff8>,
+			<0x10019 0x10019 0x7fff8>,
+			<0x10021 0x10021 0x7fff8>,
+			<0x10030 0x10030 0x7fff8>,
+			<0x10031 0x10031 0x7fff8>;
+		riscv,raw-event-to-mhpmcounters =
+			/* For raw event ID 0x0 - 0xff */
+			<0x0 0x0 0xffffffff 0xffffff00 0x7fff8>;
+	};

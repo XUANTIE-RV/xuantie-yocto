@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=155db86cdbafa7532b41f390409283eb \
 DEPENDS = "expat glib-2.0 intltool-native"
 
 inherit autotools gtk-doc pkgconfig useradd systemd gobject-introspection features_check
-inherit xuantie-gcc14-compatible
+inherit xuantie-gcc-compatible
 
 REQUIRED_DISTRO_FEATURES = "polkit"
 

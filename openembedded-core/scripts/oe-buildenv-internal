@@ -106,7 +106,17 @@ unset BITBAKEDIR newpath
 export BUILDDIR
 export PATH
 
-BB_ENV_PASSTHROUGH_ADDITIONS_OE="MACHINE DISTRO TCMODE TCLIBC HTTP_PROXY http_proxy \
+# Decompose composite TOOLCHAIN values into TOOLCHAIN + TOOLCHAIN_VENDOR.
+# Supports: xuantie-gcc, xuantie-llvm, riscv-gcc, riscv-llvm
+# Plain values (gcc, clang) are passed through unchanged.
+case "$TOOLCHAIN" in
+    xuantie-gcc)  export TOOLCHAIN_VENDOR=xuantie;   export TOOLCHAIN=gcc ;;
+    xuantie-llvm) export TOOLCHAIN_VENDOR=xuantie;   export TOOLCHAIN=clang ;;
+    riscv-gcc)    export TOOLCHAIN_VENDOR=riscv-gnu; export TOOLCHAIN=gcc ;;
+    riscv-llvm)   export TOOLCHAIN_VENDOR=riscv-gnu; export TOOLCHAIN=clang ;;
+esac
+
+BB_ENV_PASSTHROUGH_ADDITIONS_OE="MACHINE DISTRO TCMODE TCLIBC LIBC KERNEL TOOLCHAIN TOOLCHAIN_VENDOR HTTP_PROXY http_proxy \
 HTTPS_PROXY https_proxy FTP_PROXY ftp_proxy FTPS_PROXY ftps_proxy ALL_PROXY \
 all_proxy NO_PROXY no_proxy SSH_AGENT_PID SSH_AUTH_SOCK BB_SRCREV_POLICY \
 SDKMACHINE BB_NUMBER_THREADS BB_NO_NETWORK PARALLEL_MAKE GIT_PROXY_COMMAND \

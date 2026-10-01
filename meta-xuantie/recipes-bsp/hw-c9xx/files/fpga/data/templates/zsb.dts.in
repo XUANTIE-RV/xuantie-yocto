@@ -1,0 +1,56 @@
+/dts-v1/;
+/ {
+	model = "${MODEL}";
+	compatible = "xuantie,dummy";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	memory@${MEMORY_UNIT_ADDR} {
+		device_type = "memory";
+		reg = <${MEMORY_BASE} ${MEMORY_SIZE}>;
+	};
+${NTRACE_MEMORY_BLOCK}
+${CPU_BLOCK}
+${PMU_BLOCK}
+${PMC_BLOCK}
+${PCU_BLOCK}
+	soc: soc {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		compatible = "simple-bus";
+		dma-noncoherent;
+		ranges;
+
+${INTC_BLOCK}
+		dummy_apb: apb-clock {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <30000000>;
+			clock-output-names = "dummy_apb";
+		};
+
+		serial@${SERIAL_UNIT_ADDR} {
+			compatible = "snps,dw-apb-uart";
+			reg = <${SERIAL_BASE} ${SERIAL_SIZE}>;
+			interrupt-parent = <&intc>;
+			interrupts = <${SERIAL_IRQ} ${SERIAL_IRQ_TYPE}>;
+			clock-frequency = <${SERIAL_CLOCK_FREQ}>;
+			clock-names = "baudclk";
+			reg-shift = <2>;
+			reg-io-width = <4>;
+		};
+
+${GMAC_BLOCK}
+${NET_BLOCK}
+${NTRACE_BLOCK}
+${LINK_PMU_BLOCK}
+${XL300_BLOCK}
+	};
+
+	chosen {
+		bootargs = "${BOOTARGS}";
+		linux,initrd-start = <${INITRD_START}>;
+		linux,initrd-end = <${INITRD_END}>;
+		stdout-path = "${STDOUT_PATH}";
+	};
+};

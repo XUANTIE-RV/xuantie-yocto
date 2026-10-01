@@ -1,0 +1,48 @@
+From 7c3f1a9e2b4d5c6a8f0e1d2c3b4a5f6e7d8c9b0a Mon Sep 17 00:00:00 2001
+From: yanan.he <yanan.he@linux.alibaba.com>
+Date: Thu, 06 Aug 2026 00:10:00 +0800
+Subject: [PATCH] utilities: build comp_err when cross compiling with emulator
+
+comp_err is wrapped in IF(NOT CMAKE_CROSSCOMPILING): upstream expects a
+host-installed comp_err to be found in PATH during cross builds. The
+ADD_CUSTOM_COMMAND that generates mysqld_error.h/ername.h/errmsg.h/
+errmsg.sys references plain "comp_err", which on a cross build without
+the target resolves to a bare PATH lookup and fails:
+
+  cd .../build/utilities && comp_err --charset=... && cd ...
+  /bin/sh: 1: comp_err: not found
+
+When CMAKE_CROSSCOMPILING_EMULATOR is set, build comp_err as a normal
+target binary instead. The custom command references the target name,
+so CMake substitutes the full path and prepends the emulator
+automatically (same-directory target), and adds the target-level
+dependency. Cross builds without an emulator keep upstream semantics
+(host tool from PATH).
+
+Upstream-Status: Inappropriate [cross compilation specific]
+
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ utilities/CMakeLists.txt | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/utilities/CMakeLists.txt b/utilities/CMakeLists.txt
+index 83a8b6a..f2e1c9d 100644
+--- a/utilities/CMakeLists.txt
++++ b/utilities/CMakeLists.txt
+@@ -30,7 +30,12 @@ IF(NOT WITH_DEBUG)
+   DISABLE_DOCUMENTATION_WARNINGS()
+ ENDIF()
+ 
+-IF(NOT CMAKE_CROSSCOMPILING)
++# Cross build with an emulator (CMAKE_CROSSCOMPILING_EMULATOR): comp_err
++# is still needed at build time to generate mysqld_error.h & friends.
++# Build it as a target binary; the ADD_CUSTOM_COMMAND below references
++# the target name, so CMake substitutes the path and prepends the
++# emulator automatically.
++IF(NOT CMAKE_CROSSCOMPILING OR CMAKE_CROSSCOMPILING_EMULATOR)
+   MYSQL_ADD_EXECUTABLE(comp_err
+     comp_err.cc
+     COMPONENT Test
+-- 
+2.43.0

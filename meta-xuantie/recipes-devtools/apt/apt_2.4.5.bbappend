@@ -19,3 +19,9 @@ do_install:append() {
         install -m 0755 ${WORKDIR}/update-apt-sources-list.sh ${D}${INIT_D_DIR}
     fi
 }
+
+# Fix GCC 15 deprecated std::iterator error
+CXXFLAGS:append = "${@' -Wno-error=deprecated-declarations' if (d.getVar('GCC_VERSION') or '').startswith('15') else ''}"
+
+# GCC 15 header reorganization requires explicit <cstdint> include
+CXXFLAGS:append = " -include cstdint"

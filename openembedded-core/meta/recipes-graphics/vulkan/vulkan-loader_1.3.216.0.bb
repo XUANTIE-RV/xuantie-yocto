@@ -15,7 +15,7 @@ SRCREV = "322f7e3212b4fd9d70d7f48972963c83d24d06e4"
 S = "${WORKDIR}/git"
 
 REQUIRED_DISTRO_FEATURES = "vulkan"
-inherit xuantie-gcc14-compatible
+inherit xuantie-gcc-compatible
 inherit cmake features_check pkgconfig
 ANY_OF_DISTRO_FEATURES = "x11 wayland"
 

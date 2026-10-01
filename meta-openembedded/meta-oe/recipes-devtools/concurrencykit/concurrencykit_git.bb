@@ -24,8 +24,10 @@ inherit xuantie-set-package-arch-with-mcpu
 
 # Extend cpu configuration for different xuantie cpu
 python () {
-    if d.getVar('XUANTIE_MCPU') and d.getVar('XUANTIE_MCPU') != "c9xx-riscv64" and d.getVar('XUANTIE_MCPU') != "c9xx-riscv32":
+    if d.getVar('XUANTIE_TUNE_CCARGS_USE_MCPU') != 'NO':
         d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
+    else:
+        d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " " + d.getVar('XUANTIE_TUNE_CCARGS_GENERIC'))
 }
 
 PLAT:powerpc64 = "ppc64"

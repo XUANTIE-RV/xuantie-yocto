@@ -3,41 +3,43 @@ From: Bruce Ashfield <bruce.ashfield@gmail.com>
 Date: Wed, 12 Aug 2020 16:01:49 +0000
 Subject: [PATCH] build/golang.sh: convert remaining 'go' calls to use
 
+Upstream-Status: Inappropriate [embedded specific]
+
 Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
 ---
  hack/lib/golang.sh | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
-Index: kubernetes-v1.24.0+git8b1b4db3834ddf7cf1b97137180f413cb9e2186f/hack/lib/golang.sh
+Index: kubernetes/hack/lib/golang.sh
 ===================================================================
---- kubernetes-v1.24.0+git8b1b4db3834ddf7cf1b97137180f413cb9e2186f.orig/hack/lib/golang.sh
-+++ kubernetes-v1.24.0+git8b1b4db3834ddf7cf1b97137180f413cb9e2186f/hack/lib/golang.sh
-@@ -652,7 +652,7 @@
+--- kubernetes.orig/hack/lib/golang.sh
++++ kubernetes/hack/lib/golang.sh
+@@ -743,7 +743,7 @@ kube::golang::build_some_binaries() {
          kube::golang::create_coverage_dummy_test "${package}"
          kube::util::trap_add "kube::golang::delete_coverage_dummy_test \"${package}\"" EXIT
  
 -        go test -c -o "$(kube::golang::outfile_for_binary "${package}" "${platform}")" \
 +        $GO test -c -o "$(kube::golang::outfile_for_binary "${package}" "${platform}")" \
            -covermode count \
-           -coverpkg k8s.io/...,k8s.io/kubernetes/vendor/k8s.io/... \
+           -coverpkg k8s.io/... \
            "${build_args[@]}" \
-@@ -664,13 +664,13 @@
+@@ -755,13 +755,13 @@ kube::golang::build_some_binaries() {
      done
      if [[ "${#uncovered[@]}" != 0 ]]; then
        V=2 kube::log::info "Building ${uncovered[*]} without coverage..."
--      go install "${build_args[@]}" "${uncovered[@]}"
-+      $GO install "${build_args[@]}" "${uncovered[@]}"
+-      GOPROXY=off go install "${build_args[@]}" "${uncovered[@]}"
++      GOPROXY=off $GO install "${build_args[@]}" "${uncovered[@]}"
      else
        V=2 kube::log::info "Nothing to build without coverage."
-      fi
-    else
+     fi
+   else
      V=2 kube::log::info "Coverage is disabled."
--    go install "${build_args[@]}" "$@"
-+    $GO install "${build_args[@]}" "$@"
-    fi
+-    GOPROXY=off go install "${build_args[@]}" "$@"
++    GOPROXY=off $GO install "${build_args[@]}" "$@"
+   fi
  }
  
-@@ -729,7 +729,7 @@
+@@ -821,7 +821,7 @@ kube::golang::build_binaries_for_platfor
      testpkg=$(dirname "${test}")
  
      mkdir -p "$(dirname "${outfile}")"
@@ -45,4 +47,4 @@ Index: kubernetes-v1.24.0+git8b1b4db3834ddf7cf1b97137180f413cb9e2186f/hack/lib/g
 +    $GO test -c \
        ${goflags:+"${goflags[@]}"} \
        -gcflags="${gogcflags}" \
-       -asmflags="${goasmflags}" \
+       -ldflags="${goldflags}" \

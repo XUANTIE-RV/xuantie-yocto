@@ -1,2 +1,0 @@
-CFLAGS += " -Wno-incompatible-pointer-types  -Wno-calloc-transposed-args  -Wno-deprecated-declarations -Wno-maybe-uninitialized -Wno-builtin-declaration-mismatch -Wno-implicit-function-declaration -Wno-pointer-to-int-cast -Wno-implicit-int -Wno-unused-result -Wno-unknown-warning-option"
-CXXFLAGS += "-Wno-dangling-reference -Wno-unknown-warning-option  -Wno-calloc-transposed-args -Wno-dangling-pointer"

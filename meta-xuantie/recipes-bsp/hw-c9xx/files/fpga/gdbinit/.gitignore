@@ -1,0 +1,5 @@
+# Rendered products, regenerated per-invocation by update_dts_cpu.sh
+# (render_gdbinit.py / render_socinit.py). Only the *.in templates are tracked.
+zsb.gdbinit
+zsb_rv64_optee.gdbinit
+zsb_socinit.gdbinit

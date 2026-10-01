@@ -17,7 +17,7 @@ index 16d2a8d..60824f9 100644
  
  CFLAGS += -DITERATIONS=$(ITERATIONS)
 +ifeq (clang, ${TOOLCHAIN})
-+       CFLAGS += -O3 -static -DITERATIONS=10000 -mllvm -inline-threshold=500 -mllvm -riscv-default-unroll=false -mllvm -jump-threading-threshold=0 -mllvm -enable-dfa-jump-thread=true
++       CFLAGS += -O3 -static -DITERATIONS=10000 -mllvm -inline-threshold=500 -mllvm -jump-threading-threshold=0 -mllvm -enable-dfa-jump-thread=true
 +endif
 +ifeq (gcc, ${TOOLCHAIN})
 +       CFLAGS += -static -O3 -funroll-all-loops -finline-limit=500 -fgcse-sm -DITERATIONS=10000 -msignedness-cmpiv -fno-code-hoisting -mno-thread-jumps1 -mno-iv-adjust-addr-cost -mno-expand-split-imm -fselective-scheduling -fgcse-las

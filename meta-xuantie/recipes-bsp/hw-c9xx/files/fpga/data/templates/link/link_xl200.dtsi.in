@@ -1,0 +1,9 @@
+##REPEAT XL200##
+		${XL200_NODE_NAME} {
+			compatible = "xuantie,xl200-pmu";
+			reg = <${XL200_BASE} ${XL200_SIZE}>;
+			interrupt-parent = <&intc>;
+			interrupts = <${XL200_IRQ} ${XL200_IRQ_TYPE}>;
+			status = "${XL200_STATUS}";
+		};
+##ENDREPEAT##

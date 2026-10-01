@@ -44,5 +44,16 @@ do_install () {
         bbdebug 1 wrap_bin "$bin"
         wrap_bin "$bin"
     done
-}
 
+    # Fallback: if llvm-readelf was not created (binary missing from toolchain)
+    # but llvm-readobj exists, create a wrapper using llvm-readobj with GNU output
+    # style.  llvm-readelf is normally a symlink to llvm-readobj; the only
+    # difference is the default output format.
+    if [ ! -e "${D}${bindir}/${TARGET_PREFIX}llvm-readelf" ] && \
+       [ -e "${EXTERNAL_TOOLCHAIN_CLANG}/bin/llvm-readobj" ]; then
+        script="${D}${bindir}/${TARGET_PREFIX}llvm-readelf"
+        printf '#!/bin/sh\nexec $EXTERNAL_TOOLCHAIN_EXPORT_CLANG/bin/llvm-readobj --elf-output-style=GNU "$@"\n' >"$script"
+        chmod +x "$script"
+        ln -sr "$script" "${D}${bindir}/llvm-readelf"
+    fi
+}

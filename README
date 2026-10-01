@@ -1,0 +1,98 @@
+# xuantie-yocto
+
+**玄铁（XuanTie）RISC-V CPU** 的 Yocto BSP 集成仓库。以 `meta-xuantie` 为核心 BSP 层，整合 OpenEmbedded Core / OE-Layers / meta-riscv / meta-clang / meta-virtualization 等多个 Yocto 层，附带工具链拉取与镜像构建配套脚本，可直接产出面向 c906 / c907 / c908 / c910 / c920 / c925 / c930 / c950 / r908 / r910 / r920 等玄铁系列 CPU 的 Linux 镜像。
+
+---
+
+## 仓库结构
+
+| 顶层目录 | 类型 | 用途 |
+|---------|------|------|
+| `openembedded-core/` | yocto subtree | OE 核心层 + `bitbake/`（嵌套 subtree） |
+| `meta-openembedded/` | yocto subtree | 通用扩展层（meta-oe / meta-python / meta-networking / meta-gnome / ...）|
+| `meta-external-toolchain/` | yocto subtree | 外部工具链集成层 |
+| `meta-riscv/` | yocto subtree | RISC-V 通用 BSP 层 |
+| `meta-clang/` | yocto subtree | Clang/LLVM 工具链层 |
+| `meta-virtualization/` | yocto subtree | 容器/虚拟化层（docker/k8s/kvm/qemu）|
+| **`meta-xuantie/`** | yocto subtree | **玄铁核心 BSP 层**（112 个 distro / 84 个 machine / 全套 recipes）|
+| `meta-k230/` | yocto subtree | K230 SoC 支持层 |
+| `xuantie-build/` | 构建脚手架 | 各 image 变体的 `bblayers.conf`/`local.conf` 模板 |
+
+---
+
+## 代码获取
+
+发布版**不含 git submodule**，直接克隆即可：
+
+```bash
+git clone -b <分支名> https://gitee.com/xuantie-yocto/xuantie-yocto.git
+cd xuantie-yocto
+```
+
+构建脚手架 `linux-image-tools` 是独立仓库，需要它时克隆到约定路径：
+
+```bash
+git clone -b <分支名> https://gitee.com/xuantie-yocto/linux-image-tools.git \
+    xuantie-build/xuantie/linux-image-tools
+```
+
+`meta-xuantie/conf/distro/*.conf` 与 `conf/machine/*.conf` 属于生成物，不入库。
+构建前先生成工具链与 CPU 配置，再 `bitbake`：
+
+```bash
+bash meta-xuantie/scripts/toolchain-init.sh --vendor xuantie
+bash meta-xuantie/scripts/gen-cpu-confs.sh --toolchain "$(pwd)/xuantie-toolchain-gcc"
+source openembedded-core/oe-init-build-env xuantie-build/xuantie
+DISTRO=<cpu 型号，如 c920v3> bitbake xuantie-image-lite
+```
+
+---
+
+## 主要功能 / 能力概览
+
+| 维度 | 范围 |
+|------|------|
+| **支持的玄铁 CPU 家族** | c906 / c907 / c908 / c910 / c920 / c925 / c930 / c950 / r908 / r910 / r920 / xt-c92xx / xt-c93xx / xt-c95xx |
+| **Distro 数量** | 112（覆盖 GNU/musl/uclibc-ng × rv32/rv64 × 各 ISA 子集 × xthead/wo-xthead）|
+| **Machine 数量** | 84（FPGA / EVB / QEMU 各 CPU 派生）|
+| **支持 libc** | glibc、musl |
+| **支持 kernel 版本** | linux-xuantie 6.6.y（默认）/ 5.10.y |
+| **预置 image 模板** | core-image-minimal、xuantie-image-lite等 |
+| **核心扩展能力** | CPU基础性能测试集、SPEC2006/SPEC2017 基准、KVM/QEMU 虚拟化、OP-TEE、FPGA SoC适配 |
+
+### 主要 layer 组合
+
+`xuantie-build/xuantie/conf/bblayers.conf` 默认开启的层栈：
+
+```
+openembedded-core/meta
+meta-openembedded/{meta-filesystems, meta-networking, meta-perl, meta-oe, meta-python, meta-webserver}
+meta-external-toolchain
+meta-riscv
+meta-xuantie
+meta-k230
+meta-clang
+meta-virtualization
+```
+
+---
+
+- 上游：
+  - [Yocto Project](https://www.yoctoproject.org/)
+  - [meta-riscv](https://github.com/riscv/meta-riscv)
+  - [玄铁开放社区](https://www.xrvm.cn/)
+
+---
+
+## 贡献流程
+
+1. 在 [Gitee](https://gitee.com/xuantie-yocto/xuantie-yocto) fork 本仓库，基于目标发布分支新建 feature branch
+2. 提交 commit，message 用祈使句简述改动范围（涉及具体 recipe / CPU 时一并写明）
+3. 发起 Pull Request，由维护人评审
+4. 评审通过并经 CI 验证后合入
+
+---
+
+## 许可
+
+各 layer 的许可遵循其原始上游协议；`meta-xuantie/` 自有内容采用 MIT。详见各 recipe 的 `LICENSE` 字段。

@@ -28,6 +28,7 @@ SRC_URI = " \
     file://0008-tests-meson.build-use-relative-path-to-refer-to-file.patch \
     file://0009-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
     file://0010-hw-pvrdma-Protect-against-buggy-or-malicious-guest-d.patch \
+    file://0011-target-riscv-enable-zalasr-on-c920v3-cpu-variants.patch \
     file://0002-linux-user-Replace-use-of-lfs64-related-functions-an.patch \
     file://fixedmeson.patch \
     file://no-pip.patch \

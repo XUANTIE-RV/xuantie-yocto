@@ -39,7 +39,7 @@ SRC_URI = "git://github.com/linux-test-project/ltp.git;branch=master;protocol=ht
 S = "${WORKDIR}/git"
 
 inherit autotools-brokensep pkgconfig
-inherit xuantie-gcc14-compatible
+inherit xuantie-gcc-compatible
 
 # Version 20220527 added KVM test infrastructure which currently fails to build with gold due to
 # SORT_NONE in linker script which isn't supported by gold:

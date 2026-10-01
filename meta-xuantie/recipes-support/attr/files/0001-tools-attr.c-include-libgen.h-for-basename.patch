@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yanan He <yanan.he@linux.alibaba.com>
+Date: Tue, 22 Apr 2026 16:00:00 +0800
+Subject: [PATCH] tools/attr.c: include libgen.h for basename()
+
+musl libc does not declare basename() in <string.h>.
+Include <libgen.h> which provides the POSIX basename() on all libc
+implementations.
+
+Signed-off-by: Yanan He <yanan.he@linux.alibaba.com>
+---
+ tools/attr.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/attr.c b/tools/attr.c
+index 1234567..abcdefg 100644
+--- a/tools/attr.c
++++ b/tools/attr.c
+@@ -27,6 +27,7 @@
+ #include <errno.h>
+ #include <string.h>
+ #include <locale.h>
++#include <libgen.h>
+ 
+ #include <attr/attributes.h>
+ 

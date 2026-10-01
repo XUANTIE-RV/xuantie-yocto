@@ -12,7 +12,7 @@ set -e
 SCRIPT_DIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 cd $SCRIPT_DIR
 
-source script/system_alias_config.sh
+source runtime/system_alias_config.sh
 
 if [ "$#" -eq 0 ] || \
 	{ [ "$#" -eq 1 ] && { [ "$1" = "--help" ] || [ "$1" = "-h" ]; }; }; then
@@ -21,7 +21,7 @@ if [ "$#" -eq 0 ] || \
 	echo "Examples:"
 	echo "  run_fpga.sh --target_remote=127.0.0.1:1025"
 	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 \\"
-	echo "              --rva_profile=rva20  \\"
+	echo "              --rva_profile=rva22  \\"
 	echo "              --abi_mode=rv64_std  \\"
 	echo "              --enable_uboot=true \\"
 	echo "              --opensbi_ver=1.7  \\"
@@ -30,15 +30,14 @@ if [ "$#" -eq 0 ] || \
 	echo "              --rootfs_type=lite \\"
 	echo "  eg: for rva23 profile(C930), we like to use  -  "
 	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 --system=xuantie_rva23_std_kernel6_6_kcdefault"
-	echo "  eg: for rva20 profile(C920/C908/C907/C906 RV64 series), we like to use  -  "
+	echo "  eg: for rva22 profile(C920/C908/C907/C906 RV64 series), we like to use  -  "
 	echo "  run_fpga.sh --target_remote=127.0.0.1:1025 --system=xuantie_rv64_std_kernel6_6_kcdefault"
 	echo ""
 	echo "[OPTION] format is: [--KEY=VALUE] defines below, the 1st value is DEFAULT."
 	echo "     --target_remote      value: 192.168.0.1:1234"
-	echo "     --rva_profile        value: rva23 | rva20"
+	echo "     --rva_profile        value: rva23 | rva22 (rva20 compatible)"
 	echo "     --abi_mode           value: rv64_std | rv32_std "
-	echo "     --enable_uboot       value: false | true"
-	echo "     --enable_2core       value: false | true"
+	echo "     --enable_uboot       value: false | true | direct-boot | tftp-boot"
 	echo "     --opensbi_ver        value: 1.7 | 0.9"
 	echo "     --kernel_ver         value: 6.6 | 5.10 | 5.10@c906fdv"
 	echo "     --kernel_cfg         value: debug | default"
@@ -50,6 +49,10 @@ if [ "$#" -eq 0 ] || \
 		echo "                                 $item"
 	done
 	echo "     --enable_load_image_backdoor  value: false | true"
+	echo "                                   (true: kernel/rootfs loaded via"
+	echo "                                    xactor_mem_backdoor and gdbinit does no"
+	echo "                                    pcu operations — hart release happens"
+	echo "                                    outside gdbinit)"
 	echo "     --haps_sn            value: K080000 | etc."
 	echo "     --simulate_run       value: false | true"
 	echo ""
@@ -63,10 +66,9 @@ declare -a params_order
 
 # set default values
 params_array["target_remote"]="192.168.0.1:1025"; params_order+=("target_remote")
-params_array["rva_profile"]="rva20";              params_order+=("rva_profile")
+params_array["rva_profile"]="rva22";              params_order+=("rva_profile")
 params_array["abi_mode"]="rv64_std";              params_order+=("abi_mode")
 params_array["enable_uboot"]="false";             params_order+=("enable_uboot")
-params_array["enable_2core"]="false";             params_order+=("enable_2core")
 params_array["opensbi_ver"]="1.7";                params_order+=("opensbi_ver")
 params_array["kernel_ver"]="6.6";                 params_order+=("kernel_ver")
 params_array["kernel_cfg"]="debug";               params_order+=("kernel_cfg")
@@ -161,7 +163,7 @@ images_array["image_uboot"]="";     images_order+=("image_uboot")
 images_array["image_opensbi"]="";   images_order+=("image_opensbi")
 images_array["image_kernel"]="";    images_order+=("image_kernel")
 images_array["image_rootfs"]="";    images_order+=("image_rootfs")
-source script/get_images.sh
+source runtime/get_images.sh
 cpio_gz_file=${images_array["image_rootfs"]}
 if [ ${params_array["enable_load_image_backdoor"]} == "true" ]; then
 	cpio_file="${cpio_gz_file%.gz}"
@@ -184,19 +186,18 @@ done
 # declare control_array for gdb
 declare -A gdb_control_array
 gdb_control_array["rva23_profile"]=0
-gdb_control_array["rva20_profile"]=0
+gdb_control_array["rva22_profile"]=0
 gdb_control_array["rv64_std"]=0
 gdb_control_array["rv32_std"]=0
 gdb_control_array["skip_load_image"]=0
 gdb_control_array["simulate_run"]=0
 gdb_control_array["ctl_enable_uboot"]=0
-gdb_control_array["ctl_enable_2core"]=0
 gdb_control_array["opensbi_0_9_with_kernel_5_10"]=0
 
 if [ ${params_array["rva_profile"]} == "rva23" ]; then
 	gdb_control_array["rva23_profile"]=1
-elif [ ${params_array["rva_profile"]} == "rva20" ]; then
-	gdb_control_array["rva20_profile"]=1
+elif [ ${params_array["rva_profile"]} == "rva22" ] || [ ${params_array["rva_profile"]} == "rva20" ]; then
+	gdb_control_array["rva22_profile"]=1
 fi
 
 if [ ${params_array["abi_mode"]} == "rv64_std" ]; then
@@ -213,21 +214,15 @@ if [ ${params_array["simulate_run"]} == "true" ]; then
 	gdb_control_array["simulate_run"]=1
 fi
 
-if [ ${params_array["enable_uboot"]} == "true" ]; then
+if [ ${params_array["enable_uboot"]} == "true" ] || \
+   [ ${params_array["enable_uboot"]} == "direct-boot" ]; then
 	gdb_control_array["ctl_enable_uboot"]=1
+elif [ ${params_array["enable_uboot"]} == "tftp-boot" ]; then
+	gdb_control_array["ctl_enable_uboot"]=2
 elif [ ${params_array["enable_uboot"]} == "false" ]; then
 	gdb_control_array["ctl_enable_uboot"]=0
 else
-	echo "ERROR[$LINENO]: not supported uboot mode:'${params_array["enable_uboot"]}'"
-	exit 1
-fi
-
-if [ ${params_array["enable_2core"]} == "true" ]; then
-	gdb_control_array["ctl_enable_2core"]=1
-elif [ ${params_array["enable_2core"]} == "false" ]; then
-	gdb_control_array["ctl_enable_2core"]=0
-else
-	echo "ERROR[$LINENO]: not supported 2core mode:'${params_array["enable_2core"]}'"
+	echo "ERROR[$LINENO]: not supported uboot mode:'${params_array["enable_uboot"]}', use 'false|true|direct-boot|tftp-boot'"
 	exit 1
 fi
 
@@ -247,22 +242,20 @@ done
 ###############################################################################
 GDBINIT=gdbinit/zsb.gdbinit
 SOCINIT=gdbinit/zsb_socinit.gdbinit
-if [ ${params_array["abi_mode"]} == "rv64_std" ]; then
-	DTS=dts/zsb_rv64.dts
-else
-	DTS=dts/zsb_rv32.dts
-fi
 
-if [ ! -f $GDBINIT -o ! -f $SOCINIT -o ! -f $DTS ]; then
-	echo "Error: init file ${SOCINIT} or ${GDBINIT} or dts ${DTS} not exist !"
+if [ ! -f $GDBINIT -o ! -f $SOCINIT ]; then
+	echo "Error: init file ${SOCINIT} or ${GDBINIT} not exist !"
 	exit 1
 fi
 
-# modify .hw.dts with correct rootfs size
-echo ">> generate '.hw.dts'"
-if [ ! -f .hw.dts ] ; then
-	./dtc -I dts -O dts $DTS > .hw.dts
+# .hw.dts is produced by update_dts_cpu.sh (arch selected from -cpu). Fail fast
+# if it hasn't been generated yet.
+if [ ! -f .hw.dts ]; then
+	echo "Error: .hw.dts not found. Run update_dts_cpu.sh <soc_platform> -cpu <cpu> first."
+	exit 1
 fi
+
+echo ">> using .hw.dts (generated by update_dts_cpu.sh)"
 
 # if kernel is 5.10, not support _sscofpmf
 if [[ ${params_array["kernel_ver"]} == *"5.10"* ]]; then
@@ -270,13 +263,15 @@ if [[ ${params_array["kernel_ver"]} == *"5.10"* ]]; then
 fi
 
 ROOTFS_BASE=`cat .hw.dts | grep initrd-start | awk -F " " '{print $4}' | awk -F ">" '{print $1}'`
-ROOTFS_SIZE=`ls -lt $(realpath ${images_array["image_rootfs"]}) | awk '{print $5}'`
+rootfs=$(realpath "${images_array["image_rootfs"]}" 2>/dev/null) || true
+[ -s "$rootfs" ] || { echo "ERROR[$LINENO]: rootfs '${images_array["image_rootfs"]}' missing or empty"; exit 1; }
+ROOTFS_SIZE=$(stat -c%s "$rootfs")
 ((ROOTFS_END= $ROOTFS_BASE + $ROOTFS_SIZE))
 ROOTFS_END=`printf "0x%x" $ROOTFS_END`
 sed -i "s/linux,initrd-end = <0x0* .*/linux,initrd-end = <0x00 $ROOTFS_END>;/g" .hw.dts
 
 # compile device tree file
-./dtc -I dts -O dtb .hw.dts > hw.dtb
+tools/dtc -I dts -O dtb .hw.dts > hw.dtb
 
 # check all images_array image file exist before run
 echo "<< images name:"
@@ -285,8 +280,8 @@ for id in "${!images_order[@]}"; do
 	value=${images_array[$key]}
 	export $key=$value
 	echo "  $key = \"$value\""
-	if [ -n $value ]; then
-		if [ ! -e $value ] || [ ! -s $value ]; then
+	if [ -n "$value" ]; then
+		if [ ! -e "$value" ] || [ ! -s "$value" ]; then
 			echo "ERROR[$LINENO]: image '$value' not exist or size is 0"
 			exit 1
 		fi
@@ -300,27 +295,33 @@ echo "=============================="
 if [ ${params_array["enable_load_image_backdoor"]} == "false" ]; then
 	sed -i '/#\s*restore_xt \$image_kernel   binary \$vmlinux_addr/s/#\s*//' $GDBINIT
 	sed -i '/#\s*restore_xt \$image_rootfs   binary \$rootfs_addr/s/#\s*//' $GDBINIT
+	# undo any previous backdoor commenting (re-rendered gdbinit is already clean)
+	sed -i 's/^# backdoor: //' $GDBINIT
 else
 	sed -i '/^\s*restore_xt \$image_kernel   binary \$vmlinux_addr/s/^\(\s*\)\(restore_xt\)/\1# \2/' $GDBINIT
 	sed -i '/^\s*restore_xt \$image_rootfs   binary \$rootfs_addr/s/^\(\s*\)\(restore_xt\)/\1# \2/' $GDBINIT
+	# backdoor boot: images are loaded and harts released outside gdb
+	# (runtime/load_image.csh), so gdbinit must do NO pcu operations —
+	# comment out per-hart reset writes, per-hart config writes and the
+	# global release write. The "# backdoor: " marker keeps this toggle
+	# distinct from the layout-gated "# " commenting, so switching back
+	# to backdoor=false never re-enables layout-disabled harts.
+	sed -i '/^\s*set \*\(unsigned long \*\)\?0x[0-9a-f]\+ = \$zsb_addr/s/^/# backdoor: /' $GDBINIT
+	sed -i '/^\s*set \*(unsigned long \*)0x[0-9a-f]\+ = 0x/s/^/# backdoor: /' $GDBINIT
+	sed -i '/^\s*set \*0x[0-9a-f]\+ = 0x[0-9a-f]\+\s*$/s/^/# backdoor: /' $GDBINIT
 fi
 
 if [ ${params_array["simulate_run"]} == "false" ]; then
 	if [ ${params_array["enable_load_image_backdoor"]} == "true" ]; then
-		csh load_image.csh ${params_array["haps_sn"]} ${images_array["image_kernel"]} ${images_array["image_rootfs"]}
+		csh runtime/load_image.csh ${params_array["haps_sn"]} ${images_array["image_kernel"]} ${images_array["image_rootfs"]}
 	fi
 	# SoC related initialization and  boot linux with gdbinit
 	if [ ${params_array["abi_mode"]} == "rv32_std" ]; then
-		./riscv64-unknown-elf-gdb -q -ex "set architecture riscv:rv32" -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
+		tools/riscv64-unknown-elf-gdb -q -ex "set architecture riscv:rv32" -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
 	else
-		if [ ${params_array["enable_2core"]} == "true" ]; then
-			ipport=${params_array["target_remote"]}
-			./riscv64-unknown-elf-gdb -q -ex "tar remote ${ipport/1025/1026}" -x gdbinit/zsb.gdbinit_core1 &
-			sleep 4s
-		fi
-		./riscv64-unknown-elf-gdb -q -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
+		tools/riscv64-unknown-elf-gdb -q -ex "tar remote ${params_array["target_remote"]}" -x gdbinit/zsb.gdbinit -ex "c"
 	fi
 else
 	echo ""
-	./riscv64-unknown-elf-gdb -x gdbinit/zsb.gdbinit -ex "q"
+	tools/riscv64-unknown-elf-gdb -x gdbinit/zsb.gdbinit -ex "q"
 fi

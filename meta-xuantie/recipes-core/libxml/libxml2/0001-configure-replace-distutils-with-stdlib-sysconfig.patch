@@ -1,0 +1,49 @@
+From: yanan.he <yanan.he@linux.alibaba.com>
+Subject: [PATCH] configure: replace distutils with stdlib sysconfig
+
+Python 3.12 removed distutils (PEP 632); on Python 3.13 the configure
+probes that run `from distutils import sysconfig` fail with
+ModuleNotFoundError, leaving PYTHON_VERSION / PYTHON_INCLUDES /
+PYTHON_SITE_PACKAGES empty so the libxml2 python bindings are silently
+not built. That in turn breaks itstool-native do_configure
+("Python module libxml2 is needed") and libxml2 do_install_ptest_base
+(missing python/tests/Makefile).
+
+Use stdlib equivalents instead:
+- sysconfig.get_python_version() -> '%d.%d' % (v.major, v.minor)
+  (attribute access only: autoconf/m4 would eat square brackets of [:2])
+- sysconfig.get_python_inc()     -> sysconfig.get_config_var('INCLUDEPY')
+  (get_path('include') is wrong: it ignores the staged INCLUDEPY that OE
+   relocates per recipe-sysroot and returns a bare /usr/include/pythonX.Y)
+- get_python_lib(True,False,P)   -> sysconfig.get_path('platlib', vars=...)
+  (base/platbase keep the literal ${exec_prefix} for later eval expansion,
+   matching distutils semantics)
+
+Upstream-Status: Backport-incompatible [2.9.14 only; >= 2.10 uses AM_PATH_PYTHON + pkg-config]
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ configure.ac | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -832,8 +832,8 @@
+     fi
+     if test "$PYTHON" != ""
+     then
+-        PYTHON_VERSION=`$PYTHON -c "from distutils import sysconfig; print(sysconfig.get_python_version())"`
+-	PYTHON_INCLUDES=`$PYTHON -c "from distutils import sysconfig; print(sysconfig.get_python_inc())"`
++        PYTHON_VERSION=`$PYTHON -c "import sys; v=sys.version_info; print('%d.%d' % (v.major, v.minor))"`
++	PYTHON_INCLUDES=`$PYTHON -c "import sysconfig; print(sysconfig.get_config_var('INCLUDEPY'))"`
+ # does not work as it produce a /usr/lib/python path instead of/usr/lib64/python
+ #
+ #	PYTHON_SITE_PACKAGES=`$PYTHON -c "from distutils import sysconfig; print(sysconfig.get_python_lib())"`
+@@ -877,7 +877,7 @@
+ 	    then
+ 		PYTHON_SITE_PACKAGES=$with_python/lib/site-packages
+ 	    else
+-		PYTHON_SITE_PACKAGES=$($PYTHON -c 'from distutils import sysconfig; print(sysconfig.get_python_lib(True,False,"${exec_prefix}"))')
++		PYTHON_SITE_PACKAGES=$($PYTHON -c 'import sysconfig; print(sysconfig.get_path("platlib", vars={"base": "${exec_prefix}", "platbase": "${exec_prefix}"}))')
+ 	    fi
+ 	fi
+     fi

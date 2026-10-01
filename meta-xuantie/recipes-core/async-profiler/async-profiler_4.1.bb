@@ -32,6 +32,11 @@ EXTRA_OEMAKE = " \
     DEBUG=0 \
 "
 do_compile() {
+    # Pre-create output directories to avoid parallel make race condition.
+    # The upstream Makefile's pattern rule (build/%: mkdir -p $@) creates
+    # build/bin and build/lib, but build/bin/asprof's explicit rule does not
+    # depend on build/bin, so with -j N the linker can run before mkdir.
+    mkdir -p ${S}/build/bin ${S}/build/lib
     oe_runmake -C ${S}
 }
 

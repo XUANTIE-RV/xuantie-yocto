@@ -17,6 +17,7 @@ SRCNAME="pygobject"
 SRC_URI = " \
     http://ftp.gnome.org/pub/GNOME/sources/${SRCNAME}/${@gnome_verdir("${PV}")}/${SRCNAME}-${PV}.tar.xz \
     file://0001-Do-not-build-tests.patch \
+    file://0001-Replace-removed-Py_TRASHCAN_SAFE_-macros-for-Python-3.patch \
 "
 SRC_URI[sha256sum] = "ade8695e2a7073849dd0316d31d8728e15e1e0bc71d9ff6d1c09e86be52bc957"
 

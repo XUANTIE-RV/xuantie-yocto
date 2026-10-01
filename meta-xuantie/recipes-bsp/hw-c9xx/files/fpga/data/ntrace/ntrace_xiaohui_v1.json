@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "文件名规则:ntrace_<SoC 家族>_v<trace 版本>。本文件 = xiaohui 家族 + trace v1。",
+    "",
+    "追踪类型(topology_model=single-l2-funnel):两级 funnel 汇聚到单一 L2 sink;",
+    "  encoder/funnel 用绝对 offset + cluster_stride 线性排布(非 DMI 索引)。",
+    "  适用:C907 / C908(含 C908X / C908_v2)/ R908 等一代追踪核(均在 xiaohui_v1 平台)。",
+    "",
+    "地址分配(APB 基址 dmi_apb_base=0x26000000,cluster c、cluster 内核 i 从 0 计):",
+    "  encoder{p}    = base + c*cluster_stride(0x20000) + (i+1)*encoder_offset(0x1000)",
+    "  funnel1_{c}   = base + c*cluster_stride(0x20000) + funnel1_offset(0x11000)",
+    "  funnel2       = base + funnel2_offset(0x404000)                = 0x26404000",
+    "  sink(smem)    = base + 0x401000 = 0x26401000(sram=+0x400000 / pib=+0x403000)",
+    "  node_size     = 0x1000(每节点寄存器窗口)",
+    "  预留追踪内存  = reserved_mem_start 0xf0000000,大小 0x2000000(32MB,低端)。",
+    "",
+    "选择来源:auto 时由 generate_dts.py select_trace_config(cpu, platform) 拼出",
+    "  ntrace_<家族>_v<版本>(版本取 platform-selection.csv 的 ntrace 列,家族取平台名);",
+    "  -ntrace <本文件名 stem> 可强制指定(仅调试)。",
+    "  若某 SoC 家族需改 apb/base 地址:新增 data/ntrace/ntrace_<家族>_v1.json 即可,零 Python。"
+  ],
+  "topology_model": "single-l2-funnel",
+  "dmi_apb_base": "0x26000000",
+  "cluster_stride": "0x20000",
+  "encoder_offset": "0x1000",
+  "funnel1_offset": "0x11000",
+  "funnel2_offset": "0x404000",
+  "sink_offset": {
+    "smem": "0x401000",
+    "sram": "0x400000",
+    "pib": "0x403000"
+  },
+  "node_size": "0x1000",
+  "reserved_mem_start": "0xf0000000",
+  "reserved_mem_size": "0x2000000",
+  "default_sink_type": "smem"
+}

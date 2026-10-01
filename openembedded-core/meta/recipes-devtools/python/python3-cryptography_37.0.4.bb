@@ -16,6 +16,7 @@ SRC_URI += "file://run-ptest \
            file://0001-Cargo.toml-specify-pem-version.patch \
            file://0002-Cargo.toml-edition-2018-2021.patch \
            file://0001-pyproject.toml-remove-benchmark-disable-option.patch \
+           file://0003-pyo3-gate-PyUnicode_READY-call-at-compile-time-for-Py.patch;patchdir=${CARGO_HOME}/bitbake/pyo3-0.15.2 \
            crate://crates.io/Inflector/0.11.4 \
            crate://crates.io/aliasable/0.1.3 \
            crate://crates.io/asn1/0.8.7 \

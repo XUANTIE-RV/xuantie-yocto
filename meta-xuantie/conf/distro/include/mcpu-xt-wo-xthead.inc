@@ -1,4 +1,0 @@
-require conf/distro/include/mcpu.inc
-
-XUANTIE_TUNE_CCARGS_USE_MCPU = "NO"
-XUANTIE_TUNE_CCARGS_GENERIC = " ${XUANTIE_NATIVE_TUNE_CCARGS}"

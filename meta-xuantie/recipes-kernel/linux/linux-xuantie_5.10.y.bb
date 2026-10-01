@@ -72,6 +72,14 @@ do_deploy:append() {
    cp ${B}/vmlinux ${DEPLOYDIR}
 }
 
+# Disable RISC-V linker relaxation for the open-source GNU toolchain.
+# binutils 2.41+ on RISC-V rewrites .export_symbol relocations during ld -r
+# (vmlinux.o) to point at the nearest .L* debug/anchor label instead of the
+# original global symbol, which makes modpost report every EXPORT_SYMBOL as
+# "local symbol was exported". Scoped to vendor-riscv-gnu so vendor-xuantie
+# (older GCC) is unaffected.
+EXTRA_OEMAKE:append:vendor-riscv-gnu = " KCFLAGS=-mno-relax KAFLAGS=-mno-relax"
+
 KCONFIG_MODE="--alldefconfig"
 
 FILES:${KERNEL_PACKAGE_NAME}-base += "${sysconfdir}"

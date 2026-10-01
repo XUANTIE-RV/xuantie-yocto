@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: XuanTie Linux SDK CI <noreply@linux.alibaba.com>
+Date: Sun, 3 Aug 2026 00:00:00 +0800
+Subject: [PATCH] ndiff: import setuptools before distutils for Python 3.13
+
+ndiff/setup.py imports distutils.* directly. Python 3.12 removed the
+stdlib distutils package, so on python3 3.13 the ndiff build (invoked by
+`python3 setup.py build` when PACKAGECONFIG[ndiff] is enabled) fails with:
+
+    ModuleNotFoundError: No module named 'distutils'
+
+Import setuptools before the distutils imports. setuptools ships a bundled
+copy of distutils and, with SETUPTOOLS_USE_DISTUTILS=local (the default),
+installs a meta path shim that makes `import distutils.*` resolve to
+setuptools._distutils. This keeps setup.py working on Python 3.12+ while
+remaining a no-op on older interpreters that still provide stdlib distutils.
+
+Upstream-Status: Inappropriate [nmap 7.80 is EOL; local py3.13 build fix]
+---
+--- a/ndiff/setup.py
++++ b/ndiff/setup.py
+@@ -8,6 +8,11 @@
+ 
+ from stat import *
+ 
++# On Python 3.12+ the stdlib distutils was removed; importing setuptools
++# first installs its bundled _distutils shim so the distutils.* imports
++# below resolve to setuptools._distutils.
++import setuptools  # noqa: F401
++
+ import distutils.command
+ import distutils.command.install
+ import distutils.core

@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: XuanTie Linux SDK CI <noreply@linux.alibaba.com>
+Date: Sat, 2 Aug 2026 00:00:00 +0800
+Subject: [PATCH] pyo3: gate PyUnicode_READY call at compile time for Python
+ 3.13
+
+PyUnicode_READY() has been a no-op since CPython 3.12 and was removed in
+3.13. In pyo3 0.15.2 the function *definition* in
+ffi/cpython/unicodeobject.rs is correctly gated with
+#[cfg(not(Py_3_12))], but the call site in types/string.rs uses a
+*runtime* `if cfg!(not(Py_3_12))`, so the reference is still compiled for
+Python 3.12+ and building against python3 3.13 fails with:
+
+    error[E0425]: cannot find function, tuple struct or tuple variant
+    `PyUnicode_READY` in module `ffi`
+
+Switch the call site to a compile-time #[cfg(not(Py_3_12))] block so the
+reference is dropped for Python 3.12+, matching the gating of the
+definition. Behaviour is unchanged for Python <= 3.11.
+
+This patch is applied to the vendored pyo3 0.15.2 crate
+(patchdir=${CARGO_HOME}/bitbake/pyo3-0.15.2), not to the cryptography
+sources.
+
+Upstream-Status: Backport [https://github.com/PyO3/pyo3 commit 0.16 series]
+---
+ src/types/string.rs | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/types/string.rs b/src/types/string.rs
+--- a/src/types/string.rs
++++ b/src/types/string.rs
+@@ -227,7 +227,8 @@ impl PyString {
+     pub unsafe fn data(&self) -> PyResult<PyStringData<'_>> {
+         let ptr = self.as_ptr();
+
+-        if cfg!(not(Py_3_12)) {
++        #[cfg(not(Py_3_12))]
++        {
+             #[allow(deprecated)]
+             let ready = ffi::PyUnicode_READY(ptr);
+             if ready != 0 {

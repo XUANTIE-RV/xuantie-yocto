@@ -1,0 +1,986 @@
+diff -ur ceph-18.2.1~/debian/changelog ceph-18.2.1/debian/changelog
+--- ceph-18.2.1~/debian/changelog	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/debian/changelog	2023-12-11 16:55:38.000000000 -0500
+@@ -2,7 +2,7 @@
+ 
+   * New upstream release
+ 
+- -- Ceph Release Team <ceph-maintainers@ceph.io>  Tue, 14 Nov 2023 19:36:16 +0000
++ -- Ceph Release Team <ceph-maintainers@ceph.io>  Mon, 11 Dec 2023 21:55:36 +0000
+ 
+ ceph (18.2.0-1) stable; urgency=medium
+ 
+diff -ur ceph-18.2.1~/doc/architecture.rst ceph-18.2.1/doc/architecture.rst
+--- ceph-18.2.1~/doc/architecture.rst	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/doc/architecture.rst	2023-12-11 16:55:38.000000000 -0500
+@@ -30,6 +30,8 @@
+ - :term:`Ceph Manager`
+ - :term:`Ceph Metadata Server`
+ 
++.. _arch_monitor:
++
+ Ceph Monitors maintain the master copy of the cluster map, which they provide
+ to Ceph clients. Provisioning multiple monitors within the Ceph cluster ensures
+ availability in the event that one of the monitor daemons or its host fails.
+diff -ur ceph-18.2.1~/doc/glossary.rst ceph-18.2.1/doc/glossary.rst
+--- ceph-18.2.1~/doc/glossary.rst	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/doc/glossary.rst	2023-12-11 16:55:38.000000000 -0500
+@@ -271,7 +271,7 @@
+                 The Ceph manager software, which collects all the state from
+                 the whole cluster in one place.
+ 
+-	MON
++	:ref:`MON<arch_monitor>`
+ 		The Ceph monitor software.
+ 
+ 	Node
+@@ -337,6 +337,12 @@
+                 Firefly (v. 0.80). See :ref:`Primary Affinity
+                 <rados_ops_primary_affinity>`.
+ 
++        Quorum	
++                Quorum is the state that exists when a majority of the
++                :ref:`Monitors<arch_monitor>` in the cluster are ``up``. A
++                minimum of three :ref:`Monitors<arch_monitor>` must exist in
++                the cluster in order for Quorum to be possible.
++
+ 	RADOS
+                 **R**\eliable **A**\utonomic **D**\istributed **O**\bject
+                 **S**\tore. RADOS is the object store that provides a scalable
+diff -ur ceph-18.2.1~/doc/rados/troubleshooting/troubleshooting-mon.rst ceph-18.2.1/doc/rados/troubleshooting/troubleshooting-mon.rst
+--- ceph-18.2.1~/doc/rados/troubleshooting/troubleshooting-mon.rst	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/doc/rados/troubleshooting/troubleshooting-mon.rst	2023-12-11 16:55:38.000000000 -0500
+@@ -17,59 +17,66 @@
+ Initial Troubleshooting
+ =======================
+ 
+-#. **Make sure that the monitors are running.**
++The first steps in the process of troubleshooting Ceph Monitors involve making
++sure that the Monitors are running and that they are able to communicate with
++the network and on the network. Follow the steps in this section to rule out
++the simplest causes of Monitor malfunction.
++
++#. **Make sure that the Monitors are running.**
++
++    Make sure that the Monitor (*mon*) daemon processes (``ceph-mon``) are
++    running. It might be the case that the mons have not be restarted after an
++    upgrade. Checking for this simple oversight can save hours of painstaking
++    troubleshooting. 
++    
++    It is also important to make sure that the manager daemons (``ceph-mgr``)
++    are running. Remember that typical cluster configurations provide one
++    Manager (``ceph-mgr``) for each Monitor (``ceph-mon``).
+ 
+-    First, make sure that the monitor (*mon*) daemon processes (``ceph-mon``)
+-    are running. Sometimes Ceph admins either forget to start the mons or
+-    forget to restart the mons after an upgrade. Checking for this simple
+-    oversight can save hours of painstaking troubleshooting. It is also
+-    important to make sure that the manager daemons (``ceph-mgr``) are running.
+-    Remember that typical cluster configurations provide one ``ceph-mgr`` for
+-    each ``ceph-mon``.
++    .. note:: In releases prior to v1.12.5, Rook will not run more than two
++       managers.
+ 
+-    .. note:: Rook will not run more than two managers.
++#. **Make sure that you can reach the Monitor nodes.**
+ 
+-#. **Make sure that you can reach the monitor nodes.**
+-
+-    In certain rare cases, there may be ``iptables`` rules that block access to
+-    monitor nodes or TCP ports. These rules might be left over from earlier
++    In certain rare cases, ``iptables`` rules might be blocking access to
++    Monitor nodes or TCP ports. These rules might be left over from earlier
+     stress testing or rule development. To check for the presence of such
+-    rules, SSH into the server and then try to connect to the monitor's ports
+-    (``tcp/3300`` and ``tcp/6789``) using ``telnet``, ``nc``, or a similar
+-    tool.
+-
+-#. **Make sure that the ``ceph status`` command runs  and receives a reply from the cluster.**
+-
+-    If the ``ceph status`` command does receive a reply from the cluster, then
+-    the cluster is up and running. The monitors will answer to a ``status``
+-    request only if there is a formed quorum. Confirm that one or more ``mgr``
+-    daemons are reported as running. Under ideal conditions, all ``mgr``
+-    daemons will be reported as running.
+-
++    rules, SSH into each Monitor node and use ``telnet`` or ``nc`` or a similar
++    tool to attempt to connect to each of the other Monitor nodes on ports
++    ``tcp/3300`` and ``tcp/6789``. 
++
++#. **Make sure that the "ceph status" command runs and receives a reply from the cluster.**
++
++    If the ``ceph status`` command receives a reply from the cluster, then the
++    cluster is up and running. Monitors answer to a ``status`` request only if
++    there is a formed quorum. Confirm that one or more ``mgr`` daemons are
++    reported as running. In a cluster with no deficiencies, ``ceph status``
++    will report that all ``mgr`` daemons are running.
+ 
+     If the ``ceph status`` command does not receive a reply from the cluster,
+-    then there are probably not enough monitors ``up`` to form a quorum.  The
+-    ``ceph -s`` command with no further options specified connects to an
+-    arbitrarily selected monitor. In certain cases, however, it might be
+-    helpful to connect to a specific monitor (or to several specific monitors
++    then there are probably not enough Monitors ``up`` to form a quorum. If the
++    ``ceph -s`` command is run with no further options specified, it connects
++    to an arbitrarily selected Monitor. In certain cases, however, it might be
++    helpful to connect to a specific Monitor (or to several specific Monitors
+     in sequence) by adding the ``-m`` flag to the command: for example, ``ceph
+     status -m mymon1``.
+ 
+ #. **None of this worked. What now?**
+ 
+     If the above solutions have not resolved your problems, you might find it
+-    helpful to examine each individual monitor in turn. Whether or not a quorum
+-    has been formed, it is possible to contact each monitor individually and
++    helpful to examine each individual Monitor in turn. Even if no quorum has
++    been formed, it is possible to contact each Monitor individually and
+     request its status by using the ``ceph tell mon.ID mon_status`` command
+-    (here ``ID`` is the monitor's identifier).
++    (here ``ID`` is the Monitor's identifier).
+ 
+-    Run the ``ceph tell mon.ID mon_status`` command for each monitor in the
++    Run the ``ceph tell mon.ID mon_status`` command for each Monitor in the
+     cluster. For more on this command's output, see :ref:`Understanding
+     mon_status
+     <rados_troubleshoting_troubleshooting_mon_understanding_mon_status>`.
+ 
+-    There is also an alternative method: SSH into each monitor node and query
+-    the daemon's admin socket. See :ref:`Using the Monitor's Admin
++    There is also an alternative method for contacting each individual Monitor:
++    SSH into each Monitor node and query the daemon's admin socket. See
++    :ref:`Using the Monitor's Admin
+     Socket<rados_troubleshoting_troubleshooting_mon_using_admin_socket>`.
+ 
+ .. _rados_troubleshoting_troubleshooting_mon_using_admin_socket:
+diff -ur ceph-18.2.1~/qa/tasks/cephfs/kernel_mount.py ceph-18.2.1/qa/tasks/cephfs/kernel_mount.py
+--- ceph-18.2.1~/qa/tasks/cephfs/kernel_mount.py	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/qa/tasks/cephfs/kernel_mount.py	2023-12-11 16:55:38.000000000 -0500
+@@ -68,7 +68,10 @@
+                 self.enable_dynamic_debug()
+             self.ctx[f'kmount_count.{self.client_remote.hostname}'] = kmount_count + 1
+ 
+-        self.gather_mount_info()
++        try:
++            self.gather_mount_info()
++        except:
++            log.warn('failed to fetch mount info - tests depending on mount addr/inst may fail!')
+ 
+     def gather_mount_info(self):
+         self.id = self._get_global_id()
+diff -ur ceph-18.2.1~/qa/tasks/cephfs/mount.py ceph-18.2.1/qa/tasks/cephfs/mount.py
+--- ceph-18.2.1~/qa/tasks/cephfs/mount.py	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/qa/tasks/cephfs/mount.py	2023-12-11 16:55:38.000000000 -0500
+@@ -186,6 +186,12 @@
+                               sudo=True).decode())
+ 
+     def is_blocked(self):
++        if not self.addr:
++            # can't infer if our addr is blocklisted - let the caller try to
++            # umount without lazy/force. If the client was blocklisted, then
++            # the umount would be stuck and the test would fail on timeout.
++            # happens only with Ubuntu 20.04 (missing kclient patches :/).
++            return False
+         self.fs = Filesystem(self.ctx, name=self.cephfs_name)
+ 
+         try:
+diff -ur ceph-18.2.1~/src/ceph-volume/ceph_volume/devices/raw/list.py ceph-18.2.1/src/ceph-volume/ceph_volume/devices/raw/list.py
+--- ceph-18.2.1~/src/ceph-volume/ceph_volume/devices/raw/list.py	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/ceph-volume/ceph_volume/devices/raw/list.py	2023-12-11 16:55:38.000000000 -0500
+@@ -5,7 +5,7 @@
+ from textwrap import dedent
+ from ceph_volume import decorators, process
+ from ceph_volume.util import disk
+-
++from typing import Any, Dict, List
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -66,50 +66,57 @@
+     def __init__(self, argv):
+         self.argv = argv
+ 
++    def is_atari_partitions(self, _lsblk: Dict[str, Any]) -> bool:
++        dev = _lsblk['NAME']
++        if _lsblk.get('PKNAME'):
++            parent = _lsblk['PKNAME']
++            try:
++                if disk.has_bluestore_label(parent):
++                    logger.warning(('ignoring child device {} whose parent {} is a BlueStore OSD.'.format(dev, parent),
++                                    'device is likely a phantom Atari partition. device info: {}'.format(_lsblk)))
++                    return True
++            except OSError as e:
++                logger.error(('ignoring child device {} to avoid reporting invalid BlueStore data from phantom Atari partitions.'.format(dev),
++                            'failed to determine if parent device {} is BlueStore. err: {}'.format(parent, e)))
++                return True
++        return False
++
++    def exclude_atari_partitions(self, _lsblk_all: Dict[str, Any]) -> List[Dict[str, Any]]:
++        return [_lsblk for _lsblk in _lsblk_all if not self.is_atari_partitions(_lsblk)]
++
+     def generate(self, devs=None):
+         logger.debug('Listing block devices via lsblk...')
+-        info_devices = disk.lsblk_all(abspath=True)
++        info_devices = []
+         if not devs or not any(devs):
+             # If no devs are given initially, we want to list ALL devices including children and
+             # parents. Parent disks with child partitions may be the appropriate device to return if
+             # the parent disk has a bluestore header, but children may be the most appropriate
+             # devices to return if the parent disk does not have a bluestore header.
++            info_devices = disk.lsblk_all(abspath=True)
+             devs = [device['NAME'] for device in info_devices if device.get('NAME',)]
++        else:
++            for dev in devs:
++                info_devices.append(disk.lsblk(dev, abspath=True))
++
++        # Linux kernels built with CONFIG_ATARI_PARTITION enabled can falsely interpret
++        # bluestore's on-disk format as an Atari partition table. These false Atari partitions
++        # can be interpreted as real OSDs if a bluestore OSD was previously created on the false
++        # partition. See https://tracker.ceph.com/issues/52060 for more info. If a device has a
++        # parent, it is a child. If the parent is a valid bluestore OSD, the child will only
++        # exist if it is a phantom Atari partition, and the child should be ignored. If the
++        # parent isn't bluestore, then the child could be a valid bluestore OSD. If we fail to
++        # determine whether a parent is bluestore, we should err on the side of not reporting
++        # the child so as not to give a false negative.
++        info_devices = self.exclude_atari_partitions(info_devices)
+ 
+         result = {}
+         logger.debug('inspecting devices: {}'.format(devs))
+-        for dev in devs:
+-            # Linux kernels built with CONFIG_ATARI_PARTITION enabled can falsely interpret
+-            # bluestore's on-disk format as an Atari partition table. These false Atari partitions
+-            # can be interpreted as real OSDs if a bluestore OSD was previously created on the false
+-            # partition. See https://tracker.ceph.com/issues/52060 for more info. If a device has a
+-            # parent, it is a child. If the parent is a valid bluestore OSD, the child will only
+-            # exist if it is a phantom Atari partition, and the child should be ignored. If the
+-            # parent isn't bluestore, then the child could be a valid bluestore OSD. If we fail to
+-            # determine whether a parent is bluestore, we should err on the side of not reporting
+-            # the child so as not to give a false negative.
+-            matched_info_devices = [info for info in info_devices if info['NAME'] == dev]
+-            if not matched_info_devices:
+-                logger.warning('device {} does not exist'.format(dev))
+-                continue
+-            info_device = matched_info_devices[0]
+-            if 'PKNAME' in info_device and info_device['PKNAME'] != "":
+-                parent = info_device['PKNAME']
+-                try:
+-                    if disk.has_bluestore_label(parent):
+-                        logger.warning(('ignoring child device {} whose parent {} is a BlueStore OSD.'.format(dev, parent),
+-                                        'device is likely a phantom Atari partition. device info: {}'.format(info_device)))
+-                        continue
+-                except OSError as e:
+-                    logger.error(('ignoring child device {} to avoid reporting invalid BlueStore data from phantom Atari partitions.'.format(dev),
+-                                'failed to determine if parent device {} is BlueStore. err: {}'.format(parent, e)))
+-                    continue
+-
+-            bs_info = _get_bluestore_info(dev)
++        for info_device in info_devices:
++            bs_info = _get_bluestore_info(info_device['NAME'])
+             if bs_info is None:
+                 # None is also returned in the rare event that there is an issue reading info from
+                 # a BlueStore disk, so be sure to log our assumption that it isn't bluestore
+-                logger.info('device {} does not have BlueStore information'.format(dev))
++                logger.info('device {} does not have BlueStore information'.format(info_device['NAME']))
+                 continue
+             uuid = bs_info['osd_uuid']
+             if uuid not in result:
+diff -ur ceph-18.2.1~/src/ceph-volume/ceph_volume/tests/util/test_disk.py ceph-18.2.1/src/ceph-volume/ceph_volume/tests/util/test_disk.py
+--- ceph-18.2.1~/src/ceph-volume/ceph_volume/tests/util/test_disk.py	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/ceph-volume/ceph_volume/tests/util/test_disk.py	2023-12-11 16:55:38.000000000 -0500
+@@ -1,7 +1,37 @@
+ import os
+ import pytest
+ from ceph_volume.util import disk
+-from mock.mock import patch
++from mock.mock import patch, MagicMock
++
++
++class TestFunctions:
++    @patch('ceph_volume.util.disk.os.path.exists', MagicMock(return_value=False))
++    def test_is_device_path_does_not_exist(self):
++        assert not disk.is_device('/dev/foo')
++
++    @patch('ceph_volume.util.disk.os.path.exists', MagicMock(return_value=True))
++    def test_is_device_dev_doesnt_startswith_dev(self):
++        assert not disk.is_device('/foo')
++
++    @patch('ceph_volume.util.disk.allow_loop_devices', MagicMock(return_value=False))
++    @patch('ceph_volume.util.disk.os.path.exists', MagicMock(return_value=True))
++    def test_is_device_loop_not_allowed(self):
++        assert not disk.is_device('/dev/loop123')
++
++    @patch('ceph_volume.util.disk.lsblk', MagicMock(return_value={'NAME': 'foo', 'TYPE': 'disk'}))
++    @patch('ceph_volume.util.disk.os.path.exists', MagicMock(return_value=True))
++    def test_is_device_type_disk(self):
++        assert disk.is_device('/dev/foo')
++
++    @patch('ceph_volume.util.disk.lsblk', MagicMock(return_value={'NAME': 'foo', 'TYPE': 'mpath'}))
++    @patch('ceph_volume.util.disk.os.path.exists', MagicMock(return_value=True))
++    def test_is_device_type_mpath(self):
++        assert disk.is_device('/dev/foo')
++
++    @patch('ceph_volume.util.disk.lsblk', MagicMock(return_value={'NAME': 'foo1', 'TYPE': 'part'}))
++    @patch('ceph_volume.util.disk.os.path.exists', MagicMock(return_value=True))
++    def test_is_device_type_part(self):
++        assert not disk.is_device('/dev/foo1')
+ 
+ 
+ class TestLsblkParser(object):
+diff -ur ceph-18.2.1~/src/ceph-volume/ceph_volume/util/disk.py ceph-18.2.1/src/ceph-volume/ceph_volume/util/disk.py
+--- ceph-18.2.1~/src/ceph-volume/ceph_volume/util/disk.py	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/ceph-volume/ceph_volume/util/disk.py	2023-12-11 16:55:38.000000000 -0500
+@@ -359,6 +359,10 @@
+         if not allow_loop_devices():
+             return False
+ 
++    TYPE = lsblk(dev).get('TYPE')
++    if TYPE:
++        return TYPE in ['disk', 'mpath']
++
+     # fallback to stat
+     return _stat_is_device(os.lstat(dev).st_mode)
+ 
+diff -ur ceph-18.2.1~/src/.git_version ceph-18.2.1/src/.git_version
+--- ceph-18.2.1~/src/.git_version	2023-11-14 14:37:51.000000000 -0500
++++ ceph-18.2.1/src/.git_version	2023-12-11 16:57:17.000000000 -0500
+@@ -1,2 +1,2 @@
+-e3fce6809130d78ac0058fc87e537ecd926cd213
++7fe91d5d5842e04be3b4f514d6dd990c54b29c76
+ 18.2.1
+diff -ur ceph-18.2.1~/src/messages/MClientRequest.h ceph-18.2.1/src/messages/MClientRequest.h
+--- ceph-18.2.1~/src/messages/MClientRequest.h	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/messages/MClientRequest.h	2023-12-11 16:55:38.000000000 -0500
+@@ -234,6 +234,12 @@
+       copy_from_legacy_head(&head, &old_mds_head);
+       head.version = 0;
+ 
++      head.ext_num_retry = head.num_retry;
++      head.ext_num_fwd = head.num_fwd;
++
++      head.owner_uid = head.caller_uid;
++      head.owner_gid = head.caller_gid;
++
+       /* Can't set the btime from legacy struct */
+       if (head.op == CEPH_MDS_OP_SETATTR) {
+ 	int localmask = head.args.setattr.mask;
+diff -ur ceph-18.2.1~/src/os/bluestore/AvlAllocator.cc ceph-18.2.1/src/os/bluestore/AvlAllocator.cc
+--- ceph-18.2.1~/src/os/bluestore/AvlAllocator.cc	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/os/bluestore/AvlAllocator.cc	2023-12-11 16:55:38.000000000 -0500
+@@ -39,7 +39,7 @@
+   uint64_t search_bytes = 0;
+   auto rs_start = range_tree.lower_bound(range_t{*cursor, size}, compare);
+   for (auto rs = rs_start; rs != range_tree.end(); ++rs) {
+-    uint64_t offset = p2roundup(rs->start, align);
++    uint64_t offset = rs->start;
+     *cursor = offset + size;
+     if (offset + size <= rs->end) {
+       return offset;
+@@ -59,7 +59,7 @@
+   }
+   // If we reached end, start from beginning till cursor.
+   for (auto rs = range_tree.begin(); rs != rs_start; ++rs) {
+-    uint64_t offset = p2roundup(rs->start, align);
++    uint64_t offset = rs->start;
+     *cursor = offset + size;
+     if (offset + size <= rs->end) {
+       return offset;
+@@ -82,7 +82,7 @@
+   const auto compare = range_size_tree.key_comp();
+   auto rs_start = range_size_tree.lower_bound(range_t{0, size}, compare);
+   for (auto rs = rs_start; rs != range_size_tree.end(); ++rs) {
+-    uint64_t offset = p2roundup(rs->start, align);
++    uint64_t offset = rs->start;
+     if (offset + size <= rs->end) {
+       return offset;
+     }
+diff -ur ceph-18.2.1~/src/os/bluestore/BlueFS.cc ceph-18.2.1/src/os/bluestore/BlueFS.cc
+--- ceph-18.2.1~/src/os/bluestore/BlueFS.cc	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/os/bluestore/BlueFS.cc	2023-12-11 16:55:38.000000000 -0500
+@@ -658,16 +658,24 @@
+   }
+   logger->set(l_bluefs_wal_alloc_unit, wal_alloc_size);
+ 
++
++  uint64_t shared_alloc_size = cct->_conf->bluefs_shared_alloc_size;
++  if (shared_alloc && shared_alloc->a) {
++    uint64_t unit = shared_alloc->a->get_block_size();
++    shared_alloc_size = std::max(
++      unit,
++      shared_alloc_size);
++    ceph_assert(0 == p2phase(shared_alloc_size, unit));
++  }
+   if (bdev[BDEV_SLOW]) {
+     alloc_size[BDEV_DB] = cct->_conf->bluefs_alloc_size;
+-    alloc_size[BDEV_SLOW] = cct->_conf->bluefs_shared_alloc_size;
+-    logger->set(l_bluefs_db_alloc_unit, cct->_conf->bluefs_alloc_size);
+-    logger->set(l_bluefs_main_alloc_unit, cct->_conf->bluefs_shared_alloc_size);
++    alloc_size[BDEV_SLOW] = shared_alloc_size;
+   } else {
+-    alloc_size[BDEV_DB] = cct->_conf->bluefs_shared_alloc_size;
+-    logger->set(l_bluefs_main_alloc_unit, 0);
+-    logger->set(l_bluefs_db_alloc_unit, cct->_conf->bluefs_shared_alloc_size);
++    alloc_size[BDEV_DB] = shared_alloc_size;
++    alloc_size[BDEV_SLOW] = 0;
+   }
++  logger->set(l_bluefs_db_alloc_unit, alloc_size[BDEV_DB]);
++  logger->set(l_bluefs_main_alloc_unit, alloc_size[BDEV_SLOW]);
+   // new wal and db devices are never shared
+   if (bdev[BDEV_NEWWAL]) {
+     alloc_size[BDEV_NEWWAL] = cct->_conf->bluefs_alloc_size;
+@@ -681,13 +689,13 @@
+       continue;
+     }
+     ceph_assert(bdev[id]->get_size());
+-    ceph_assert(alloc_size[id]);
+     if (is_shared_alloc(id)) {
+       dout(1) << __func__ << " shared, id " << id << std::hex
+               << ", capacity 0x" << bdev[id]->get_size()
+               << ", block size 0x" << alloc_size[id]
+               << std::dec << dendl;
+     } else {
++      ceph_assert(alloc_size[id]);
+       std::string name = "bluefs-";
+       const char* devnames[] = { "wal","db","slow" };
+       if (id <= BDEV_SLOW)
+diff -ur ceph-18.2.1~/src/os/bluestore/BtreeAllocator.cc ceph-18.2.1/src/os/bluestore/BtreeAllocator.cc
+--- ceph-18.2.1~/src/os/bluestore/BtreeAllocator.cc	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/os/bluestore/BtreeAllocator.cc	2023-12-11 16:55:38.000000000 -0500
+@@ -25,7 +25,7 @@
+ {
+   auto rs_start = range_tree.lower_bound(*cursor);
+   for (auto rs = rs_start; rs != range_tree.end(); ++rs) {
+-    uint64_t offset = p2roundup(rs->first, align);
++    uint64_t offset = rs->first;
+     if (offset + size <= rs->second) {
+       *cursor = offset + size;
+       return offset;
+@@ -37,7 +37,7 @@
+   }
+   // If we reached end, start from beginning till cursor.
+   for (auto rs = range_tree.begin(); rs != rs_start; ++rs) {
+-    uint64_t offset = p2roundup(rs->first, align);
++    uint64_t offset = rs->first;
+     if (offset + size <= rs->second) {
+       *cursor = offset + size;
+       return offset;
+@@ -53,7 +53,7 @@
+   // the needs
+   auto rs_start = range_size_tree.lower_bound(range_value_t{0,size});
+   for (auto rs = rs_start; rs != range_size_tree.end(); ++rs) {
+-    uint64_t offset = p2roundup(rs->start, align);
++    uint64_t offset = rs->start;
+     if (offset + size <= rs->start + rs->size) {
+       return offset;
+     }
+diff -ur ceph-18.2.1~/src/os/bluestore/fastbmap_allocator_impl.cc ceph-18.2.1/src/os/bluestore/fastbmap_allocator_impl.cc
+--- ceph-18.2.1~/src/os/bluestore/fastbmap_allocator_impl.cc	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/os/bluestore/fastbmap_allocator_impl.cc	2023-12-11 16:55:38.000000000 -0500
+@@ -17,19 +17,9 @@
+ 
+ inline interval_t _align2units(uint64_t offset, uint64_t len, uint64_t min_length)
+ {
+-  interval_t res;
+-  if (len >= min_length) {
+-    res.offset = p2roundup(offset, min_length);
+-    auto delta_off = res.offset - offset;
+-    if (len > delta_off) {
+-      res.length = len - delta_off;
+-      res.length = p2align<uint64_t>(res.length, min_length);
+-      if (res.length) {
+-	return res;
+-      }
+-    }
+-  }
+-  return interval_t();
++  return len >= min_length ?
++    interval_t(offset, p2align<uint64_t>(len, min_length)) :
++    interval_t();
+ }
+ 
+ interval_t AllocatorLevel01Loose::_get_longest_from_l0(uint64_t pos0,
+diff -ur ceph-18.2.1~/src/os/bluestore/StupidAllocator.cc ceph-18.2.1/src/os/bluestore/StupidAllocator.cc
+--- ceph-18.2.1~/src/os/bluestore/StupidAllocator.cc	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/os/bluestore/StupidAllocator.cc	2023-12-11 16:55:38.000000000 -0500
+@@ -52,20 +52,6 @@
+   }
+ }
+ 
+-/// return the effective length of the extent if we align to alloc_unit
+-uint64_t StupidAllocator::_aligned_len(
+-  StupidAllocator::interval_set_t::iterator p,
+-  uint64_t alloc_unit)
+-{
+-  uint64_t skew = p.get_start() % alloc_unit;
+-  if (skew)
+-    skew = alloc_unit - skew;
+-  if (skew > p.get_len())
+-    return 0;
+-  else
+-    return p.get_len() - skew;
+-}
+-
+ int64_t StupidAllocator::allocate_int(
+   uint64_t want_size, uint64_t alloc_unit, int64_t hint,
+   uint64_t *offset, uint32_t *length)
+@@ -89,7 +75,7 @@
+     for (bin = orig_bin; bin < (int)free.size(); ++bin) {
+       p = free[bin].lower_bound(hint);
+       while (p != free[bin].end()) {
+-	if (_aligned_len(p, alloc_unit) >= want_size) {
++	if (p.get_len() >= want_size) {
+ 	  goto found;
+ 	}
+ 	++p;
+@@ -102,7 +88,7 @@
+     p = free[bin].begin();
+     auto end = hint ? free[bin].lower_bound(hint) : free[bin].end();
+     while (p != end) {
+-      if (_aligned_len(p, alloc_unit) >= want_size) {
++      if (p.get_len() >= want_size) {
+ 	goto found;
+       }
+       ++p;
+@@ -114,7 +100,7 @@
+     for (bin = orig_bin; bin >= 0; --bin) {
+       p = free[bin].lower_bound(hint);
+       while (p != free[bin].end()) {
+-	if (_aligned_len(p, alloc_unit) >= alloc_unit) {
++	if (p.get_len() >= alloc_unit) {
+ 	  goto found;
+ 	}
+ 	++p;
+@@ -127,7 +113,7 @@
+     p = free[bin].begin();
+     auto end = hint ? free[bin].lower_bound(hint) : free[bin].end();
+     while (p != end) {
+-      if (_aligned_len(p, alloc_unit) >= alloc_unit) {
++      if (p.get_len() >= alloc_unit) {
+ 	goto found;
+       }
+       ++p;
+@@ -137,11 +123,9 @@
+   return -ENOSPC;
+ 
+  found:
+-  uint64_t skew = p.get_start() % alloc_unit;
+-  if (skew)
+-    skew = alloc_unit - skew;
+-  *offset = p.get_start() + skew;
+-  *length = std::min(std::max(alloc_unit, want_size), p2align((p.get_len() - skew), alloc_unit));
++  *offset = p.get_start();
++  *length = std::min(std::max(alloc_unit, want_size), p2align(p.get_len(), alloc_unit));
++
+   if (cct->_conf->bluestore_debug_small_allocations) {
+     uint64_t max =
+       alloc_unit * (rand() % cct->_conf->bluestore_debug_small_allocations);
+@@ -158,7 +142,7 @@
+ 
+   free[bin].erase(*offset, *length);
+   uint64_t off, len;
+-  if (*offset && free[bin].contains(*offset - skew - 1, &off, &len)) {
++  if (*offset && free[bin].contains(*offset - 1, &off, &len)) {
+     int newbin = _choose_bin(len);
+     if (newbin != bin) {
+       ldout(cct, 30) << __func__ << " demoting 0x" << std::hex << off << "~" << len
+diff -ur ceph-18.2.1~/src/os/bluestore/StupidAllocator.h ceph-18.2.1/src/os/bluestore/StupidAllocator.h
+--- ceph-18.2.1~/src/os/bluestore/StupidAllocator.h	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/os/bluestore/StupidAllocator.h	2023-12-11 16:55:38.000000000 -0500
+@@ -31,10 +31,6 @@
+   unsigned _choose_bin(uint64_t len);
+   void _insert_free(uint64_t offset, uint64_t len);
+ 
+-  uint64_t _aligned_len(
+-    interval_set_t::iterator p,
+-    uint64_t alloc_unit);
+-
+ public:
+   StupidAllocator(CephContext* cct,
+                   int64_t size,
+diff -ur ceph-18.2.1~/src/test/objectstore/Allocator_test.cc ceph-18.2.1/src/test/objectstore/Allocator_test.cc
+--- ceph-18.2.1~/src/test/objectstore/Allocator_test.cc	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/test/objectstore/Allocator_test.cc	2023-12-11 16:55:38.000000000 -0500
+@@ -516,8 +516,7 @@
+   PExtentVector extents;
+   auto need = 0x3f980000;
+   auto got = alloc->allocate(need, 0x10000, 0, (int64_t)0, &extents);
+-  EXPECT_GT(got, 0);
+-  EXPECT_EQ(got, 0x630000);
++  EXPECT_GE(got, 0x630000);
+ }
+ 
+ TEST_P(AllocTest, test_alloc_50656_best_fit)
+diff -ur ceph-18.2.1~/src/test/objectstore/fastbmap_allocator_test.cc ceph-18.2.1/src/test/objectstore/fastbmap_allocator_test.cc
+--- ceph-18.2.1~/src/test/objectstore/fastbmap_allocator_test.cc	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/test/objectstore/fastbmap_allocator_test.cc	2023-12-11 16:55:38.000000000 -0500
+@@ -625,6 +625,8 @@
+     ASSERT_EQ(bins_overall[cbits(num_chunks / 2) - 1], 1u);
+ 
+     {
++      // Original free space disposition (start chunk, count):
++      // <NC/2, NC/2>
+       size_t to_release = 2 * _1m + 0x1000;
+       // release 2M + 4K at the beginning
+       interval_vector_t r;
+@@ -637,6 +639,8 @@
+       ASSERT_EQ(bins_overall[cbits(num_chunks / 2) - 1], 1u);
+     }
+     {
++      // Original free space disposition (start chunk, count):
++      // <0, 513>, <NC / 2, NC / 2>
+       // allocate 4K within the deallocated range
+       uint64_t allocated4 = 0;
+       interval_vector_t a4;
+@@ -652,79 +656,91 @@
+       ASSERT_EQ(bins_overall[cbits(num_chunks / 2) - 1], 1u);
+     }
+     {
+-      // allocate 1M - should go to the second 1M chunk
++      // Original free space disposition (start chunk, count):
++      // <1, 512>, <NC / 2, NC / 2>
++      // allocate 1M - should go to offset 4096
+       uint64_t allocated4 = 0;
+       interval_vector_t a4;
+       al2.allocate_l2(_1m, _1m, &allocated4, &a4);
+       ASSERT_EQ(a4.size(), 1u);
+       ASSERT_EQ(allocated4, _1m);
+-      ASSERT_EQ(a4[0].offset, _1m);
++      ASSERT_EQ(a4[0].offset, 4096);
+       ASSERT_EQ(a4[0].length, _1m);
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+-      ASSERT_EQ(bins_overall.size(), 3u);
+-      ASSERT_EQ(bins_overall[0], 1u);
+-      ASSERT_EQ(bins_overall[cbits((_1m - 0x1000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall.size(), 2u);
++      ASSERT_EQ(bins_overall[cbits(_1m / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits(num_chunks / 2) - 1], 1u);
+     }
+     {
++      // Original free space disposition (start chunk, count):
++      // <257, 256>, <NC / 2, NC / 2>
+       // and allocate yet another 8K within the deallocated range
+       uint64_t allocated4 = 0;
+       interval_vector_t a4;
+       al2.allocate_l2(0x2000, 0x1000, &allocated4, &a4);
+       ASSERT_EQ(a4.size(), 1u);
+       ASSERT_EQ(allocated4, 0x2000u);
+-      ASSERT_EQ(a4[0].offset, 0x1000u);
++      ASSERT_EQ(a4[0].offset, _1m + 0x1000u);
+       ASSERT_EQ(a4[0].length, 0x2000u);
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+-      ASSERT_EQ(bins_overall[0], 1u);
+-      ASSERT_EQ(bins_overall[cbits((_1m - 0x3000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall.size(), 2u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000) / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits(num_chunks / 2) - 1], 1u);
+     }
+     {
+-      // release just allocated 1M
++      // Original free space disposition (start chunk, count):
++      // <259, 254>, <NC / 2, NC / 2>
++      // release 4K~1M
+       interval_vector_t r;
+-      r.emplace_back(_1m, _1m);
++      r.emplace_back(0x1000, _1m);
+       al2.free_l2(r);
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+-      ASSERT_EQ(bins_overall.size(), 2u);
+-      ASSERT_EQ(bins_overall[cbits((2 * _1m - 0x3000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall.size(), 3u);
++      //ASSERT_EQ(bins_overall[cbits((2 * _1m - 0x3000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits(_1m / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000) / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits(num_chunks / 2) - 1], 1u);
+     }
+     {
+-      // allocate 3M - should go to the second 1M chunk and @capacity/2
++      // Original free space disposition (start chunk, count):
++      // <1, 257>, <259, 254>, <NC / 2, NC / 2>
++      // allocate 3M - should go to the first 1M chunk and @capacity/2
+       uint64_t allocated4 = 0;
+       interval_vector_t a4;
+       al2.allocate_l2(3 * _1m, _1m, &allocated4, &a4);
+       ASSERT_EQ(a4.size(), 2u);
+       ASSERT_EQ(allocated4, 3 * _1m);
+-      ASSERT_EQ(a4[0].offset, _1m);
++      ASSERT_EQ(a4[0].offset, 0x1000);
+       ASSERT_EQ(a4[0].length, _1m);
+       ASSERT_EQ(a4[1].offset, capacity / 2);
+       ASSERT_EQ(a4[1].length, 2 * _1m);
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+-      ASSERT_EQ(bins_overall.size(), 3u);
+-      ASSERT_EQ(bins_overall[0], 1u);
+-      ASSERT_EQ(bins_overall[cbits((_1m - 0x3000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall.size(), 2u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000) / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits((num_chunks - 512) / 2) - 1], 1u);
+     }
+     {
+-      // release allocated 1M in the second meg chunk except
++      // Original free space disposition (start chunk, count):
++      // <259, 254>, <NC / 2 - 512, NC / 2 - 512>
++      // release allocated 1M in the first meg chunk except
+       // the first 4K chunk
+       interval_vector_t r;
+-      r.emplace_back(_1m + 0x1000, _1m);
++      r.emplace_back(0x1000, _1m);
+       al2.free_l2(r);
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+       ASSERT_EQ(bins_overall.size(), 3u);
+       ASSERT_EQ(bins_overall[cbits(_1m / 0x1000) - 1], 1u);
+-      ASSERT_EQ(bins_overall[cbits((_1m - 0x3000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000) / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits((num_chunks - 512) / 2) - 1], 1u);
+     }
+     {
++      // Original free space disposition (start chunk, count):
++      // <1, 256>, <259, 254>, <NC / 2 - 512, NC / 2 - 512>
+       // release 2M @(capacity / 2)
+       interval_vector_t r;
+       r.emplace_back(capacity / 2, 2 * _1m);
+@@ -733,10 +749,12 @@
+       al2.collect_stats(bins_overall);
+       ASSERT_EQ(bins_overall.size(), 3u);
+       ASSERT_EQ(bins_overall[cbits(_1m / 0x1000) - 1], 1u);
+-      ASSERT_EQ(bins_overall[cbits((_1m - 0x3000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000) / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits((num_chunks) / 2) - 1], 1u);
+     }
+     {
++      // Original free space disposition (start chunk, count):
++      // <1, 256>, <259, 254>, <NC / 2, NC / 2>
+       // allocate 4x512K - should go to the second halves of
+       // the first and second 1M chunks and @(capacity / 2)
+       uint64_t allocated4 = 0;
+@@ -744,51 +762,54 @@
+       al2.allocate_l2(2 * _1m, _1m / 2, &allocated4, &a4);
+       ASSERT_EQ(a4.size(), 3u);
+       ASSERT_EQ(allocated4, 2 * _1m);
+-      ASSERT_EQ(a4[0].offset, _1m / 2);
++      ASSERT_EQ(a4[1].offset, 0x1000);
++      ASSERT_EQ(a4[1].length, _1m);
++      ASSERT_EQ(a4[0].offset, _1m + 0x3000);
+       ASSERT_EQ(a4[0].length, _1m / 2);
+-      ASSERT_EQ(a4[1].offset, _1m + _1m / 2);
+-      ASSERT_EQ(a4[1].length, _1m / 2);
+       ASSERT_EQ(a4[2].offset, capacity / 2);
+-      ASSERT_EQ(a4[2].length, _1m);
++      ASSERT_EQ(a4[2].length, _1m / 2);
+ 
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+-      ASSERT_EQ(bins_overall.size(), 3u);
+-      ASSERT_EQ(bins_overall[0], 1u);
+-      // below we have 512K - 4K & 512K - 12K chunks which both fit into
+-      // the same bin = 6
+-      ASSERT_EQ(bins_overall[6], 2u);
++      ASSERT_EQ(bins_overall.size(), 2u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000 - 0x80000) / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits((num_chunks - 256) / 2) - 1], 1u);
+ 
+     }
+     {
+-      // cleanup first 2M except except the last 4K chunk
++      // Original free space disposition (start chunk, count):
++      // <387, 126>, <NC / 2 + 128, NC / 2 - 128>
++      // cleanup first 1536K except the last 4K chunk
+       interval_vector_t r;
+-      r.emplace_back(0, 2 * _1m - 0x1000);
++      r.emplace_back(0, _1m + _1m / 2 - 0x1000);
+       al2.free_l2(r);
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+ 
+       ASSERT_EQ(bins_overall.size(), 3u);
+-      ASSERT_EQ(bins_overall[0], 1u);
+-      ASSERT_EQ(bins_overall[cbits((_2m - 0x1000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits((_1m + _1m / 2 - 0x1000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000 - 0x80000) / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits((num_chunks - 256) / 2) - 1], 1u);
+     }
+     {
+-      // release 2M @(capacity / 2)
++      // Original free space disposition (start chunk, count):
++      // <0, 383> <387, 126>, <NC / 2 + 128, NC / 2 - 128>
++      // release 512K @(capacity / 2)
+       interval_vector_t r;
+-      r.emplace_back(capacity / 2, 2 * _1m);
++      r.emplace_back(capacity / 2, _1m / 2);
+       al2.free_l2(r);
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+ 
+       ASSERT_EQ(bins_overall.size(), 3u);
+-      ASSERT_EQ(bins_overall[0], 1u);
+-      ASSERT_EQ(bins_overall[cbits((_2m - 0x1000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits((_1m + _1m / 2 - 0x1000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000 - 0x80000) / 0x1000) - 1], 1u);
+       ASSERT_EQ(bins_overall[cbits(num_chunks / 2) - 1], 1u);
+     }
+     {
+-      // allocate 132M using 4M granularity should go to (capacity / 2)
++      // Original free space disposition (start chunk, count):
++      // <0, 383> <387, 126>, <NC / 2, NC / 2>
++      // allocate 132M (=33792*4096) = using 4M granularity should go to (capacity / 2)
+       uint64_t allocated4 = 0;
+       interval_vector_t a4;
+       al2.allocate_l2(132 * _1m, 4 * _1m , &allocated4, &a4);
+@@ -799,24 +820,40 @@
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+       ASSERT_EQ(bins_overall.size(), 3u);
++      ASSERT_EQ(bins_overall[cbits((_1m + _1m / 2 - 0x1000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits((_1m - 0x2000 - 0x80000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits(num_chunks / 2 - 33792)  - 1], 1u);
+     }
+     {
+-      // cleanup left 4K chunk in the first 2M
++      // Original free space disposition (start chunk, count):
++      // <0, 383> <387, 126>, <NC / 2 + 33792, NC / 2 - 33792>
++      // cleanup remaining 4*4K chunks in the first 2M
+       interval_vector_t r;
+-      r.emplace_back(2 * _1m - 0x1000, 0x1000);
++      r.emplace_back(383 * 4096, 4 * 0x1000);
+       al2.free_l2(r);
+       bins_overall.clear();
+       al2.collect_stats(bins_overall);
+ 
+       ASSERT_EQ(bins_overall.size(), 2u);
++      ASSERT_EQ(bins_overall[cbits((2 * _1m + 0x1000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits(num_chunks / 2 - 33792)  - 1], 1u);
+     }
+     {
++      // Original free space disposition (start chunk, count):
++      // <0, 513>, <NC / 2 + 33792, NC / 2 - 33792>
+       // release 132M @(capacity / 2)
+       interval_vector_t r;
+       r.emplace_back(capacity / 2, 132 * _1m);
+       al2.free_l2(r);
++      bins_overall.clear();
++      al2.collect_stats(bins_overall);
++      ASSERT_EQ(bins_overall.size(), 2u);
++      ASSERT_EQ(bins_overall[cbits((2 * _1m + 0x1000) / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits(num_chunks / 2)  - 1], 1u);
+     }
+     {
++      // Original free space disposition (start chunk, count):
++      // <0, 513>, <NC / 2, NC / 2>
+       // allocate 132M using 2M granularity should go to the first chunk and to
+       // (capacity / 2)
+       uint64_t allocated4 = 0;
+@@ -827,14 +864,31 @@
+       ASSERT_EQ(a4[0].length, 2 * _1m);
+       ASSERT_EQ(a4[1].offset, capacity / 2);
+       ASSERT_EQ(a4[1].length, 130 * _1m);
++
++      bins_overall.clear();
++      al2.collect_stats(bins_overall);
++
++      ASSERT_EQ(bins_overall.size(), 2u);
++      ASSERT_EQ(bins_overall[cbits(0)], 1u);
++      ASSERT_EQ(bins_overall[cbits(num_chunks / 2 - 33792)  - 1], 1u);
+     }
+     {
++      // Original free space disposition (start chunk, count):
++      //  <512, 1>, <NC / 2 + 33792, NC / 2 - 33792>
+       // release 130M @(capacity / 2)
+       interval_vector_t r;
+       r.emplace_back(capacity / 2, 132 * _1m);
+       al2.free_l2(r);
++      bins_overall.clear();
++      al2.collect_stats(bins_overall);
++
++      ASSERT_EQ(bins_overall.size(), 2u);
++      ASSERT_EQ(bins_overall[cbits(0)], 1u);
++      ASSERT_EQ(bins_overall[cbits(num_chunks / 2)  - 1], 1u);
+     }
+     {
++      // Original free space disposition (start chunk, count):
++      //  <512,1>, <NC / 2, NC / 2>
+       // release 4K~16K
+       // release 28K~32K
+       // release 68K~24K
+@@ -843,21 +897,46 @@
+       r.emplace_back(0x7000, 0x8000);
+       r.emplace_back(0x11000, 0x6000);
+       al2.free_l2(r);
++
++      bins_overall.clear();
++      al2.collect_stats(bins_overall);
++
++      ASSERT_EQ(bins_overall.size(), 4u);
++      ASSERT_EQ(bins_overall[cbits(0)], 1u);
++      ASSERT_EQ(bins_overall[cbits(0x4000 / 0x1000) - 1], 2u); // accounts both 0x4000 & 0x6000
++      ASSERT_EQ(bins_overall[cbits(0x8000 / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits(num_chunks / 2)  - 1], 1u);
+     }
+     {
+-      // allocate 32K using 16K granularity - should bypass the first
+-      // unaligned extent, use the second free extent partially given
+-      // the 16K alignment and then fallback to capacity / 2
++      // Original free space disposition (start chunk, count):
++      //  <1, 4>, <7, 8>, <17, 6> <512,1>, <NC / 2, NC / 2>
++      // allocate 80K using 16K granularity
+       uint64_t allocated4 = 0;
+       interval_vector_t a4;
+-      al2.allocate_l2(0x8000, 0x4000, &allocated4, &a4);
+-      ASSERT_EQ(a4.size(), 2u);
+-      ASSERT_EQ(a4[0].offset, 0x8000u);
+-      ASSERT_EQ(a4[0].length, 0x4000u);
+-      ASSERT_EQ(a4[1].offset, capacity / 2);
++      al2.allocate_l2(0x14000, 0x4000, &allocated4, &a4);
++
++      ASSERT_EQ(a4.size(), 4);
++      ASSERT_EQ(a4[1].offset, 0x1000u);
+       ASSERT_EQ(a4[1].length, 0x4000u);
+-    }
++      ASSERT_EQ(a4[0].offset, 0x7000u);
++      ASSERT_EQ(a4[0].length, 0x8000u);
++      ASSERT_EQ(a4[2].offset, 0x11000u);
++      ASSERT_EQ(a4[2].length, 0x4000u);
++      ASSERT_EQ(a4[3].offset, capacity / 2);
++      ASSERT_EQ(a4[3].length, 0x4000u);
++
++      bins_overall.clear();
++      al2.collect_stats(bins_overall);
+ 
++      ASSERT_EQ(bins_overall.size(), 3u);
++      ASSERT_EQ(bins_overall[cbits(0)], 1u);
++      ASSERT_EQ(bins_overall[cbits(0x2000 / 0x1000) - 1], 1u);
++      ASSERT_EQ(bins_overall[cbits(num_chunks / 2 - 1)  - 1], 1u);
++    }
++    {
++      // Original free space disposition (start chunk, count):
++      //  <21, 2> <512,1>, <NC / 2 + 1, NC / 2 - 1>
++    }
+   }
+   std::cout << "Done L2 cont aligned" << std::endl;
+ }
+@@ -913,7 +992,7 @@
+     al2.allocate_l2(0x3e000000, _1m, &allocated4, &a4);
+     ASSERT_EQ(a4.size(), 2u);
+     ASSERT_EQ(allocated4, 0x3e000000u);
+-    ASSERT_EQ(a4[0].offset, 0x5fed00000u);
++    ASSERT_EQ(a4[0].offset, 0x5fec30000u);
+     ASSERT_EQ(a4[0].length, 0x1300000u);
+     ASSERT_EQ(a4[1].offset, 0x628000000u);
+     ASSERT_EQ(a4[1].length, 0x3cd00000u);
+diff -ur ceph-18.2.1~/src/test/objectstore/store_test.cc ceph-18.2.1/src/test/objectstore/store_test.cc
+--- ceph-18.2.1~/src/test/objectstore/store_test.cc	2023-11-14 14:36:19.000000000 -0500
++++ ceph-18.2.1/src/test/objectstore/store_test.cc	2023-12-11 16:55:38.000000000 -0500
+@@ -9524,9 +9524,9 @@
+     string key;
+     _key_encode_u64(1, &key);
+     bluestore_shared_blob_t sb(1);
+-    sb.ref_map.get(0x2000, block_size);
+-    sb.ref_map.get(0x4000, block_size);
+-    sb.ref_map.get(0x4000, block_size);
++    sb.ref_map.get(0x822000, block_size);
++    sb.ref_map.get(0x824000, block_size);
++    sb.ref_map.get(0x824000, block_size);
+     bufferlist bl;
+     encode(sb, bl);
+     bstore->inject_broken_shared_blob_key(key, bl);

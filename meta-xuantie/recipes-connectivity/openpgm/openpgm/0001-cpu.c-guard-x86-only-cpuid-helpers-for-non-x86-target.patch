@@ -1,0 +1,34 @@
+cpu.c: guard x86-only cpuid helpers for non-x86 targets
+
+The __cpuidex and _xgetbv helpers use x86 inline asm constraints
+("=a", cpuid, xgetbv) but are only referenced by the x86
+pgm_cpuid implementation, which is already guarded by
+__i386__/__x86_64__ (with a generic fallback in #else). On RISC-V
+the helpers still get compiled and fail with
+"invalid output constraint '=a' in asm".
+
+Move the helpers under the same architecture guard.
+
+Upstream-Status: Pending
+Signed-off-by: linux-sdk-ai-expert <linux-sdk-ai-expert@linux.alibaba>
+
+--- a/cpu.c
++++ b/cpu.c
+@@ -33,7 +33,7 @@
+ //#define CPU_DEBUG
+ 
+ 
+-#ifndef _MSC_VER
++#if !defined(_MSC_VER) && (defined(__i386__) || defined(__x86_64__))
+ static
+ void
+ __cpuidex (int cpu_info[4], int function_id, int subfunction_id) {
+@@ -56,7 +56,7 @@
+     "xgetbv" : "=a"(eax), "=d"(edx) : "c"(xcr));
+   return (((uint64_t)(edx)) << 32) | eax;
+ }
+-#endif
++#endif /* !defined(_MSC_VER) && x86 */
+ 
+ 
+ #if defined(__i386__) || defined(__x86_64__)

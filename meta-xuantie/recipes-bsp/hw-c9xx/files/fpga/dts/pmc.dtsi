@@ -1,5 +1,0 @@
-pmc: xuantie_pmc@26900000 {
-    compatible = "xuantie,pmc";
-    status = "skip";
-    reg = <0x00000000 0x26900000 0x00000000 0x00010000>;
-};

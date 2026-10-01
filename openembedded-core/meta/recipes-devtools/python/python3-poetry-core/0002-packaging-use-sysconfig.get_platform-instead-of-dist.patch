@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: XuanTie Linux SDK CI <noreply@linux.alibaba.com>
+Date: Sat, 2 Aug 2026 00:00:00 +0800
+Subject: [PATCH] packaging: use sysconfig.get_platform instead of distutils
+
+The vendored packaging in poetry-core 1.0.8 (poetry/core/_vendor/packaging/
+tags.py) imports distutils.util and calls distutils.util.get_platform().
+distutils was removed from the standard library in Python 3.12, so building
+poetry-core against python3 3.13 fails with:
+
+    File ".../poetry/core/_vendor/packaging/tags.py", line 7, in <module>
+        import distutils.util
+    ModuleNotFoundError: No module named 'distutils'
+
+sysconfig.get_platform() returns the same platform string and is already
+imported in this module, so drop the distutils import and use it directly.
+This matches upstream packaging, which replaced distutils.util.get_platform()
+with sysconfig.get_platform() when distutils was deprecated. Behaviour is
+unchanged.
+
+Upstream-Status: Backport [https://github.com/pypa/packaging remove-distutils]
+---
+--- a/poetry/core/_vendor/packaging/tags.py
++++ b/poetry/core/_vendor/packaging/tags.py
+@@ -4,7 +4,6 @@
+ 
+ from __future__ import absolute_import
+ 
+-import distutils.util
+ 
+ try:
+     from importlib.machinery import EXTENSION_SUFFIXES
+@@ -781,7 +780,7 @@
+ 
+ def _linux_platforms(is_32bit=_32_BIT_INTERPRETER):
+     # type: (bool) -> Iterator[str]
+-    linux = _normalize_string(distutils.util.get_platform())
++    linux = _normalize_string(sysconfig.get_platform())
+     if is_32bit:
+         if linux == "linux_x86_64":
+             linux = "linux_i686"
+@@ -796,7 +795,7 @@
+ 
+ def _generic_platforms():
+     # type: () -> Iterator[str]
+-    yield _normalize_string(distutils.util.get_platform())
++    yield _normalize_string(sysconfig.get_platform())
+ 
+ 
+ def _platform_tags():

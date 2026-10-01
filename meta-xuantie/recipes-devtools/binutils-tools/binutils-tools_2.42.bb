@@ -1,4 +1,5 @@
 LICENSE = "CLOSED"
+PV = "2.42-V3.5.0"
 LIC_FILES_CHKSUM = ""
 COMPATIBLE_HOST = "(riscv64|riscv32).*-linux"
 
@@ -8,20 +9,17 @@ SRCREV = "${XUANTIE_LINUX_TAG}"
 S = "${WORKDIR}"
 
 
-FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/gcc_14.3.0_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=36ab871f00a0507fc49a636bdf281b5c1545da3f7372355e69c9c6a99ead299a"
-FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/gcc_14.3.0_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=960df75dd3ecda23eab41e62a758da6b97e95be09057ca3495841eb204d4bc0e"
-FILE_RV32_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/gcc_14.3.0_riscv32-5.10.4-rv32gc-ilp32d.deb;sha256sum=b65c169c1af97c23314ded77a28f7054a6628f20a94893fcccd49412a30af882"
-FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.3.0/gcc_14.3.0_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=de43ed42da3f6ded487302b89d1a7c22235cdfaf2b26c43f6ca7893e6eb4ca91"
+FILE_RV64_510 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/gcc_14.3.0_riscv64-5.10.4-rv64gc-lp64d.deb;sha256sum=31189ed3e31e5c21cbc73d84effdabdca683bbcf3ffb339d8ae1a065eb4e0fdb"
+FILE_RV64_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/gcc_14.3.0_riscv64-6.6.36-rv64gc-lp64d.deb;sha256sum=bac8e759defd8eb87a8b550c8a0b5ff6126040444fc272ccb17f17133992e23e"
+FILE_RV32_66 = "http://yocbook.oss-cn-hangzhou.aliyuncs.com/linux_image/XuanTie_V1.4.0/gcc_14.3.0_riscv32-6.6.36-rv32gc-ilp32d.deb;sha256sum=97a4b5319d186bae6fd52f07c3c62174fbc9a68d10fa9f5c390b8229f7d7dd26"
 
 SRC_URI:riscv64 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
     '${FILE_RV64_510}', \
     '${FILE_RV64_66}', d)}"
 
-SRC_URI:riscv32 = "${@bb.utils.contains('PREFERRED_VERSION_linux-xuantie', '5.10.y', \
-    '${FILE_RV32_510}', \
-    '${FILE_RV32_66}', d)}"
+SRC_URI:riscv32 = "${FILE_RV32_66}"
 
-PR = "r11"
+PR = "r0"
 
 INSANE_SKIP:${PN} += "file-rdeps dev-deps infodir"
 INSANE_SKIP:${PN} += "dev-so staticdev"

@@ -3,8 +3,9 @@ SRC_URI += " \
 	file://0002-add-xuantie-fpga-defconfig.patch \
 	file://0003-add-xuantie-fpga-dts.patch \
 	file://0004-fix-uart-32bit-reg-and-do-not-relocate-kernel-image.patch \
-        file://0005-add-xuantie-fpga-board.patch \
-        file://0006-modify-mmu-type-and-sys-mem-in-dts.patch \
+	file://0005-add-xuantie-fpga-board.patch \
+	file://0006-riscv-cache-subsystem-support.patch \
+	file://0007-net-designware-gmac-axi-config.patch \
 "
 DEPENDS += "opensbi"
 

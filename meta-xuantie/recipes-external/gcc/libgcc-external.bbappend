@@ -18,4 +18,4 @@ do_install:append() {
     fi
 }
 
-DEPENDS:append:toolchain-clang = " clang-cross-${TARGET_ARCH}"
+

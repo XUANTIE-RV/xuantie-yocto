@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: XuanTie Linux SDK CI <noreply@linux.alibaba.com>
+Date: Sat, 2 Aug 2026 00:00:00 +0800
+Subject: [PATCH] Replace removed Py_TRASHCAN_SAFE_* macros for Python 3.13
+
+Py_TRASHCAN_SAFE_BEGIN()/Py_TRASHCAN_SAFE_END() were deprecated in Python
+3.8 and removed in Python 3.13. Building pygobject against python3 3.13
+therefore fails with:
+
+    gi/pygi-resulttuple.c:312:5: error: call to undeclared function
+    'Py_TRASHCAN_SAFE_BEGIN'
+
+Switch to the Py_TRASHCAN_BEGIN(op, dealloc)/Py_TRASHCAN_END macros, which
+have been available since Python 3.8, so the change is safe for every
+supported CPython version.
+
+Upstream-Status: Backport [https://gitlab.gnome.org/GNOME/pygobject]
+---
+ gi/pygi-resulttuple.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gi/pygi-resulttuple.c b/gi/pygi-resulttuple.c
+--- a/gi/pygi-resulttuple.c
++++ b/gi/pygi-resulttuple.c
+@@ -309,7 +309,7 @@ static void resulttuple_dealloc(PyObject *self) {
+     Py_ssize_t i, len;
+
+     PyObject_GC_UnTrack (self);
+-    Py_TRASHCAN_SAFE_BEGIN (self)
++    Py_TRASHCAN_BEGIN (self, resulttuple_dealloc)
+
+     /* Free the tuple items and, if there is space, save the tuple object
+      * pointer to the front of the free list for its size. Otherwise free it.
+@@ -331,6 +331,6 @@ static void resulttuple_dealloc(PyObject *self) {
+     Py_TYPE (self)->tp_free (self);
+
+ done:
+-    Py_TRASHCAN_SAFE_END (self)
++    Py_TRASHCAN_END
+ }
+ #endif

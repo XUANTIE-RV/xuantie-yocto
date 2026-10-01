@@ -16,6 +16,7 @@ SRC_URI = "https://archive.mozilla.org/pub/firefox/releases/${PV}esr/source/fire
            file://0001-util.configure-fix-one-occasionally-reproduced-confi.patch \
            file://0001-rewrite-cargo-host-linker-in-python3.patch  \
            file://py-3.11.patch \
+           file://0001-six-add-find_spec-to-vendored-six-importer-for-Python.patch \
            "
 SRC_URI[sha256sum] = "53be2bcde0b5ee3ec106bd8ba06b8ae95e7d489c484e881dfbe5360e4c920762"
 
@@ -24,6 +25,10 @@ S = "${WORKDIR}/firefox-${@d.getVar("PV").replace("esr", "")}"
 inherit pkgconfig perlnative python3native rust
 
 DEPENDS += "zlib cargo-native python3 icu"
+# Python 3.12 removed the stdlib distutils that mozbuild's configure.py imports;
+# setuptools-native provides the _distutils compatibility shim via its
+# distutils-precedence.pth so `import distutils.*` keeps working at configure.
+DEPENDS += "python3-setuptools-native"
 DEPENDS:remove:mipsarch = "icu"
 DEPENDS:remove:powerpc:toolchain-clang = "icu"
 
@@ -49,6 +54,13 @@ ICU:powerpc:toolchain-clang = ""
 
 do_configure() {
     cd ${B}
+    # mozbuild's configure would otherwise spawn its bundled virtualenv 20.2.2
+    # (third_party/python/virtualenv), which is incompatible with Python 3.13
+    # (uses the removed distutils/pipes modules and the pre-3.10 entry_points()
+    # dict API). MOZ_TEST_PYTHON is mozbuild's supported hook to reuse the
+    # invoking interpreter instead of building/re-exec'ing that virtualenv; all
+    # build-time Python modules are already provided via PYTHONPATH above.
+    export MOZ_TEST_PYTHON="$(python3 -c 'import sys; print(sys.executable)')"
     python3 ${S}/configure.py \
         --enable-project=js \
         --target=${RUST_HOST_SYS} \

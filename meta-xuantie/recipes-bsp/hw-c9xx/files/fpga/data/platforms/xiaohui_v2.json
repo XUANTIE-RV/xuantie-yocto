@@ -1,0 +1,191 @@
+{
+  "_comment": "XuanTie xiaohui v2 SoC platform. INTC = aplic (AIA). CPUs on this SoC (c930/c925/c950) must have the Sstc ISA extension, because APLIC-based timer relies on stimecmp. Default DDR = 16G.",
+  "max_cores": 32,
+  "cores_per_cluster": 8,
+  "memory": {
+    "base": "0x60000000", "size": "0x400000000", "desc": "DDR memory (16G)"
+  },
+  "peripherals": {
+    "serial": { "base": "0x1900d000", "size": "0x1000",
+                "irq": 20, "irq_type": 4, "clock_frequency": 36000000,
+                "desc": "DesignWare APB UART" },
+    "gmac":   { "base": "0x18010000", "size": "0x2000",
+                "irq": 21, "irq_type": 4,
+                "desc": "GMAC ethernet controller",
+                "_comment": "GMAC 有三种模式(由 -gmac 选项 / CPU 自动决定):h100 = 默认 HAPS/H100 FPGA 网卡,socinit 用 init.mode_h100 写序列(net_mode=0);h100_v2 = c930/c925 自动切换的变体,socinit 用 init.mode_haps_v2 写序列(net_mode=1);pro = 独立 pro 网卡(-gmac pro),走 gmac_pro dtsi 模板、无此处 init 写序列。",
+                "init": {
+                  "base": "0x1900e000",
+                  "mode_h100": [
+                    { "offset": "0x1c", "value": "0x0" },
+                    { "offset": "0x04", "value": "0x2000" },
+                    { "offset": "0x08", "value": "0x2000" },
+                    { "offset": "0x00", "value": "0x7e" },
+                    { "offset": "0x0c", "value": "0x4" },
+                    { "offset": "0x0c", "value": "0x80000004" }
+                  ],
+                  "mode_haps_v2": [
+                    { "offset": "0x1c", "value": "0x1" },
+                    { "offset": "0x04", "value": "0x2000" },
+                    { "offset": "0x08", "value": "0x2200" },
+                    { "offset": "0x00", "value": "0x7e" },
+                    { "offset": "0x0c", "value": "0x4" },
+                    { "offset": "0x20", "value": "0x1" },
+                    { "offset": "0x0c", "value": "0x80000004" }
+                  ]
+                } }
+  },
+  "net": {
+    "_comment": "xiaohui_v2 PCIe: 与 NGF 同一配置 — enable rc1, rc0/rc1 ECAM 均声明(rc0 disabled), RP INTx APLIC 用 NGF rc1 的基址/标签(aplic_die0_pcie_rc1_rpN_m/s)。-nic pcie1|pcie1-rp<n> 选择 RC1 与 RP INTx; RP INTx 需 -intc aplic (RP APLIC MSI 挂 IMSIC)。缺省 pcie = rc1 okay, RP INTx 全 disabled。本平台无 gmac/RCiEP/IOMMU 声明, -iommu 与 gmac token 报错。",
+    "modes": ["pcie"],
+    "pcie": {
+      "enable": "rc1",
+      "rc0": { "base": "0x3ff80000000", "size": "0x10000000", "domain": 0,
+               "ranges": "<0x1000000 0x00 0x00 0x00 0x00 0x00 0x100000>, <0x2000000 0x00 0x100000 0x00 0x100000 0x00 0x3f00000>, <0x2000000 0x400 0x00 0x400 0x00 0x400 0x00>" },
+      "rc1": { "base": "0x3ff90000000", "size": "0x10000000", "domain": 1,
+               "ranges": "<0x1000000 0x00 0x4000000 0x00 0x4000000 0x00 0x100000>, <0x2000000 0x00 0x4100000 0x00 0x4100000 0x00 0x3f00000>, <0x2000000 0x800 0x00 0x800 0x00 0x400 0x00>" },
+      "intx": {
+        "template": "net/aplic_pcie_rp.dtsi.in",
+        "ports": [
+          { "id": 0, "device": 0,
+            "m": { "label": "aplic_die0_pcie_rc1_rp0_m", "base": "0x5b4500000", "size": "0x4000" },
+            "s": { "label": "aplic_die0_pcie_rc1_rp0_s", "base": "0x534504000", "size": "0x4000" } },
+          { "id": 1, "device": 1,
+            "m": { "label": "aplic_die0_pcie_rc1_rp1_m", "base": "0x5b4d00000", "size": "0x4000" },
+            "s": { "label": "aplic_die0_pcie_rc1_rp1_s", "base": "0x534d04000", "size": "0x4000" } },
+          { "id": 2, "device": 2,
+            "m": { "label": "aplic_die0_pcie_rc1_rp2_m", "base": "0x5b5500000", "size": "0x4000" },
+            "s": { "label": "aplic_die0_pcie_rc1_rp2_s", "base": "0x535504000", "size": "0x4000" } },
+          { "id": 3, "device": 3,
+            "m": { "label": "aplic_die0_pcie_rc1_rp3_m", "base": "0x5b5d00000", "size": "0x4000" },
+            "s": { "label": "aplic_die0_pcie_rc1_rp3_s", "base": "0x535d04000", "size": "0x4000" } }
+        ]
+      }
+    }
+  },
+  "hsm": {
+    "_comment": "HSM/power-management config: hsm.pmc drives the DTS pmc node (-pmc) and the socinit IPMC writes; hsm.pcu.boot_release drives the gdbinit reset/release sequence; hsm.pcu.version (+nodes, once registered) drives the PCU HSM DTS node.",
+    "pmc": {
+      "base": "0x26900000", "size": "0x00010000", "desc": "Power management controller",
+      "ipmc": {
+        "base_addr":     "0x26900100",
+        "release_stride": "0x1000",
+        "release_offset": "0x0",
+        "clock_offset":   "0x4",
+        "release_value":  "0x18",
+        "clock_value":    "0x11",
+        "n_cores":        4
+      }
+    },
+    "pcu": {
+      "_comment": "version = PCU HSM node generation switch (xuantie,pcu; xiaohui_v2 is v1-fixed). nodes (PCU address constants) is intentionally absent: the xiaohui_v2 PCU base/offsets differ from NGF and are pending hardware confirmation; without nodes the generator emits no PCU node (opensbi degrades to plain wfi).",
+      "version": "v1",
+      "boot_release": {
+        "_comment": "Boot hart-release config (v2 = PCU, used by c925/c930/c950). reset_addrs = per-hart reset vector regs (set to $zsb_addr). release_addrs/release_value are the v2-only per-hart PCU release/config writes. Per-hart reset/config AND the global release (release_addr) are all layout-gated exactly like v1: only -layout-populated harts are active, the rest are commented out; the global release mask follows release_default (<=8 cores) / release_layout (>8 cores). NOTE: boot_release v1/v2 names the hart-release generation, distinct from both the -pmc DTS node (hsm.pmc) and the PCU HSM node version (hsm.pcu.version).",
+        "reset_addrs":    ["0x26808020", "0x26828020", "0x26888020", "0x268a8020",
+                           "0x26908020", "0x26928020", "0x26988020", "0x269a8020",
+                           "0x26a08020", "0x26a28020", "0x26a88020", "0x26aa8020",
+                           "0x26b08020", "0x26b28020", "0x26b88020", "0x26ba8020"],
+        "release_addr":   "0x18030000",
+        "release_default": "0xff",
+        "release_layout": "0xffffffff",
+        "release_addrs":  ["0x26808100", "0x26828100", "0x26888100", "0x268a8100",
+                           "0x26908100", "0x26928100", "0x26988100", "0x269a8100",
+                           "0x26a08100", "0x26a28100", "0x26a88100", "0x26aa8100",
+                           "0x26b08100", "0x26b28100", "0x26b88100", "0x26ba8100"],
+        "release_value":  "0x80000008"
+      }
+    }
+  },
+  "intc": {
+    "_comment": "v2 is aplic-native (AIA): c930/c925/c950 select aplic by default. The plic sub-block is kept so `--intc plic` can be forced on v2 as well, mirroring v1. Sstc CPUs use stimecmp, so no aplic.mtimer node.",
+    "plic": {
+      "clint":      { "base": "0x0c000000", "size": "0x04000000",
+                      "has_64bit_mmio": false, "desc": "T-Head c900 CLINT" },
+      "sswi":       { "base": "0x0c00c000", "size": "0x00010000",
+                      "desc": "ACLINT SSWI" },
+      "controller": { "base": "0x08000000", "size": "0x04000000",
+                      "ndev": "80", "max_priority": "7",
+                      "desc": "T-Head c900 PLIC" }
+    },
+    "aplic": {
+      "aplic_s":  { "base": "0x08004000", "size": "0x4000",
+                    "desc": "APLIC S-mode controller" },
+      "aplic_m":  { "base": "0x08000000", "size": "0x4000",
+                    "num_sources": "0x60", "delegate_range": "0x01 0x60",
+                    "desc": "APLIC M-mode controller" },
+      "imsics_m": { "base": "0xf00000000000", "size_per_core": "0x1000",
+                    "desc": "IMSIC M-mode, base 属 PA48 地址范围 (size scales with core count)" },
+      "imsics_s": { "base": "0xf00010000000", "size_per_core": "0x40000",
+                    "num_ids": "0xff", "guest_index_bits": "6",
+                    "desc": "IMSIC S-mode, base 属 PA48 地址范围 (size scales with core count)" }
+    }
+  },
+  "link_ip": {
+    "_comment": "Interconnect/link IP by generation. ncore=NCore coherence bus (--bus ncore); xl200=XuanTie Link 200 (--bus stlk/stlk2); xl300=XuanTie Link 300 (--bus stlk3); xl100 reserved.",
+    "ncore": {
+      "_comment": "Snoop/DVM regs derived as cluster_base + i*snoop_stride + snoop_offset (snoop) and cluster_base + dvm_offset (dvm). cluster0 has 4 snoop regs, cluster1 has 1.",
+      "cluster0_base":        "0x26880000",
+      "cluster1_base":        "0x26b80000",
+      "snoop_offset":         "0x40",
+      "snoop_stride":         "0x1000",
+      "cluster0_snoop_count": 4,
+      "cluster1_snoop_count": 1,
+      "dvm_offset":           "0x7f040",
+      "enable_value":         "0x3"
+    },
+    "xl100": {},
+    "xl200": {
+      "stl3_base":       "0xfffffff000",
+      "stl3_base_stlk2": "0xfffffffff000",
+      "pmu": [
+        { "index": 0, "base": "0xfffffffff000", "size": "0x1000", "irq": 22, "irq_type": 4, "desc": "XL200 Link PMU" }
+      ]
+    },
+    "xl300": {
+      "_comment": "Per-cluster PMU + CBQRI + L3 cache derived from single-cluster prototypes: pmu/cbqri instance i lives at base + i*cluster_stride, irq at irq_base + i*irq_stride, cbqri cache phandle &l3_cache_<i>; the L3 cache node l3_cache_<i>/l3-cache-<i> is emitted per cluster from the l3_cache prototype and referenced by both cbqri and each core's next-level-cache. clusters = physical cluster count; each node's status is okay iff cluster i is populated by -layout. L3 cache is emitted ONLY on xl300 (--bus stlk3); non-xl300 RV64 builds carry no L3.",
+      "clusters": 2,
+      "cluster_stride": "0x200000",
+      "pmu":   { "base": "0x269ff000", "size": "0x1000", "irq_base": 170, "irq_stride": 84, "irq_type": 4 },
+      "cbqri": { "base": "0x269ff400", "size": "0x1000", "rcid": 8, "mcid": 8 },
+      "l3_cache": { "level": 3, "block-size": "0x40", "sets": "0x1000", "size": "0x400000" }
+    }
+  },
+  "chosen": {
+    "bootargs": "console=ttyS0,115200 norandmaps no_check_unaligned_access earlycon=sbi",
+    "_comment_initrd": "initrd.end is a placeholder (0x0); the boot script backfills the real end address after it computes the rootfs size.",
+    "initrd": { "start": "0x64000000", "end": "0x0" },
+    "stdout_path":  "/soc/serial@1900D000:115200"
+  },
+  "images_layout": {
+    "_comment": "Boot image load addresses consumed by the gdb scripts (zsb.gdbinit + zsb_socinit.gdbinit).",
+    "kernel_5_10": {
+      "opensbi_addr":      "0x60000000",
+      "uboot_addr":        "0x60400000",
+      "vmlinux_addr":      { "no-uboot": "0x60400000", "u-boot": "0x60800000" },
+      "dtb_addr":          "0x63f00000",
+      "zsb_addr":          "0x63ff8000",
+      "flag_addr":         "0x603FFF00",
+      "rootfs_addr":       "0x64000000",
+      "plic_delegate_addr": "0x081ffffc"
+    },
+    "kernel_6_6": {
+      "opensbi_addr":      "0x60000000",
+      "uboot_addr":        "0x60400000",
+      "vmlinux_addr":      { "no-uboot": "0x60400000", "u-boot": "0x60800000" },
+      "dtb_addr":          "0x60300000",
+      "zsb_addr":          "0x603F8000",
+      "flag_addr":         "0x603FFF00",
+      "rootfs_addr":       "0x64000000"
+    },
+    "optee": {
+      "_comment": "OP-TEE boot: kernel/rootfs in the 0x8xxxxxxx window (matches optee DTS linux,initrd-start=0x84000000); bl31 secure monitor + tee-os secure.",
+      "vmlinux_addr":      "0x80200000",
+      "rootfs_addr":       "0x84000000",
+      "zsb_addr":          "0x603F8000",
+      "dtb_addr":          "0x60300000",
+      "bl31_addr":         "0x60000000",
+      "teeos_addr":        "0xef000000",
+      "flag_addr":         "0x603FFF00"
+    }
+  }
+}

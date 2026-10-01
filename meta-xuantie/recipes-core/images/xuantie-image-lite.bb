@@ -5,8 +5,12 @@ require xuantie-image-minimal.bb
 
 DEPENDS += "cpio-native"
 
+# Use busybox as init manager to avoid sysvinit/busybox file conflicts
+# (e.g., /etc/init.d/rcS provided by both packages)
+VIRTUAL-RUNTIME_init_manager = "busybox"
+
 #testing basic tools
-IMAGE_INSTALL += " glibc-external-utils time unzip ldd file procps"
+IMAGE_INSTALL += " time unzip ldd file procps"
 IMAGE_INSTALL += " wget util-linux-mount grep nfs-utils-mount"
 IMAGE_INSTALL += " ntfs-3g ntfs-3g-ntfsprogs ntfsprogs"
 
@@ -25,8 +29,11 @@ IMAGE_INSTALL += " ntpdate "
 # coreutils
 IMAGE_INSTALL:append = " ${@bb.utils.contains('XUANTIE_MARCH', 'rva23u64', 'coreutils', '', d)}"
 
-
 IMAGE_FEATURES:append = " ssh-server-openssh "
+
+# libc utils
+IMAGE_INSTALL:append:libc-glibc = " glibc-external-utils"
+IMAGE_INSTALL:append:libc-musl = " musl-external-utils"
 
 #for FPGA
 EXTRA_IMAGEDEPENDS += " hw-c9xx "

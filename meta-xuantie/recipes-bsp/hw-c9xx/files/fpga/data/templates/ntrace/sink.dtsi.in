@@ -1,0 +1,12 @@
+		${SINK_NAME}: xtntrace_${SINK_TYPE}@${SINK_UNIT} {
+			compatible = "xuantie_ntrace,sink-controller";
+			reg = <${SINK_REG} ${SINK_SIZE}>;
+			memory-region = <&xuantie_ntrace_reserved>;
+			working_mode = "${SINK_WORKING_MODE}";
+			format = "original";
+			input_port {
+				port0 {
+					endpoint = <&${SINK_IN}>;
+				};
+			};
+		};

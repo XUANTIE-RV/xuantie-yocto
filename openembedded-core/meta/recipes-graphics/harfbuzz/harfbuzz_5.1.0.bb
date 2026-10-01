@@ -12,7 +12,7 @@ SRC_URI = "${GITHUB_BASE_URI}/download/${PV}/${BPN}-${PV}.tar.xz \
            file://0001-fix-signedness-of-char-in-tests.patch \
 "
 SRC_URI[sha256sum] = "2edb95db668781aaa8d60959d21be2ff80085f31b12053cdd660d9a50ce84f05"
-inherit xuantie-gcc14-compatible
+inherit xuantie-gcc-compatible
 SRC_URI:append = " file://0001-Resolve-harfbuzz-compilation-errors-in-gcc14-toolcha.patch"
 
 inherit meson pkgconfig lib_package gtk-doc gobject-introspection github-releases

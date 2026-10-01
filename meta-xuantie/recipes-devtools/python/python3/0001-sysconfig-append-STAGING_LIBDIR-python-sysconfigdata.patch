@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: meta-xuantie <noreply@xuantie.invalid>
+Date: Wed, 29 Jul 2026 00:00:00 +0000
+Subject: [PATCH] sysconfig: append STAGING_LIBDIR/python-sysconfigdata to
+ sys.path
+
+So that the target configuration can be used when running the native
+interpreter during cross builds.
+
+This is the Python 3.13 port of oe-core's
+0001-distutils-sysconfig-append-STAGING_LIBDIR-python-sys.patch. In 3.13
+the sysconfig module became a package (Lib/sysconfig/__init__.py) and
+_init_posix() grew an upstream cross-build branch keyed on the new
+_PYTHON_SYSCONFIGDATA_PATH env var. oe-core's python3targetconfig.bbclass
+still only exports _PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata" and relies
+on the target sysconfigdata being reachable via sys.path, so without this
+the native python raises "ModuleNotFoundError: No module named
+'_sysconfigdata'" for every recipe that inherits setuptools3-base /
+python3targetconfig (btrfs-tools, ...).
+
+Add a STAGING_LIBDIR fallback branch that mirrors the langdale patch,
+placed after the upstream _PYTHON_SYSCONFIGDATA_PATH branch so the newer
+mechanism still wins when set.
+
+Upstream-Status: Inappropriate [oe-core specific; python 3.13 backport]
+
+---
+ Lib/sysconfig/__init__.py | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/Lib/sysconfig/__init__.py
++++ b/Lib/sysconfig/__init__.py
+@@ -357,6 +357,13 @@ def _init_posix(vars):
+         spec = FileFinder(path, (SourceFileLoader, SOURCE_SUFFIXES)).find_spec(name)
+         _temp = module_from_spec(spec)
+         spec.loader.exec_module(_temp)
++    elif 'STAGING_LIBDIR' in os.environ:
++        # OE cross build: target sysconfigdata lives in the target sysroot.
++        # Append it to sys.path so `import _sysconfigdata` resolves the target
++        # build config when running the native interpreter. Kept off PYTHONPATH
++        # for the reason noted above.
++        sys.path.append(os.environ['STAGING_LIBDIR'] + '/python-sysconfigdata')
++        _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
+     else:
+         _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
+     build_time_vars = _temp.build_time_vars

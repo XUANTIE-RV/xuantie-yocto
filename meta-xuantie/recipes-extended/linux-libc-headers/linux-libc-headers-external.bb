@@ -3,6 +3,8 @@ LICENSE = "CLOSED"
 
 PV = "1.0.0"
 
+SRC_URI = "file://wordsize.h"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -39,7 +41,7 @@ do_install() {
 	install -m 0644 ${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/include/sound/*.h       ${D}${includedir}/sound/
 	install -m 0644 ${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/include/video/*.h       ${D}${includedir}/video/
 	install -m 0644 ${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/include/xen/*.h         ${D}${includedir}/xen/
-	install -m 0644 ${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/include/bits/wordsize.h ${D}${includedir}/bits/
+	install -m 0644 ${WORKDIR}/wordsize.h ${D}${includedir}/bits/
 	cp -rfa ${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/include/linux/*                 ${D}${includedir}/linux/
 }
 

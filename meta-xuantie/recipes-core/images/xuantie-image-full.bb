@@ -9,7 +9,7 @@ require ../packagegroups/xuantie-buildroot-lite.bb
 IMAGE_INSTALL += " xuantie-debug-tools xuantie-benchmark"
 #64 bit testing build tools
 IMAGE_INSTALL += " file coreutils sed xz zlib zlib-dev wget tar ripgrep perl m4 lz4 lz4-dev grep "
-IMAGE_INSTALL += " autoconf automake bc bcc gcc binutils flex ncurses ncurses-dev bison nasm yasm python3 mpfr ninja cmake dragonwell "
+IMAGE_INSTALL += " autoconf automake bc bcc gcc binutils flex ncurses ncurses-dev bison nasm yasm python3 mpfr ninja cmake  "
 
 python do_rootfs:append:riscv64 () {
     import subprocess

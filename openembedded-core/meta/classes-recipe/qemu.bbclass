@@ -34,14 +34,9 @@ def qemu_wrapper_cmdline(data, rootfs_path, library_paths):
     if qemu_binary == "qemu-allarch":
         qemu_binary = "qemuwrapper"
 
-    qemu_options = data.getVar("QEMU_OPTIONS") 
-    target_arch = data.getVar("TARGET_ARCH")
-    cpu_ = ""
-    if target_arch == "riscv64":
-        cpu_ = " -cpu c920v3 "
-    elif target_arch == "riscv32":
-        cpu_ = " -cpu c907fdv-rv32 "
-    return "PSEUDO_UNLOAD=1 " + qemu_binary + " " + cpu_ + qemu_options + " -L " + rootfs_path\
+    qemu_options = data.getVar("QEMU_OPTIONS")    
+
+    return "PSEUDO_UNLOAD=1 " + qemu_binary + " " + qemu_options + " -L " + rootfs_path\
             + " -E LD_LIBRARY_PATH=" + ":".join(library_paths) + " "
 
 # Next function will return a string containing the command that is needed to

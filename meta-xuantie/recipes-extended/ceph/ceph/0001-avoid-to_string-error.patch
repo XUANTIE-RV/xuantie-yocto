@@ -1,0 +1,73 @@
+From f807220d13adc0656c30d3207d11c70360b88d06 Mon Sep 17 00:00:00 2001
+From: Chen Qi <Qi.Chen@windriver.com>
+Date: Wed, 13 Mar 2024 03:14:55 -0700
+Subject: [PATCH] avoid to_string error
+
+Upstream-Status: Pending
+
+Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+---
+ src/rgw/rgw_asio_client.cc | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/src/rgw/rgw_asio_client.cc b/src/rgw/rgw_asio_client.cc
+index a0ec0bf5c..17880eda5 100644
+--- a/src/rgw/rgw_asio_client.cc
++++ b/src/rgw/rgw_asio_client.cc
+@@ -3,6 +3,7 @@
+ 
+ #include <boost/algorithm/string/predicate.hpp>
+ #include <boost/asio/write.hpp>
++#include <string_view>
+ 
+ #include "rgw_asio_client.h"
+ #include "rgw_perf_counters.h"
+@@ -39,11 +40,11 @@ int ClientIO::init_env(CephContext *cct)
+     const auto& value = header->value();
+ 
+     if (field == beast::http::field::content_length) {
+-      env.set("CONTENT_LENGTH", value.to_string());
++      env.set("CONTENT_LENGTH", std::string(value));
+       continue;
+     }
+     if (field == beast::http::field::content_type) {
+-      env.set("CONTENT_TYPE", value.to_string());
++      env.set("CONTENT_TYPE", std::string(value));
+       continue;
+     }
+ 
+@@ -62,26 +63,26 @@ int ClientIO::init_env(CephContext *cct)
+     }
+     *dest = '\0';
+ 
+-    env.set(buf, value.to_string());
++    env.set(buf, std::string(value));
+   }
+ 
+   int major = request.version() / 10;
+   int minor = request.version() % 10;
+   env.set("HTTP_VERSION", std::to_string(major) + '.' + std::to_string(minor));
+ 
+-  env.set("REQUEST_METHOD", request.method_string().to_string());
++  env.set("REQUEST_METHOD", std::string(request.method_string()));
+ 
+   // split uri from query
+   auto uri = request.target();
+   auto pos = uri.find('?');
+   if (pos != uri.npos) {
+     auto query = uri.substr(pos + 1);
+-    env.set("QUERY_STRING", query.to_string());
++    env.set("QUERY_STRING", std::string(query));
+     uri = uri.substr(0, pos);
+   }
+-  env.set("SCRIPT_URI", uri.to_string());
++  env.set("SCRIPT_URI", std::string(uri));
+ 
+-  env.set("REQUEST_URI", request.target().to_string());
++  env.set("REQUEST_URI", std::string(request.target()));
+ 
+   char port_buf[16];
+   snprintf(port_buf, sizeof(port_buf), "%d", local_endpoint.port());
+-- 
+2.42.0
+

@@ -1,0 +1,48 @@
+##IF HAS_MTIMER##
+		mtimer@${MTIMER_UNIT_ADDR} {
+			interrupts-extended = <&cpu0_intc 0x07>;
+			reg = <${MTIMER_MTIMECMP_BASE} ${MTIMER_MTIMECMP_SIZE} ${MTIMER_MTIME_BASE} ${MTIMER_MTIME_SIZE}>;
+			compatible = "riscv,aclint-mtimer";
+		};
+
+##ENDIF##
+		intc: aplic@${APLIC_S_UNIT_ADDR} {
+			riscv,num-sources = <${NUM_SOURCES}>;
+			reg = <${APLIC_S_BASE} ${APLIC_S_SIZE}>;
+			msi-parent = <&imsics_s>;
+			interrupt-controller;
+			#interrupt-cells = <0x02>;
+			compatible = "riscv,aplic";
+		};
+
+		aplic_m: aplic@${APLIC_M_UNIT_ADDR} {
+			riscv,delegate = <&intc ${DELEGATE_RANGE}>;
+			riscv,children = <&intc>;
+			riscv,num-sources = <${NUM_SOURCES}>;
+			reg = <${APLIC_M_BASE} ${APLIC_M_SIZE}>;
+			msi-parent = <&imsics_m>;
+			interrupt-controller;
+			#interrupt-cells = <0x02>;
+			compatible = "riscv,aplic";
+		};
+
+		imsics_m: imsics@${IMSICS_M_UNIT_ADDR} {
+			riscv,num-ids = <${IMSICS_NUM_IDS}>;
+			reg = <${IMSICS_M_BASE} ${IMSICS_M_SIZE}>;
+			interrupts-extended = <${IMSICS_M_PARENTS}>;
+			msi-controller;
+			interrupt-controller;
+			#interrupt-cells = <0x00>;
+			compatible = "riscv,imsics";
+		};
+
+		imsics_s: imsics@${IMSICS_S_UNIT_ADDR} {
+			riscv,guest-index-bits = <${IMSICS_GUEST_IDX_BITS}>;
+			riscv,num-ids = <${IMSICS_NUM_IDS}>;
+			reg = <${IMSICS_S_BASE} ${IMSICS_S_SIZE}>;
+			interrupts-extended = <${IMSICS_S_PARENTS}>;
+			msi-controller;
+			interrupt-controller;
+			#interrupt-cells = <0x00>;
+			compatible = "riscv,imsics";
+		};

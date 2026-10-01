@@ -1,0 +1,103 @@
+From a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 Mon Sep 17 00:00:00 2001
+From: yanan.he <yanan.he@linux.alibaba.com>
+Date: Wed, 10 Jun 2026 09:00:00 +0800
+Subject: [PATCH] riscv: dts: add gmac node with snps,axi-config for QEMU
+ verification
+
+Add a GMAC ethernet node together with a stmmac-axi-config phandle node
+to the QEMU virt RISC-V device trees so that the U-Boot DesignWare GMAC
+driver can be exercised against the snps,axi-config DT bindings without
+requiring real FPGA hardware.
+
+The configuration mirrors the XuanTie C930 FPGA GMAC binding (compatible
+"snps,dwmac", snps,pbl=32, snps,fixed-burst, snps,axi-config pointing
+at a stmmac_axi_setup node with snps,wr_osr_lmt / snps,rd_osr_lmt /
+snps,blen) so that exactly the same DT parsing path used on real
+hardware is taken when running under QEMU.
+
+Both qemu-virt64.dts and qemu-virt32.dts are updated identically so the
+verification works for the rv64 and rv32 smode builds.
+
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ arch/riscv/dts/qemu-virt32.dts | 29 +++++++++++++++++++++++++++++
+ arch/riscv/dts/qemu-virt64.dts | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+)
+
+diff --git a/arch/riscv/dts/qemu-virt32.dts b/arch/riscv/dts/qemu-virt32.dts
+--- a/arch/riscv/dts/qemu-virt32.dts
++++ b/arch/riscv/dts/qemu-virt32.dts
+@@ -8,4 +8,33 @@
+ #include "binman.dtsi"
+ 
+ / {
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	soc {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		compatible = "simple-bus";
++		ranges;
++
++		stmmac_axi_setup: stmmac-axi-config {
++			snps,wr_osr_lmt = <3>;
++			snps,rd_osr_lmt = <3>;
++			snps,blen = <0x4 0x08 0x10 0x00 0x00 0x00 0x00>;
++		};
++
++		gmac: ethernet@18010000 {
++			dma-noncoherent;
++			compatible = "snps,dwmac";
++			reg = <0x0 0x18010000 0x0 0x2000>;
++			interrupt-parent = <&plic>;
++			interrupts = <21>;
++			snps,pbl = <32>;
++			snps,fixed-burst;
++			snps,axi-config = <&stmmac_axi_setup>;
++			max-speed = <100>;
++			phy-mode = "mii";
++			status = "okay";
++		};
++	};
+ };
+diff --git a/arch/riscv/dts/qemu-virt64.dts b/arch/riscv/dts/qemu-virt64.dts
+--- a/arch/riscv/dts/qemu-virt64.dts
++++ b/arch/riscv/dts/qemu-virt64.dts
+@@ -8,4 +8,33 @@
+ #include "binman.dtsi"
+ 
+ / {
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	soc {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		compatible = "simple-bus";
++		ranges;
++
++		stmmac_axi_setup: stmmac-axi-config {
++			snps,wr_osr_lmt = <3>;
++			snps,rd_osr_lmt = <3>;
++			snps,blen = <0x4 0x08 0x10 0x00 0x00 0x00 0x00>;
++		};
++
++		gmac: ethernet@18010000 {
++			dma-noncoherent;
++			compatible = "snps,dwmac";
++			reg = <0x0 0x18010000 0x0 0x2000>;
++			interrupt-parent = <&plic>;
++			interrupts = <21>;
++			snps,pbl = <32>;
++			snps,fixed-burst;
++			snps,axi-config = <&stmmac_axi_setup>;
++			max-speed = <100>;
++			phy-mode = "mii";
++			status = "okay";
++		};
++	};
+ };
+-- 
+2.47.0
+

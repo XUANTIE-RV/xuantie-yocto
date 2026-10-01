@@ -1,0 +1,53 @@
+From 085a579568f7d8bb0da922418b3ad6fbd787dc18 Mon Sep 17 00:00:00 2001
+From: yan yihao <yan.yihao@zte.com.cn>
+Date: Thu, 29 May 2025 15:29:11 -0400
+Subject: [PATCH] riscv
+
+---
+ src/arrow/cpp/cmake_modules/SetupCxxFlags.cmake            | 2 ++
+ src/arrow/cpp/src/arrow/vendored/fast_float/float_common.h | 1 +
+ src/common/Cycles.h                                        | 4 ++++
+ 3 files changed, 7 insertions(+)
+
+diff --git a/src/arrow/cpp/cmake_modules/SetupCxxFlags.cmake b/src/arrow/cpp/cmake_modules/SetupCxxFlags.cmake
+index e3367ca..e5c54cc 100644
+--- a/src/arrow/cpp/cmake_modules/SetupCxxFlags.cmake
++++ b/src/arrow/cpp/cmake_modules/SetupCxxFlags.cmake
+@@ -34,6 +34,8 @@ if(NOT DEFINED ARROW_CPU_FLAG)
+     set(ARROW_CPU_FLAG "s390x")
+   elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "loongarch64")
+     set(ARROW_CPU_FLAG "loongarch")
++  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
++    set(ARROW_CPU_FLAG "riscv64")
+   else()
+     set(ARROW_CPU_FLAG "x86")
+   endif()
+diff --git a/src/arrow/cpp/src/arrow/vendored/fast_float/float_common.h b/src/arrow/cpp/src/arrow/vendored/fast_float/float_common.h
+index 8d11067..297ac36 100644
+--- a/src/arrow/cpp/src/arrow/vendored/fast_float/float_common.h
++++ b/src/arrow/cpp/src/arrow/vendored/fast_float/float_common.h
+@@ -9,6 +9,7 @@
+        || defined(__amd64) || defined(__aarch64__) || defined(_M_ARM64) || defined(__loongarch__)\
+        || defined(__MINGW64__)                                          \
+        || defined(__s390x__)                                            \
++       || defined(__riscv)                                              \
+        || (defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)) \
+        || defined(__EMSCRIPTEN__))
+ #define FASTFLOAT_64BIT
+diff --git a/src/common/Cycles.h b/src/common/Cycles.h
+index 1bae9d6..9260d10 100644
+--- a/src/common/Cycles.h
++++ b/src/common/Cycles.h
+@@ -88,6 +88,10 @@ class Cycles {
+   struct timeval tv;
+   gettimeofday(&tv, nullptr);
+   return static_cast<int64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
++#elif defined(__riscv) && __riscv_xlen == 64
++  uint64_t tsc;
++  asm volatile ("rdtime %0" : "=r" (tsc));
++  return tsc;
+ #else
+ #warning No high-precision counter available for your OS/arch
+     return 0;
+-- 
+2.41.0

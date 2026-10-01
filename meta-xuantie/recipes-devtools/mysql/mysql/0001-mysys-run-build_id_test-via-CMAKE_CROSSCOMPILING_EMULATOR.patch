@@ -1,0 +1,52 @@
+From 5b1e2c9d8f4a4e2b9c1d7a3f6e8b0a1c2d3e4f5a Mon Sep 17 00:00:00 2001
+From: yanan.he <yanan.he@linux.alibaba.com>
+Date: Wed, 05 Aug 2026 21:00:22 +0800
+Subject: [PATCH] mysys: run build_id_test via CMAKE_CROSSCOMPILING_EMULATOR
+
+verify_build_id.cmake is executed as a POST_BUILD step in "cmake -P"
+script mode. Script mode does not load the toolchain file, so
+CMAKE_CROSSCOMPILING_EMULATOR is unknown there and the freshly linked
+target binary is executed directly on the build host. On cross builds
+this fails ("./build_id_test: 1: ELF ...: not found", followed by
+"Bad build id").
+
+Pass the emulator into the script explicitly and prepend it when
+invoking ./build_id_test. Native builds are unaffected because the
+variable expands to nothing.
+
+Upstream-Status: Inappropriate [cross compilation specific]
+
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ mysys/CMakeLists.txt        | 1 +
+ mysys/verify_build_id.cmake | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mysys/CMakeLists.txt b/mysys/CMakeLists.txt
+index 78aa44b..a1b2c3d 100644
+--- a/mysys/CMakeLists.txt
++++ b/mysys/CMakeLists.txt
+@@ -266,6 +266,7 @@ IF(HAVE_BUILD_ID_SUPPORT)
+   # Verify that we can read our own build-id:
+   ADD_CUSTOM_COMMAND(TARGET build_id_test POST_BUILD
+     COMMAND ${CMAKE_COMMAND}
++    "-DBUILD_ID_TEST_EMULATOR:STRING=${CMAKE_CROSSCOMPILING_EMULATOR}"
+     -DREADELF_EXECUTABLE=${READELF_EXECUTABLE}
+     -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_build_id.cmake
+     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/runtime_output_directory
+diff --git a/mysys/verify_build_id.cmake b/mysys/verify_build_id.cmake
+index edcd484..b2c3d4e 100644
+--- a/mysys/verify_build_id.cmake
++++ b/mysys/verify_build_id.cmake
+@@ -22,7 +22,7 @@
+ # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
+ 
+ EXECUTE_PROCESS(
+-  COMMAND ./build_id_test
++  COMMAND ${BUILD_ID_TEST_EMULATOR} ./build_id_test
+   OUTPUT_VARIABLE out1
+   )
+ EXECUTE_PROCESS(
+-- 
+2.43.0
+

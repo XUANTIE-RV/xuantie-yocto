@@ -1,0 +1,5 @@
+	pmc: xuantie_pmc@${PMC_UNIT_ADDR} {
+		compatible = "xuantie,pmc";
+		status = "${PMC_STATUS}";
+		reg = <${PMC_BASE} ${PMC_SIZE}>;
+	};

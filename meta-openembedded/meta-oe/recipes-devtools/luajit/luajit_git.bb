@@ -1,16 +1,16 @@
 SUMMARY = "Just-In-Time Compiler for Lua"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=d421a5e2a24207f5e260537399a9a38b"
+LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=a2c43bf4a9ea63755af2131b0ae59ff3"
 HOMEPAGE = "http://luajit.org"
 
 SRC_URI = "git://github.com/ruyisdk/LuaJIT.git;protocol=http;branch=riscv64-v2.1-branch"
 
 PV = "2.1"
-PR = "r1"
+PR = "r2"
 
-# commit Date: Fri Jun 21 13:12:42 2024 +0800
-# commit info: riscv: add README for patchset release
-SRCREV = "d7286888852ddac7f8b2fc269b4853a4ef5044a4"
+# commit Date: Wed Jun 11 14:33:06 2025 +0800
+# commit info: riscv: add v-extension support for c908
+SRCREV = "f8b9fbbe5e07395e322b6a8fe49180849ab8767e"
 
 S = "${WORKDIR}/git"
 
@@ -19,8 +19,10 @@ inherit xuantie-set-package-arch-with-mcpu
 
 # Extend cpu configuration for different xuantie cpu
 python () {
-    if d.getVar('XUANTIE_MCPU') and d.getVar('XUANTIE_MCPU') != "c9xx-riscv64" and d.getVar('XUANTIE_MCPU') != "c9xx-riscv32":
+    if d.getVar('XUANTIE_TUNE_CCARGS_USE_MCPU') != 'NO':
         d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " -mcpu=" + d.getVar('XUANTIE_MCPU'))
+    else:
+        d.setVar('TUNE_CCARGS', d.getVar('TUNE_CCARGS') + " " + d.getVar('XUANTIE_TUNE_CCARGS_GENERIC'))
 }
 
 BBCLASSEXTEND = "native"

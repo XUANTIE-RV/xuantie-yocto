@@ -15,8 +15,13 @@ DEPENDS += "bison-native \
             python3-setuptools-native \
             "
 
+# bpf is a RISC-V-only prebuilt package (COMPATIBLE_HOST); gate the
+# dependency so non-RISC-V bcc builds are not broken.
+DEPENDS:append:riscv64 = " bpf"
+DEPENDS:append:riscv32 = " bpf"
+
 RDEPENDS:${PN} += "bash python3 python3-core python3-setuptools xz"
-RDEPENDS:${PN} += "bison flex zip zlib elfutils bash python3 python3-setuptools xz iputils netperf iperf3"
+RDEPENDS:${PN} += "bison flex zip zlib elfutils bash python3 python3-setuptools xz iputils netperf"
 RDEPENDS:${PN}-ptest = "kernel-devsrc cmake bash python3 python3-netaddr python3-pyroute2 clang"
 
 SRC_URI = "gitsm://github.com/iovisor/bcc;branch=master;protocol=https \
@@ -27,6 +32,7 @@ SRC_URI = "gitsm://github.com/iovisor/bcc;branch=master;protocol=https \
            file://ptest_wrapper.sh \
            file://fix_for_memleak.patch \
            file://0001-Add-libclangXce.patch \
+           file://0001-bcc_proc-Fix-library-resolution-on-RISC-V.patch \
            "
 
 SRCREV = "c31a1ca305f787ba53e001ead45ebf65233a32cf"

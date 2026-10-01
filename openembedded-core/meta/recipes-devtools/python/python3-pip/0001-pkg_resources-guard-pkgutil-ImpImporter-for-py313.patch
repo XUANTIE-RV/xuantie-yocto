@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: XuanTie Linux SDK CI <noreply@linux.alibaba.com>
+Date: Sun, 3 Aug 2026 00:00:00 +0800
+Subject: [PATCH] pkg_resources: guard pkgutil.ImpImporter for Python 3.13
+
+pip 22.2.2 vendors a copy of pkg_resources that registers finders and
+namespace handlers keyed on pkgutil.ImpImporter at import time. Python
+3.12 removed pkgutil.ImpImporter, so on python3 3.13 merely importing
+pip._vendor.pkg_resources aborts with:
+
+    AttributeError: module 'pkgutil' has no attribute 'ImpImporter'
+
+pip's importlib metadata backend imports pkg_resources lazily while
+scanning egg directories (user_agent() -> get_distribution() ->
+find_distributions), so every `pip install` run performed by a recipe
+against the native pip (e.g. spdk's python bindings install) crashes.
+
+Guard both registrations with hasattr(pkgutil, 'ImpImporter'), matching
+the fix upstream setuptools/pkg_resources adopted. On Python <= 3.11 the
+attribute exists and behaviour is unchanged.
+
+Upstream-Status: Backport [pypa/setuptools pkg_resources ImpImporter guard]
+---
+--- a/src/pip/_vendor/pkg_resources/__init__.py
++++ b/src/pip/_vendor/pkg_resources/__init__.py
+@@ -2161,7 +2161,8 @@
+     return next(dist_groups, ())
+ 
+ 
+-register_finder(pkgutil.ImpImporter, find_on_path)
++if hasattr(pkgutil, 'ImpImporter'):
++    register_finder(pkgutil.ImpImporter, find_on_path)
+ 
+ if hasattr(importlib_machinery, 'FileFinder'):
+     register_finder(importlib_machinery.FileFinder, find_on_path)
+@@ -2312,7 +2313,8 @@
+         return subpath
+ 
+ 
+-register_namespace_handler(pkgutil.ImpImporter, file_ns_handler)
++if hasattr(pkgutil, 'ImpImporter'):
++    register_namespace_handler(pkgutil.ImpImporter, file_ns_handler)
+ register_namespace_handler(zipimport.zipimporter, file_ns_handler)
+ 
+ if hasattr(importlib_machinery, 'FileFinder'):

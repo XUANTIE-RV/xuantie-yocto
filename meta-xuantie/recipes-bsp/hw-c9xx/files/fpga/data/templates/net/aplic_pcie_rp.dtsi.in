@@ -1,0 +1,24 @@
+##REPEAT PORTS##
+		${RP_M_LABEL}: aplic@${RP_M_UNIT} {
+			compatible = "riscv,aplic";
+			#interrupt-cells = <0x02>;
+			riscv,delegate = <&${RP_S_LABEL} 0x01 0x4>;
+			riscv,children = <&${RP_S_LABEL}>;
+			riscv,num-sources = <0x4>;
+			reg = <${RP_M_REG}>;
+			msi-parent = <&imsics_m>;
+			interrupt-controller;
+			status = "${RP_STATUS}";
+		};
+
+		${RP_S_LABEL}: aplic@${RP_S_UNIT} {
+			compatible = "riscv,aplic";
+			#interrupt-cells = <0x02>;
+			riscv,num-sources = <0x4>;
+			reg = <${RP_S_REG}>;
+			msi-parent = <&imsics_s>;
+			interrupt-controller;
+			status = "${RP_STATUS}";
+		};
+
+##ENDREPEAT##

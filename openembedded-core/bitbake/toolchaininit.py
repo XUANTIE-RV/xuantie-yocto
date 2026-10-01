@@ -10,16 +10,14 @@ def toolchain_init():
     script_path = os.path.join(
         main_dir,
         "meta-xuantie",
-        "conf",
-        "distro",
-        "include",
-        "xuantie-toolchain-init.sh"
+        "scripts",
+        "toolchain-init.sh"
     )
 
     if not os.path.exists(script_path):
-        sys.exit(f"Error: The toolchain script {script_math} does not exist!")
+        sys.exit(f"Error: The toolchain script {script_path} does not exist!")
 
     try:
-        subprocess.run([script_path], check=True)
+        subprocess.run([script_path, "--vendor", "xuantie"], check=True)
     except subprocess.CalledProcessError as e:
         sys.exit(f"Toolchain initialization failed:{str(e)}")

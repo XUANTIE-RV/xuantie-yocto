@@ -1,0 +1,19 @@
+##REPEAT XL300_PMU##
+		${XL300_NODE_NAME} {
+			compatible = "xuantie,xl300-pmu";
+			reg = <${XL300_BASE} ${XL300_SIZE}>;
+			interrupt-parent = <&intc>;
+			interrupts = <${XL300_IRQ} ${XL300_IRQ_TYPE}>;
+			status = "${XL300_STATUS}";
+		};
+##ENDREPEAT##
+##REPEAT XL300_CBQRI##
+		xl300_cbqri_cc_${CBQRI_INDEX}@${CBQRI_UNIT} {
+			compatible = "riscv,cbqri-capacity-controller";
+			reg = <${CBQRI_BASE} ${CBQRI_SIZE}>;
+			riscv,cbqri-cache = <&l3_cache_${CBQRI_INDEX}>;
+			riscv,cbqri-rcid = <${CBQRI_RCID}>;
+			riscv,cbqri-mcid = <${CBQRI_MCID}>;
+			status = "${CBQRI_STATUS}";
+		};
+##ENDREPEAT##

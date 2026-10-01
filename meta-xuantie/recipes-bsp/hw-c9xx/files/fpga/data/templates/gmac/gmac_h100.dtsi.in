@@ -1,0 +1,29 @@
+		stmmac_axi_setup: stmmac-axi-config{
+			snps,wr_osr_lmt = <3>;
+			snps,rd_osr_lmt = <3>;
+			snps,blen = <16 8 4 0 0 0 0> ;
+		};
+		gmac: ethernet@${GMAC_UNIT_ADDR} {
+			compatible = "snps,dwmac";
+			reg = <${GMAC_BASE} ${GMAC_SIZE}>;
+			interrupt-parent = <&intc>;
+			interrupts = <21 4>;
+			interrupt-names = "macirq";
+			clocks = <&dummy_apb>;
+			clock-names = "stmmaceth";
+			snps,pbl = <32>;
+			snps,fixed-burst;
+			snps,axi-config = <&stmmac_axi_setup>;
+			max-speed = <100>;
+			phy-mode = "mii";
+			phy-handle = <&phy_88E1111>;
+			mdio0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				compatible = "snps,dwmac-mdio";
+
+				phy_88E1111: ethernet-phy@0 {
+					reg = <0x0 0x0>;
+				};
+			};
+		};

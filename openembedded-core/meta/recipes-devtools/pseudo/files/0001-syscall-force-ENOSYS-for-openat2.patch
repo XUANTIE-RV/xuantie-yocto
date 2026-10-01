@@ -1,0 +1,52 @@
+syscall: force ENOSYS for openat2 so callers fall back to openat
+
+GNU tar 1.34 (and other recent coreutils/gnulib users) open directories
+with the raw openat2() syscall using RESOLVE_BENEATH, called via
+syscall(SYS_openat2, ...). pseudo has no openat2 wrapper and its syscall()
+interceptor passes unknown numbers straight through, so the directory fd
+returned by openat2() is never recorded in pseudo's client-side fd->path
+table. A subsequent openat(dirfd, name, O_CREAT) then fails path
+resolution (fd_path() returns NULL -> "unknown directory" ->
+"couldn't allocate absolute path"), and the real openat() is issued with a
+bad path, returning EFAULT ("Bad address").
+
+Under OE this breaks perform_packagecopy()'s
+  tar --exclude=./sysroot-only -cf - -C ${D} -p -S . | tar -xf - -C ${PKGD}
+which runs under pseudo, so do_package fails and no packages/debs can be
+produced on hosts whose tar uses openat2().
+
+Report ENOSYS for SYS_openat2, exactly as pseudo already does for
+SYS_renameat2. gnulib treats openat2()==ENOSYS as "kernel too old" and
+transparently falls back to a plain openat() emulation, which pseudo does
+wrap and track correctly.
+
+Upstream-Status: Pending
+
+Signed-off-by: yanan.he <yanan.he@example.com>
+---
+ ports/linux/pseudo_wrappers.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+--- a/ports/linux/pseudo_wrappers.c
++++ b/ports/linux/pseudo_wrappers.c
+@@ -78,6 +78,20 @@
+ 	(void) number;
+ #endif
+
++#ifdef SYS_openat2
++	/* GNU tar 1.34+ (and other coreutils) open directories via a raw
++	 * syscall(SYS_openat2, ..., RESOLVE_BENEATH). pseudo cannot record the
++	 * returned dirfd (no openat2 wrapper), so a later openat(dirfd, name)
++	 * fails path resolution and returns EFAULT. Report ENOSYS so callers
++	 * (gnulib) fall back to the wrapped openat(), which pseudo tracks. This
++	 * mirrors the SYS_renameat2 handling above.
++	 */
++	if (number == SYS_openat2) {
++		errno = ENOSYS;
++		return -1;
++	}
++#endif
++
+ #ifdef SYS_seccomp
+ 	/* pseudo and seccomp are incompatible as pseudo uses different syscalls
+ 	 * so pretend to enable seccomp but really do nothing */

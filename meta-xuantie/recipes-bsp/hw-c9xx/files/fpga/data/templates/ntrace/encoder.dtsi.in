@@ -1,0 +1,23 @@
+		${ENC_NAME}: xtntrace_encoder@${ENC_UNIT} {
+			compatible = "xuantie_ntrace,encoder-controller";
+			reg = <${ENC_REG} ${ENC_SIZE}>;
+			cpu = <${ENC_CPU}>;
+			trace_encoder_format = <0x1>;
+			trace_encoder_inst_mode = <0x6>;
+			trace_encoder_context = "${TRACE_CONTEXT}";
+			trace_encoder_inst_stall_enable = "${TRACE_STALL}";
+			trace_encoder_inhibit_src = "${TRACE_INHIBIT_SRC}";
+			trace_encoder_src_id = <${ENC_CPU}>;
+			trace_encoder_inst_sync_mode = <0x0>;
+			trace_encoder_inst_sync_max = <0xffff>;
+			trace_encoder_inst_trigger_enable = "${TRACE_TRIGGER_ENABLE}";
+			trace_timestamp_enable = "${TRACE_TIMESTAMP_ENABLE}";
+			trace_timestamp_runindebugmode = "${TRACE_RUN_IN_DEBUGMODE}";
+			trace_timestamp_mode = <0x1>;
+			trace_timestamp_prescale = <0x0>;
+			output_port {
+				port0 {
+					endpoint = <&${ENC_OUT}>;
+				};
+			};
+		};

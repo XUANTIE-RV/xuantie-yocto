@@ -1,1 +1,1 @@
-inherit xuantie-clang18-compatible
+inherit xuantie-clang-compatible

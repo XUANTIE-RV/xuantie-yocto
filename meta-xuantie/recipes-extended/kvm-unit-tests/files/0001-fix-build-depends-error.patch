@@ -3,12 +3,17 @@ From: lucz <chongzhi.lcz@alibaba-inc.com>
 Date: Wed, 19 Mar 2025 10:44:37 +0800
 Subject: [PATCH] fix build depends error
 
+Simplify dependency variable names by removing the $(TEST_DIR)/ prefix
+which can confuse some Make implementations. Also update the secondary
+expansion in pattern rules to use $(notdir $*) so that the stem-based
+variable lookup matches the simplified names.
+
 ---
- riscv/Makefile | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ riscv/Makefile | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/riscv/Makefile b/riscv/Makefile
-index c8498aa3..ed548a10 100644
+index c8498aa..e244934 100644
 --- a/riscv/Makefile
 +++ b/riscv/Makefile
 @@ -19,10 +19,10 @@ tests += $(TEST_DIR)/isa-dbltrp.$(exe)
@@ -25,6 +30,33 @@ index c8498aa3..ed548a10 100644
  
  # When built for EFI sieve needs extra memory, run with e.g. '-m 256' on QEMU
  $(TEST_DIR)/sieve.$(exe): AUXFLAGS = 0x1
+@@ -110,7 +110,7 @@ cflatobjs += lib/efi.o
+ .PRECIOUS: %.so
+ 
+ %.so: EFI_LDFLAGS += -defsym=EFI_SUBSYSTEM=0xa --no-undefined
+-%.so: %.o $(FLATLIBS) $(SRCDIR)/riscv/efi/elf_riscv64_efi.lds $(cstart.o) %.aux.o $$($$*-deps)
++%.so: %.o $(FLATLIBS) $(SRCDIR)/riscv/efi/elf_riscv64_efi.lds $(cstart.o) %.aux.o $$($$(notdir $$*)-deps)
+ 	$(LD) $(EFI_LDFLAGS) -o $@ -T $(SRCDIR)/riscv/efi/elf_riscv64_efi.lds \
+ 		$(filter %.o, $^) $(FLATLIBS) $(EFI_LIBS)
+ 
+@@ -126,7 +126,7 @@ cflatobjs += lib/efi.o
+ 		-O binary $^ $@
+ else
+ %.elf: LDFLAGS += -pie -n -z notext
+-%.elf: %.o $(FLATLIBS) $(SRCDIR)/riscv/flat.lds $(cstart.o) %.aux.o $$($$*-deps)
++%.elf: %.o $(FLATLIBS) $(SRCDIR)/riscv/flat.lds $(cstart.o) %.aux.o $$($$(notdir $$*)-deps)
+ 	$(LD) $(LDFLAGS) -o $@ -T $(SRCDIR)/riscv/flat.lds \
+ 		$(filter %.o, $^) $(FLATLIBS)
+ 	@chmod a-x $@
+@@ -139,7 +139,7 @@ endif
+ 
+ generated-files = $(asm-offsets)
+ $(tests:.$(exe)=.o) $(cstart.o) $(cflatobjs): $(generated-files)
+-$(foreach test,$(tests),$($(test:.$(exe)=-deps))): $(generated-files)
++$(foreach test,$(tests),$($(notdir $(test:.$(exe)=-deps)))): $(generated-files)
+ 
+ arch_clean: asm_offsets_clean
+ 	$(RM) $(TEST_DIR)/*.{o,flat,elf,so,efi,debug} \
 -- 
 2.25.1
 

@@ -1,0 +1,2 @@
+TOOLCHAIN_URL=https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2026.04.30/riscv64-uclibc-ng-ubuntu-22.04-gcc.tar.xz
+TOOLCHAIN_MD5=dc01ba30f33739123464ff8b94b1dbd9

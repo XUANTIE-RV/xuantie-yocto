@@ -45,6 +45,7 @@ EXTRA_OEMAKE = " \
         pythondir=${PYTHON_SITEPACKAGES_DIR} \
         pyexecdir=${PYTHON_SITEPACKAGES_DIR} \
         STDINC='${STAGING_INCDIR}' \
+        PYTHON3_INCLUDES='-I${STAGING_INCDIR}/python${PYTHON_BASEVERSION}' \
         "
 
 SUMMARY:audispd-plugins = "Plugins for the audit event dispatcher"

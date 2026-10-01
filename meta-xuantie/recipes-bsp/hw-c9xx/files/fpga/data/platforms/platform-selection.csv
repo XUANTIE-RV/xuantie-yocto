@@ -1,0 +1,40 @@
+# CPU -> platform + per-block variant selection.
+#
+# The platform / intc / pmu / gmac / link / ntrace columns are ALL the SOLE
+# SOURCE for their block; the pcu column overrides the platform JSON's
+# hsm.pcu.version default per CPU. generate_dts.py reads each row via
+# platform_selection_row(cpu), matched top-to-bottom with fnmatch against the
+# alias-normalized cpu name (e.g. c930 -> xt-c9301fdt), first hit wins.
+# Adding/adjusting a CPU family = edit a CSV row, no Python change. A few
+# selectors still sit in Python and take precedence over this table: an explicit
+# platform override (PLATFORM_CONFIG / --platform / <soc_platform>, when it names
+# an existing platform json), the arch=rv32 override (rv32 CPUs ->
+# xiaohui_v1_rv32 + pmu_v1_rv32, cross-cutting every pattern), and the
+# -intc / -gmac CLI overrides.
+#
+# Columns:
+#   platform : SoC platform JSON data/platforms/<name>.json   (resolve_platform; SOLE SOURCE)
+#   intc     : interrupt controller default                   (select_intc_kind; SOLE SOURCE; -intc overrides)
+#   pmu      : PMU template data/templates/pmu/<pmu>.dtsi.in   (select_pmu; SOLE SOURCE; rv32 -> pmu_v1_rv32)
+#   gmac     : GMAC default                                    (detect_gmac_type; SOLE SOURCE; -gmac pro|h100 overrides)
+#   link     : auto XuanTie Link block                         (select_link_pmu; SOLE SOURCE; xl300 is opt-in via -bus stlk3)
+#   ntrace   : N-Trace version v1/v2                           (select_trace_config -> ntrace_<家族>_v<版本>.json; SOLE SOURCE; 'unsupported'/'-' -> fail fast)
+#   pcu      : PCU HSM node version override                   (select_pcu_version; v1/v2 overrides the platform JSON hsm.pcu.version for this CPU; '-' = keep the platform default; no PCU node unless the platform registers hsm.pcu.nodes)
+#
+# rv32 variants (e.g. c907-rv32): platform -> xiaohui_v1_rv32, pmu -> pmu_v1_rv32
+# (arch-driven, overriding the name-family platform/pmu below); intc/gmac/link/ntrace unchanged.
+cpu_pattern,platform,intc,pmu,gmac,link,ntrace,pcu,note
+*c930*,xiaohui_v2,aplic,pmu_v2,h100_v2,none,v2,-,C930 family; -bus stlk3 -> xl300 (PMU+CBQRI)
+*c925*,xiaohui_v2,aplic,pmu_v2,h100_v2,none,v2,-,C925 family; -bus stlk3 -> xl300 (PMU+CBQRI)
+*c9502*,minimesh,aplic,pmu_v2,h100_v2,none,v2,v2,C950V2 (NGF minimesh/fullmesh, pcu-v2 group power domain); must precede *c950*
+*c9501*,minimesh,aplic,pmu_v2,h100_v2,none,v2,-,C950V1 (NGF minimesh/fullmesh, 缺省 haps FPGA 类型); must precede *c950*
+*c950*,xiaohui_v2,aplic,pmu_v2,h100_v2,none,v2,-,C950 family; -bus stlk3 -> xl300 (PMU+CBQRI)
+*c908x*,xiaohui_v1,plic,pmu_v1_ext,h100,xl200,v1,-,C908X (auto xl200)
+*c908*_v2*,xiaohui_v1,plic,pmu_v1_ext,h100,xl200,v1,-,C908 v2 variants (c908v_v2 / c908vk-cp-xt_v2; auto xl200)
+*c920v3*,xiaohui_v1,plic,pmu_v1,h100,xl200,v2,-,C920v3 (auto xl200; C920 -> v2 trace)
+*r908*,xiaohui_v1,plic,pmu_v1_ext,h100,xl200,v1,-,R908 family (auto xl200; pmu_v1_ext preserves legacy 0x36/0x38, no manual evidence)
+*c920*,xiaohui_v1,plic,pmu_v1,h100,none,v2,-,C920 family (c920v2 / c9204 / c9205)
+*r920*,xiaohui_v1,plic,pmu_v1,h100,none,-,-,R920 family (走 C920 系列基础事件表 0x07/0x06); ntrace no row -> fail fast
+*c907*,xiaohui_v1,plic,pmu_v1_ext,h100,none,v1,-,C907 family (rv32 -> xiaohui_v1_rv32 + pmu_v1_rv32)
+*c908*,xiaohui_v1,plic,pmu_v1_ext,h100,none,v1,-,C908 family
+*,xiaohui_v1,plic,pmu_v1,h100,none,-,-,other RV64 (c906 / c910 / c920v2 ...); ntrace no row -> fail fast

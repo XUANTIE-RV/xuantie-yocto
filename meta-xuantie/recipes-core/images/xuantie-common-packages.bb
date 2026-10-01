@@ -15,6 +15,7 @@ IMAGE_INSTALL += " \
     binutils \
     binutils-tools \
     bison \
+    brotli \
     clang \
     cmake \
     coreutils \
@@ -32,15 +33,23 @@ IMAGE_INSTALL += " \
     glib-2.0 \
     gnu-config \
     grep \
+    jbig \
     kernel-selftest \
+    lcms \
+    lerc \
     libarchive \
     libcap \
     libcereal \
     libcroco \
+    libdeflate \
     libevent \
     libffi \
     libgfortran \
     libgomp \
+    libgssapi-krb5 \
+    libk5crypto \
+    libkrb5 \
+    libkrb5support \
     libnsl2 \
     libpcre \
     libsamplerate0 \
@@ -48,6 +57,7 @@ IMAGE_INSTALL += " \
     libtheora \
     libudev \
     libusb1 \
+    libwebp \
     libxml2 \
     libxv \
     litmus-tests-riscv \
@@ -80,6 +90,7 @@ IMAGE_INSTALL += " \
     stress-ng \
     tar \
     texinfo \
+    tiff \
     tk \
     util-linux \
     wget \
@@ -111,7 +122,7 @@ IMAGE_INSTALL:append:riscv64 = " \
     iperf3 \
     ipmitool \
     kernel-devsrc \
-    klitmus \
+     \
     kmod \
     libnl \
     libssh \

@@ -13,7 +13,7 @@ PR="r2"
 S = "${WORKDIR}/git"
 inherit xuantie-set-package-arch-with-mcpu-benchmark
 EXTRA_OEMAKE = " PORT_DIR=linux"
-PACKAGE_ARCH = "${XUANTIE_MCPU}_external"
+PACKAGE_ARCH = "${XUANTIE_MCPU_PACKAGE_ARCH}_external"
 do_compile() {
 	oe_runmake
 }

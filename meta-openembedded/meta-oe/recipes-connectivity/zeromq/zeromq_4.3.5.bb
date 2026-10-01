@@ -3,8 +3,12 @@ HOMEPAGE = "http://www.zeromq.org"
 LICENSE = "LGPL-3.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=9741c346eef56131163e13b9db1241b3"
 
-PACKAGECONFIG ??= "libsodium"
-PACKAGECONFIG[libsodium] = "-DWITH_LIBSODIUM=ON,-DWITH_LIBSODIUM=OFF, libsodium"
+PACKAGECONFIG ??= "libsodium pgm"
+# 4.3.5 gates libsodium behind ENABLE_CURVE (default OFF); both are needed
+# for CURVE security and the libsodium.so.23 runtime dependency
+PACKAGECONFIG[libsodium] = "-DENABLE_CURVE=ON -DWITH_LIBSODIUM=ON,-DWITH_LIBSODIUM=OFF, libsodium"
+# openpgm installs openpgm-5.3.pc; cmake defaults to searching openpgm-5.2
+PACKAGECONFIG[pgm] = "-DWITH_OPENPGM=ON -DOPENPGM_PKGCONFIG_NAME=openpgm-5.3,-DWITH_OPENPGM=OFF, openpgm"
 
 SRC_URI = "http://github.com/zeromq/libzmq/releases/download/v${PV}/zeromq-${PV}.tar.gz \
     file://0001-CMakeLists-txt-Avoid-host-specific-path-to-libsodium.patch \

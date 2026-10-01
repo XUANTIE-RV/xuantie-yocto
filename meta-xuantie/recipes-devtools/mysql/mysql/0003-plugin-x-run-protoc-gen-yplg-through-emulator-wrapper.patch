@@ -1,0 +1,61 @@
+From 9e4b2c8d1f3a5e7b9c0d2e4f6a8b0c1d3e5f7a9b Mon Sep 17 00:00:00 2001
+From: yanan.he <yanan.he@linux.alibaba.com>
+Date: Thu, 06 Aug 2026 00:40:00 +0800
+Subject: [PATCH] plugin/x: run protoc-gen-yplg through emulator wrapper
+
+The mysqlx build runs protoc (a target binary, itself executed via
+CMAKE_CROSSCOMPILING_EMULATOR) with
+
+  --plugin=protoc-gen-yplg=$<TARGET_FILE:xprotocol_plugin>
+
+protoc then execve()s the plugin path directly. qemu usermode does not
+re-emulate child processes, so the foreign-arch plugin fails to spawn:
+
+  .../runtime_output_directory/xprotocol_plugin: program not found or
+  is not executable
+  --yplg_out: protoc-gen-yplg: Plugin failed with status code 1.
+
+When cross compiling with an emulator, generate a tiny wrapper script
+that re-enters the emulator for the plugin, and pass the wrapper as the
+--plugin path. Native builds keep using the plugin target file directly.
+
+Upstream-Status: Inappropriate [cross compilation specific]
+
+Signed-off-by: yanan.he <yanan.he@linux.alibaba.com>
+---
+ plugin/x/protocol/plugin/CMakeLists.txt | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/plugin/x/protocol/plugin/CMakeLists.txt b/plugin/x/protocol/plugin/CMakeLists.txt
+index 1a2b3c4..d5e6f7a 100644
+--- a/plugin/x/protocol/plugin/CMakeLists.txt
++++ b/plugin/x/protocol/plugin/CMakeLists.txt
+@@ -63,6 +63,20 @@ IF(MY_COMPILER_IS_GNU)
+   MY_TARGET_LINK_OPTIONS(xprotocol_plugin "-Wl,--no-as-needed -lpthread")
+ ENDIF()
+ 
++# Cross build with an emulator: protoc (already emulated) spawns the
++# yplg plugin with a bare execve(), which the build host cannot run.
++# Route the plugin through a wrapper that re-enters the emulator.
++IF(CMAKE_CROSSCOMPILING AND CMAKE_CROSSCOMPILING_EMULATOR)
++  STRING(REPLACE ";" " " YPLG_EMULATOR "${CMAKE_CROSSCOMPILING_EMULATOR}")
++  FILE(GENERATE
++    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/protoc_gen_yplg_wrapper.sh"
++    CONTENT "#!/bin/sh\nexec ${YPLG_EMULATOR} \"$<TARGET_FILE:xprotocol_plugin>\" \"$@\"\n"
++    FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
++  SET(PROTOC_GEN_YPLG "${CMAKE_CURRENT_BINARY_DIR}/protoc_gen_yplg_wrapper.sh")
++ELSE()
++  SET(PROTOC_GEN_YPLG "$<TARGET_FILE:xprotocol_plugin>")
++ENDIF()
++
+ ADD_CUSTOM_COMMAND(
+   OUTPUT "${MYSQLX_GENERATE_DIR}/xprotocol_tags.h"
+          "${MYSQLX_GENERATE_DIR}/encoding_descriptors.h"
+@@ -69,4 +83,4 @@ ADD_CUSTOM_COMMAND(
+   COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+-  ARGS --plugin=protoc-gen-yplg=$<TARGET_FILE:xprotocol_plugin>
++  ARGS --plugin=protoc-gen-yplg=${PROTOC_GEN_YPLG}
+        --yplg_out "${MYSQLX_GENERATE_DIR}"
+        -I "${PROTOBUF_INCLUDE_DIR}"
+-- 
+2.43.0

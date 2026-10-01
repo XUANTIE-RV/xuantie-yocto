@@ -42,7 +42,11 @@ do_install:append() {
     else
         rm -rf ${D}/usr/libexec/getconf/*64* ${D}${base_libdir}/ld-linux-*64-*
     fi
-    rm -rf ${D}/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME} ${D}${prefix}/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}
+    # Clean up intermediate multilib directories (e.g. lib64xthead/).
+    # Skip when LIB_DIR_NAME is "lib" — that IS the standard directory.
+    if [ "${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}" != "lib" ]; then
+        rm -rf ${D}/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME} ${D}${prefix}/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}
+    fi
     if [ -d "${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/lib32xthead/" ] && \
         [ -d "${EXTERNAL_TOOLCHAIN_SYSROOT}/usr/lib64xthead/" ]; then
         cd ${D}${libdir}
@@ -81,6 +85,36 @@ external_toolchain_sysroot_adjust() {
 
 	install -d ${SYSROOT_DESTDIR}/usr/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}/
 	ln -s ../lib ${SYSROOT_DESTDIR}/usr/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}/${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME}
+
+	# For clang toolchain with -rtlib=compiler-rt:
+	# Clang searches for libclang_rt.builtins in standard multilib paths (lib64/lp64d/)
+	# when using --gcc-toolchain. Create symlinks to satisfy these search paths.
+	# Use directory existence check instead of TOOLCHAIN variable, because
+	# glibc-external builds with gcc but downstream recipes (libcxx) force clang.
+	if [ -d "${EXTERNAL_TOOLCHAIN_CLANG}" ]; then
+		# Determine standard lib dir name (lib64 for rv64, lib32 for rv32)
+		if [ "${TUNE_ARCH}" = "riscv64" ]; then
+			std_lib_dir="lib64"
+		else
+			std_lib_dir="lib32"
+		fi
+
+		# Create lib64/lp64d -> ../lib symlink for clang runtime library search
+		if [ ! -e ${SYSROOT_DESTDIR}/${std_lib_dir}/${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME} ]; then
+			install -d ${SYSROOT_DESTDIR}/${std_lib_dir}/
+			ln -s ../lib ${SYSROOT_DESTDIR}/${std_lib_dir}/${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME}
+		fi
+
+		# Copy libclang_rt.builtins to the standard lib directory
+		if [ -f "${EXTERNAL_TOOLCHAIN_CLANG}/sysroot/lib/libclang_rt.builtins-${TUNE_ARCH}.a" ]; then
+			# Open-source toolchain: flat lib/ structure
+			install -m 0644 "${EXTERNAL_TOOLCHAIN_CLANG}/sysroot/lib/libclang_rt.builtins-${TUNE_ARCH}.a" ${SYSROOT_DESTDIR}/lib/
+		elif [ "${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}" != "lib" ] && \
+		     [ -f "${EXTERNAL_TOOLCHAIN_CLANG}/sysroot/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}/${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME}/libclang_rt.builtins-${TUNE_ARCH}.a" ]; then
+			# XuanTie toolchain: multilib structure
+			install -m 0644 "${EXTERNAL_TOOLCHAIN_CLANG}/sysroot/${EXTERNAL_TOOLCHAIN_LIB_DIR_NAME}/${EXTERNAL_TOOLCHAIN_ABI_DIR_NAME}/libclang_rt.builtins-${TUNE_ARCH}.a" ${SYSROOT_DESTDIR}/lib/
+		fi
+	fi
 }
 
 DEPENDS:append:toolchain-clang = " clang-cross-${TARGET_ARCH}"

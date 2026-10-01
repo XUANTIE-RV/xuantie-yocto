@@ -1,0 +1,118 @@
+From a2e52d3e1b93235a8c3a2aaeb400fcd800f12920 Mon Sep 17 00:00:00 2001
+From: Kefu Chai <tchaikov@gmail.com>
+Date: Wed, 25 Jun 2025 19:58:42 +0800
+Subject: [PATCH] pybind: fix callback function type compatibility for GCC
+ 14/15
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The callback function types in Cython source files were inconsistent
+with the corresponding librados and librgw API declarations, causing
+build failures with GCC 14 and 15.
+
+GCC 14 introduced stricter pointer type checking and no longer allows
+implicit casting between incompatible pointer types. This resulted in
+-Wincompatible-pointer-types errors where char** arguments were passed
+to functions expecting const char* const*.
+
+Example error:
+
+```
+      rados.c: In function ‘__pyx_pf_5rados_12OmapIterator_4__next__’:
+      rados.c:32423:76: error: passing argument 2 of ‘__pyx_f_5rados_rados_omap_get_next’ from incompatible pointer type [-Wincompatible-pointer-types]
+      32423 |         __pyx_t_1 = __pyx_f_5rados_rados_omap_get_next(__pyx_v_self->ctx, (&__pyx_v_key_), (&__pyx_v_val_), (&__pyx_v_len_)); if (unlikely(__pyx_t_1 == ((int)-1) && __Pyx_ErrOccurredWithGIL())) __PYX_ERR(0, 1394, __pyx_L4_error)
+            |                                                                           ~^~~~~~~~~~~~~~
+            |                                                                            |
+            |                                                                            char **
+      rados.c:9172:141: note: expected ‘const char * const*’ but argument is of type ‘char **’
+       9172 | static int __pyx_f_5rados_rados_omap_get_next(CYTHON_UNUSED __pyx_t_5rados_rados_omap_iter_t __pyx_v_iter, CYTHON_UNUSED char const *const *__pyx_v_key, CYTHON_UNUSED char const *const *__pyx_v_val, CYTHON_UNUSED size_t *__pyx_v_len) {
+            |                                                                                                                                             ^
+      rados.c:32423:93: error: passing argument 3 of ‘__pyx_f_5rados_rados_omap_get_next’ from incompatible pointer type [-Wincompatible-pointer-types]
+      32423 |         __pyx_t_1 = __pyx_f_5rados_rados_omap_get_next(__pyx_v_self->ctx, (&__pyx_v_key_), (&__pyx_v_val_), (&__pyx_v_len_)); if (unlikely(__pyx_t_1 == ((int)-1) && __Pyx_ErrOccurredWithGIL())) __PYX_ERR(0, 1394, __pyx_L4_error)
+            |                                                                                            ~^~~~~~~~~~~~~~
+            |                                                                                             |
+            |                                                                                             char **
+      rados.c:9172:187: note: expected ‘const char * const*’ but argument is of type ‘char **’
+       9172 | static int __pyx_f_5rados_rados_omap_get_next(CYTHON_UNUSED __pyx_t_5rados_rados_omap_iter_t __pyx_v_iter, CYTHON_UNUSED char const *const *__pyx_v_key, CYTHON_UNUSED char const *const *__pyx_v_val, CYTHON_UNUSED size_t *__pyx_v_len) {
+            |                                                                                                                                                                                           ^
+      error: command '/usr/bin/gcc' failed with exit code 1`
+```
+
+This change corrects the mock function implementations used during Sphinx
+documentation builds to match the actual API signatures. The public API
+remains unchanged to avoid requiring a major version bump.
+
+See also
+https://gcc.gnu.org/gcc-14/porting_to.html#incompatible-pointer-types
+
+Signed-off-by: Kefu Chai <tchaikov@gmail.com>
+---
+ src/pybind/rados/mock_rados.pxi | 2 +-
+ src/pybind/rgw/c_rgw.pxd        | 2 +-
+ src/pybind/rgw/mock_rgw.pxi     | 2 +-
+ src/pybind/rgw/rgw.pyx          | 6 +++---
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/pybind/rados/mock_rados.pxi b/src/pybind/rados/mock_rados.pxi
+index 36f5aad7d0a..d040df6782e 100644
+--- a/src/pybind/rados/mock_rados.pxi
++++ b/src/pybind/rados/mock_rados.pxi
+@@ -441,7 +441,7 @@ cdef nogil:
+         pass
+     void rados_read_op_set_flags(rados_read_op_t read_op, int flags):
+         pass
+-    int rados_omap_get_next(rados_omap_iter_t iter, const char * const* key, const char * const* val, size_t * len):
++    int rados_omap_get_next(rados_omap_iter_t iter, char ** key, char ** val, size_t * len):
+         pass
+     void rados_omap_get_end(rados_omap_iter_t iter):
+         pass
+diff --git a/src/pybind/rgw/c_rgw.pxd b/src/pybind/rgw/c_rgw.pxd
+index 988b67b0ef9..4654460ed64 100644
+--- a/src/pybind/rgw/c_rgw.pxd
++++ b/src/pybind/rgw/c_rgw.pxd
+@@ -102,7 +102,7 @@ cdef extern from "rados/rgw_file.h" nogil:
+ 
+     int rgw_readdir(rgw_fs *fs,
+                     rgw_file_handle *parent_fh, uint64_t *offset,
+-                    bool (*cb)(const char *name, void *arg, uint64_t offset, stat *st, uint32_t st_mask, uint32_t flags) nogil except? -9000,
++                    int (*cb)(const char *name, void *arg, uint64_t offset, stat *st, uint32_t st_mask, uint32_t flags) nogil except? -9000,
+                     void *cb_arg, bool *eof, uint32_t flags) except? -9000
+ 
+     int rgw_getattr(rgw_fs *fs,
+diff --git a/src/pybind/rgw/mock_rgw.pxi b/src/pybind/rgw/mock_rgw.pxi
+index 806d4df75de..d19ce777875 100644
+--- a/src/pybind/rgw/mock_rgw.pxi
++++ b/src/pybind/rgw/mock_rgw.pxi
+@@ -116,7 +116,7 @@ cdef nogil:
+ 
+     int rgw_readdir(rgw_fs *fs,
+                     rgw_file_handle *parent_fh, uint64_t *offset,
+-                    libcpp.bool (*cb)(const char *name, void *arg, uint64_t offset, stat *st, uint32_t st_mask, uint32_t flags) nogil except? -9000,
++                    int (*cb)(const char *name, void *arg, uint64_t offset, stat *st, uint32_t st_mask, uint32_t flags) nogil except? -9000,
+                     void *cb_arg, libcpp.bool *eof, uint32_t flags) except? -9000:
+         pass
+ 
+diff --git a/src/pybind/rgw/rgw.pyx b/src/pybind/rgw/rgw.pyx
+index d210a70bbb8..6da956e2d96 100644
+--- a/src/pybind/rgw/rgw.pyx
++++ b/src/pybind/rgw/rgw.pyx
+@@ -166,12 +166,12 @@ cdef make_ex(ret, msg):
+         return Error(msg + (": error code %d" % ret))
+ 
+ 
+-cdef bint readdir_cb(const char *name, void *arg, uint64_t offset, stat *st, uint32_t st_mask, uint32_t flags) \
++cdef int readdir_cb(const char *name, void *arg, uint64_t offset, stat *st, uint32_t st_mask, uint32_t flags) \
+ except? -9000 with gil:
+     if exc.PyErr_Occurred():
+-        return False
++        return 0
+     (<object>arg)(name, offset, flags)
+-    return True
++    return 1
+ 
+ 
+ class LibCephFSStateError(Error):
+-- 
+2.25.1
+
